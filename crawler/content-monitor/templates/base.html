@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <title>{% block title %}Content Monitor{% endblock %}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1{% block viewport_extra %}{% endblock %}">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" crossorigin="anonymous">
+  <script>
+    tailwind.config = {
+      theme: { extend: { fontFamily: { sans: ['Inter','Noto Sans SC','system-ui','sans-serif'] } } }
+    }
+  </script>
+  <style>
+    body { font-family: 'Inter','Noto Sans SC',system-ui,sans-serif; }
+    .scroll-y::-webkit-scrollbar { width: 5px; }
+    .scroll-y::-webkit-scrollbar-thumb { background: #E2E8F0; border-radius: 10px; }
+    .scroll-y::-webkit-scrollbar-track { background: transparent; }
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.02); }
+    .card-hover { transition: box-shadow .2s, transform .2s; }
+    .card-hover:hover { box-shadow: 0 8px 24px rgba(0,0,0,.07); transform: translateY(-1px); }
+    .nav-icon { transition: all .2s ease; }
+    .nav-icon:hover { transform: scale(1.08); }
+    .btn-primary { background: linear-gradient(135deg, #6C5CE7, #a29bfe); color: #fff; border: none; border-radius: 12px; font-weight: 600; transition: all .2s; }
+    .btn-primary:hover { box-shadow: 0 4px 15px rgba(108,92,231,.35); transform: translateY(-1px); }
+    .btn-primary:active { transform: scale(.97); }
+    .badge { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; }
+  </style>
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="{% block body_class %}bg-[#F5F6FA] text-gray-800{% endblock %}">
+  {% block body %}
+  <div class="flex h-screen overflow-hidden">
+
+    <!-- ====== Sidebar ====== -->
+    <aside class="w-[88px] bg-[#1E1F25] flex flex-col items-center py-5 shrink-0 z-30">
+      <div class="min-w-[48px] px-3 py-2 rounded-xl bg-gradient-to-br from-[#6C5CE7] to-[#a29bfe] flex flex-col items-center justify-center gap-1 mb-8 shadow-lg shadow-purple-500/30">
+        <svg width="32" height="30" viewBox="0 0 32 30" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- 笔记卡片主体 -->
+          <rect x="2" y="6" width="17" height="21" rx="2.5" fill="white" opacity="0.93"/>
+          <!-- 折角三角 -->
+          <path d="M15.5 6 L19 9.5 H15.5 V6Z" fill="rgba(108,92,231,0.22)"/>
+          <!-- 折角分隔线 -->
+          <path d="M15.5 6 L19 9.5" stroke="rgba(108,92,231,0.28)" stroke-width="0.6"/>
+          <!-- 文字线条 1 -->
+          <rect x="5" y="14" width="9" height="1.5" rx="0.75" fill="#6C5CE7" opacity="0.48"/>
+          <!-- 文字线条 2 -->
+          <rect x="5" y="17.5" width="6.5" height="1.5" rx="0.75" fill="#6C5CE7" opacity="0.34"/>
+          <!-- 四角星闪光 -->
+          <path d="M24.5 2 L26 7 L31 8.5 L26 10 L24.5 15 L23 10 L18 8.5 L23 7 Z" fill="white"/>
+          <!-- 小圆点装饰 -->
+          <circle cx="24.5" cy="21" r="1.6" fill="white" opacity="0.55"/>
+        </svg>
+        <span class="text-white font-black text-[9px] tracking-widest leading-none">demi</span>
+      </div>
+
+      <nav class="flex flex-col items-center gap-2.5 flex-1">
+
+        {# 监控：上升柱状图 + 趋势线 #}
+        <a href="/" class="nav-icon flex flex-col items-center gap-0.5 group" title="监控">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/' %}background:#6C5CE7;color:#fff;box-shadow:0 4px 12px #6C5CE755{% else %}background:#F0EDFF;color:#6C5CE7{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="1"   y="10" width="3.5" height="7" rx="1" fill="currentColor" opacity="0.6"/>
+              <rect x="6.5" y="6"  width="3.5" height="11" rx="1" fill="currentColor"/>
+              <rect x="12"  y="2"  width="3.5" height="15" rx="1" fill="currentColor" opacity="0.8"/>
+              <path d="M2.5 9 L8 5 L13.5 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" opacity="0.45"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/' %}text-white{% else %}text-gray-500{% endif %}">监控</span>
+        </a>
+
+        {# 改写：铅笔 + 四角星闪光 #}
+        <a href="/rewrite" class="nav-icon flex flex-col items-center gap-0.5 group" title="改写">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/rewrite' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/rewrite' %}background:#00B894;color:#fff;box-shadow:0 4px 12px #00B89455{% else %}background:#E8FFF5;color:#00B894{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <path d="M3 14.5 L10 7.5 L12 9.5 L5 16.5 L3 16.5 Z" fill="currentColor" opacity="0.82"/>
+              <path d="M10 7.5 L12 9.5 L13.5 8 L11.5 6 Z" fill="currentColor"/>
+              <path d="M15 2 L15.8 4.5 L18 5.2 L15.8 5.9 L15 8.4 L14.2 5.9 L12 5.2 L14.2 4.5 Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/rewrite' %}text-white{% else %}text-gray-500{% endif %}">改写</span>
+        </a>
+
+        {# 编辑：图片框 + 山峦 + 太阳 #}
+        <a href="/reddit_edit" class="nav-icon flex flex-col items-center gap-0.5 group" title="编辑">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/reddit_edit' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/reddit_edit' %}background:#FF7675;color:#fff;box-shadow:0 4px 12px #FF767555{% else %}background:#FFF0F0;color:#FF7675{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="1.5" y="3.5" width="15" height="11" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <path d="M1.5 11.5 L5.5 7.5 L9 10.5 L12 7.5 L16.5 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+              <circle cx="13" cy="6.5" r="1.6" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/reddit_edit' %}text-white{% else %}text-gray-500{% endif %}">编辑</span>
+        </a>
+
+        {# 评测：游戏手柄 + 星 #}
+        <a href="/review" class="nav-icon flex flex-col items-center gap-0.5 group" title="评测">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/review' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/review' %}background:#F39C12;color:#fff;box-shadow:0 4px 12px #F39C1255{% else %}background:#FFF5E0;color:#F39C12{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="1" y="6" width="16" height="9" rx="2.5" stroke="currentColor" stroke-width="1.4" fill="none"/>
+              <circle cx="5.5" cy="10.5" r="1.2" fill="currentColor" opacity="0.7"/>
+              <rect x="8.5" y="9.5" width="4" height="1.3" rx="0.6" fill="currentColor" opacity="0.9"/>
+              <rect x="10" y="8" width="1.3" height="4" rx="0.6" fill="currentColor" opacity="0.9"/>
+              <path d="M9.5 1 L10.2 3.2 L12.5 4 L10.2 4.8 L9.5 7 L8.8 4.8 L6.5 4 L8.8 3.2 Z" fill="currentColor" opacity="0.55"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/review' %}text-white{% else %}text-gray-500{% endif %}">评测</span>
+        </a>
+
+        {# 生成：笔记卡 + 顶部星光 #}
+        <a href="/xhs_full" class="nav-icon flex flex-col items-center gap-0.5 group" title="生成">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/xhs_full' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/xhs_full' %}background:#0984E3;color:#fff;box-shadow:0 4px 12px #0984E355{% else %}background:#E8F4FD;color:#0984E3{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="2" y="5.5" width="14" height="11.5" rx="2" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <rect x="4.5" y="9.5"  width="9"   height="1.5" rx="0.75" fill="currentColor" opacity="0.8"/>
+              <rect x="4.5" y="12.5" width="5.5" height="1.5" rx="0.75" fill="currentColor" opacity="0.55"/>
+              <path d="M9.5 1 L10.2 3.2 L12.5 4 L10.2 4.8 L9.5 7 L8.8 4.8 L6.5 4 L8.8 3.2 Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/xhs_full' %}text-white{% else %}text-gray-500{% endif %}">生成</span>
+        </a>
+
+        {# 速写：搜索 + 铅笔 #}
+        <a href="/freewrite" class="nav-icon flex flex-col items-center gap-0.5 group" title="速写">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/freewrite' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/freewrite' %}background:#E17055;color:#fff;box-shadow:0 4px 12px #E1705555{% else %}background:#FFF3EE;color:#E17055{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="7.5" cy="7.5" r="5" stroke="currentColor" stroke-width="1.5" fill="none"/>
+              <path d="M11.5 11.5 L16 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M5.5 7.5 h4M7.5 5.5 v4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/freewrite' %}text-white{% else %}text-gray-500{% endif %}">速写</span>
+        </a>
+
+        {# 视频：播放按钮 #}
+        <a href="/video" class="nav-icon flex flex-col items-center gap-0.5 group" title="视频">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/video' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/video' %}background:#6C5CE7;color:#fff;box-shadow:0 4px 12px #6C5CE755{% else %}background:#F0EDFF;color:#6C5CE7{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="7.5" stroke="currentColor" stroke-width="1.4" fill="none"/>
+              <path d="M7.5 6 L13 9 L7.5 12 Z" fill="currentColor" opacity="0.9"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/video' %}text-white{% else %}text-gray-500{% endif %}">视频</span>
+        </a>
+
+        {# 周报：报告图标 #}
+        <a href="/weekly_report" class="nav-icon flex flex-col items-center gap-0.5 group" title="周报">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/weekly_report' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/weekly_report' %}background:#F39C12;color:#fff;box-shadow:0 4px 12px #F39C1255{% else %}background:#FFF5E0;color:#F39C12{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="2" y="3" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.4" fill="none"/>
+              <rect x="4.5" y="7" width="4" height="1.2" rx="0.6" fill="currentColor" opacity="0.8"/>
+              <rect x="4.5" y="9.5" width="9" height="1.2" rx="0.6" fill="currentColor" opacity="0.6"/>
+              <rect x="4.5" y="12" width="6" height="1.2" rx="0.6" fill="currentColor" opacity="0.4"/>
+              <path d="M10 1 L10.5 2.5 L12 3 L10.5 3.5 L10 5 L9.5 3.5 L8 3 L9.5 2.5 Z" fill="currentColor"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/weekly_report' %}text-white{% else %}text-gray-500{% endif %}">周报</span>
+        </a>
+
+        {# 洛克亚文化：花朵 + 精灵 #}
+        <a href="/luoke_xhs" class="nav-icon flex flex-col items-center gap-0.5 group" title="洛克图文">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/luoke_xhs' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/luoke_xhs' %}background:#E8829A;color:#fff;box-shadow:0 4px 12px #E8829A55{% else %}background:#FFF0F5;color:#E8829A{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <circle cx="9" cy="9" r="2.5" fill="currentColor" opacity="0.9"/>
+              <path d="M9 2.5 C9 2.5 10.5 5 9 6.5 C7.5 5 9 2.5 9 2.5Z" fill="currentColor" opacity="0.7"/>
+              <path d="M9 15.5 C9 15.5 10.5 13 9 11.5 C7.5 13 9 15.5 9 15.5Z" fill="currentColor" opacity="0.7"/>
+              <path d="M2.5 9 C2.5 9 5 10.5 6.5 9 C5 7.5 2.5 9 2.5 9Z" fill="currentColor" opacity="0.7"/>
+              <path d="M15.5 9 C15.5 9 13 10.5 11.5 9 C13 7.5 15.5 9 15.5 9Z" fill="currentColor" opacity="0.7"/>
+              <path d="M4.2 4.2 C4.2 4.2 6.5 5.8 5.8 7.5 C4 7.2 4.2 4.2 4.2 4.2Z" fill="currentColor" opacity="0.5"/>
+              <path d="M13.8 13.8 C13.8 13.8 11.5 12.2 12.2 10.5 C14 10.8 13.8 13.8 13.8 13.8Z" fill="currentColor" opacity="0.5"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/luoke_xhs' %}text-white{% else %}text-gray-500{% endif %}">洛克</span>
+        </a>
+
+        {# Game AI Demo：游戏手柄 + 闪光 #}
+        <a href="/game_demo" class="nav-icon flex flex-col items-center gap-0.5 group" title="AI试玩">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200 {% if request.path == '/game_demo' %}shadow-lg{% endif %}"
+               style="{% if request.path == '/game_demo' %}background:#7C3AED;color:#fff;box-shadow:0 4px 12px #7C3AED55{% else %}background:#EDE9FE;color:#7C3AED{% endif %}">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+              <rect x="1" y="5.5" width="16" height="10" rx="3" stroke="currentColor" stroke-width="1.4" fill="none"/>
+              <rect x="4" y="9" width="3.5" height="1.2" rx="0.6" fill="currentColor"/>
+              <rect x="5.25" y="7.75" width="1.2" height="3.5" rx="0.6" fill="currentColor"/>
+              <circle cx="12.5" cy="9.5" r="1" fill="currentColor" opacity="0.8"/>
+              <circle cx="14.5" cy="11" r="1" fill="currentColor" opacity="0.5"/>
+              <path d="M10 1 L10.6 2.8 L12.5 3.4 L10.6 4 L10 5.8 L9.4 4 L7.5 3.4 L9.4 2.8 Z" fill="currentColor" opacity="0.6"/>
+            </svg>
+          </div>
+          <span class="text-[9px] font-medium {% if request.path == '/game_demo' %}text-white{% else %}text-gray-500{% endif %}">AI试玩</span>
+        </a>
+
+      </nav>
+
+      <!-- Cookie 设置按钮（固定在侧边栏底部） -->
+      <button onclick="openCookieModal()"
+              class="nav-icon flex flex-col items-center gap-0.5 mb-3 group" title="Cookie 设置">
+        <div class="w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-200"
+             style="background:#2a2b33;color:#94a3b8;"
+             id="cookie-nav-btn">
+          <i data-lucide="key" class="w-4 h-4"></i>
+        </div>
+        <span class="text-[9px] font-medium text-gray-500" id="cookie-nav-label">Cookie</span>
+      </button>
+
+    </aside>
+
+    <!-- ====== Main Column ====== -->
+    <div class="flex-1 flex flex-col min-w-0 overflow-hidden">
+
+      {% block top_bar %}
+      <header class="h-[56px] bg-white border-b border-gray-100/80 px-8 flex items-center justify-between shrink-0">
+        <div>
+          <h1 class="text-[15px] font-bold text-gray-800">{% block page_title %}Dashboard{% endblock %}</h1>
+          <p class="text-[10px] text-gray-400 -mt-0.5">{% block page_subtitle %}{% endblock %}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          {% block header_actions %}{% endblock %}
+        </div>
+      </header>
+      {% endblock %}
+
+      <main class="flex-1 {% block main_class %}overflow-auto scroll-y p-6{% endblock %}">
+        {% block main %}{% endblock %}
+      </main>
+    </div>
+  </div>
+  <script>lucide.createIcons();</script>
+  {% endblock %}
+
+<!-- ====== Cookie 管理弹窗 ====== -->
+<div id="cookie-modal"
+     class="fixed inset-0 z-50 flex items-center justify-center hidden"
+     style="background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);">
+  <div class="bg-white rounded-2xl shadow-2xl w-[520px] max-w-[95vw] overflow-hidden"
+       onclick="event.stopPropagation()">
+    <!-- 标题栏 -->
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+      <div class="flex items-center gap-2.5">
+        <div class="w-7 h-7 rounded-lg bg-[#F0EDFF] text-[#6C5CE7] flex items-center justify-center">
+          <i data-lucide="key" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h2 class="text-sm font-bold text-gray-800">Cookie 设置</h2>
+          <p class="text-[10px] text-gray-400">仅存储在本地浏览器，每次抓取时自动附带</p>
+        </div>
+      </div>
+      <button onclick="closeCookieModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+
+    <!-- 内容 -->
+    <div class="px-6 py-5 space-y-4">
+
+      <!-- 微博 -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-[#E04848] inline-block"></span>微博 Cookie
+          </label>
+          <span id="weibo-cookie-status" class="text-[10px] text-gray-400"></span>
+        </div>
+        <textarea id="cookie-weibo" rows="3" placeholder="粘贴微博 Cookie，包含 SUB=xxx; SUBP=xxx; XSRF-TOKEN=xxx"
+                  class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono resize-none focus:outline-none focus:border-[#E04848] focus:ring-2 focus:ring-[#E04848]/10 transition-all scroll-y"></textarea>
+        <p class="text-[10px] text-gray-400 mt-1">F12 → Network → 任意请求 → Request Headers → Cookie</p>
+      </div>
+
+      <!-- B站 -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-[#00A1D6] inline-block"></span>B站 Cookie
+          </label>
+          <span id="bili-cookie-status" class="text-[10px] text-gray-400"></span>
+        </div>
+        <textarea id="cookie-bilibili" rows="3" placeholder="粘贴B站 Cookie，包含 SESSDATA=xxx; bili_jct=xxx; DedeUserID=xxx"
+                  class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono resize-none focus:outline-none focus:border-[#00A1D6] focus:ring-2 focus:ring-[#00A1D6]/10 transition-all scroll-y"></textarea>
+        <p class="text-[10px] text-gray-400 mt-1">登录 bilibili.com → F12 → Network → 任意请求 → Cookie</p>
+      </div>
+
+      <!-- Twitter/X -->
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-semibold text-gray-600 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-[#1DA1F2] inline-block"></span>Twitter/X Cookie
+          </label>
+          <span id="twitter-cookie-status" class="text-[10px] text-gray-400"></span>
+        </div>
+        <textarea id="cookie-twitter" rows="3" placeholder="粘贴 Twitter Cookie，需包含 auth_token=xxx; ct0=xxx"
+                  class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono resize-none focus:outline-none focus:border-[#1DA1F2] focus:ring-2 focus:ring-[#1DA1F2]/10 transition-all scroll-y"></textarea>
+        <p class="text-[10px] text-gray-400 mt-1">登录 twitter.com → F12 → Network → 任意请求 → Cookie（需含 auth_token）</p>
+      </div>
+
+      <!-- 提示 -->
+      <div class="bg-amber-50 border border-amber-100 rounded-xl px-4 py-2.5 text-[11px] text-amber-700 flex items-start gap-2">
+        <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i>
+        <span>Cookie 仅存储在您的浏览器 localStorage 中，不会上传到服务器持久化。页面刷新后仍然有效，清除浏览器数据后失效。</span>
+      </div>
+    </div>
+
+    <!-- 底部按钮 -->
+    <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+      <button onclick="clearAllCookies()"
+              class="text-xs text-gray-400 hover:text-red-500 transition-colors flex items-center gap-1">
+        <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 清除全部
+      </button>
+      <div class="flex gap-2">
+        <button onclick="closeCookieModal()"
+                class="px-4 py-2 rounded-xl border border-gray-200 text-gray-500 text-xs font-medium hover:bg-gray-50 transition-colors">
+          取消
+        </button>
+        <button onclick="saveCookies()"
+                class="px-5 py-2 rounded-xl bg-[#6C5CE7] text-white text-xs font-semibold hover:bg-[#5a4bd1] transition-colors">
+          保存
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Cookie 管理（localStorage） ────────────────────────────────
+const COOKIE_KEYS = { weibo: 'cm_cookie_weibo', bilibili: 'cm_cookie_bilibili', twitter: 'cm_cookie_twitter' };
+
+function loadCookies() {
+  const weibo   = localStorage.getItem(COOKIE_KEYS.weibo)    || '';
+  const bili    = localStorage.getItem(COOKIE_KEYS.bilibili) || '';
+  const twitter = localStorage.getItem(COOKIE_KEYS.twitter)  || '';
+  document.getElementById('cookie-weibo').value    = weibo;
+  document.getElementById('cookie-bilibili').value = bili;
+  document.getElementById('cookie-twitter').value  = twitter;
+  document.getElementById('weibo-cookie-status').textContent   = weibo   ? '已设置 ✓' : '未设置';
+  document.getElementById('weibo-cookie-status').className     = 'text-[10px] ' + (weibo   ? 'text-green-500' : 'text-gray-400');
+  document.getElementById('bili-cookie-status').textContent    = bili    ? '已设置 ✓' : '未设置';
+  document.getElementById('bili-cookie-status').className      = 'text-[10px] ' + (bili    ? 'text-green-500' : 'text-gray-400');
+  document.getElementById('twitter-cookie-status').textContent = twitter ? '已设置 ✓' : '未设置';
+  document.getElementById('twitter-cookie-status').className   = 'text-[10px] ' + (twitter ? 'text-green-500' : 'text-gray-400');
+  // 侧边栏按钮状态
+  const hasAny = weibo || bili || twitter;
+  const btn = document.getElementById('cookie-nav-btn');
+  const lbl = document.getElementById('cookie-nav-label');
+  if (btn) {
+    btn.style.background = hasAny ? '#1a2636' : '#2a2b33';
+    btn.style.color = hasAny ? '#60a5fa' : '#94a3b8';
+  }
+  if (lbl) lbl.style.color = hasAny ? '#60a5fa' : '';
+}
+
+function saveCookies() {
+  const weibo   = document.getElementById('cookie-weibo').value.trim();
+  const bili    = document.getElementById('cookie-bilibili').value.trim();
+  const twitter = document.getElementById('cookie-twitter').value.trim();
+  if (weibo)   localStorage.setItem(COOKIE_KEYS.weibo, weibo);
+  else         localStorage.removeItem(COOKIE_KEYS.weibo);
+  if (bili)    localStorage.setItem(COOKIE_KEYS.bilibili, bili);
+  else         localStorage.removeItem(COOKIE_KEYS.bilibili);
+  if (twitter) localStorage.setItem(COOKIE_KEYS.twitter, twitter);
+  else         localStorage.removeItem(COOKIE_KEYS.twitter);
+  loadCookies();
+  closeCookieModal();
+}
+
+function clearAllCookies() {
+  if (!confirm('确定清除全部 Cookie？')) return;
+  Object.values(COOKIE_KEYS).forEach(k => localStorage.removeItem(k));
+  loadCookies();
+  closeCookieModal();
+}
+
+function openCookieModal() {
+  loadCookies();
+  document.getElementById('cookie-modal').classList.remove('hidden');
+  lucide.createIcons();
+}
+
+function closeCookieModal() {
+  document.getElementById('cookie-modal').classList.add('hidden');
+}
+
+// 点击遮罩关闭
+document.getElementById('cookie-modal').addEventListener('click', closeCookieModal);
+
+// 对外暴露：抓取时调用，获取当前所有 cookie
+window.getStoredCookies = function() {
+  return {
+    weibo:    localStorage.getItem(COOKIE_KEYS.weibo)    || '',
+    bilibili: localStorage.getItem(COOKIE_KEYS.bilibili) || '',
+    twitter:  localStorage.getItem(COOKIE_KEYS.twitter)  || '',
+  };
+};
+
+// 页面加载时更新侧边栏状态
+document.addEventListener('DOMContentLoaded', () => { loadCookies(); lucide.createIcons(); });
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

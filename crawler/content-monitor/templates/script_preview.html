@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+{% block title %}视频脚本预览 - 游戏雷达局{% endblock %}
+{% block page_title %}视频脚本预览{% endblock %}
+
+{% block header_actions %}
+<a href="/rewrite" class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#6C5CE7] transition-colors font-medium">
+  <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> 返回改写
+</a>
+{% endblock %}
+
+{% block main %}
+<div class="flex gap-6 h-full min-h-0">
+
+  <!-- 左：说明 + 操作 -->
+  <div class="w-[260px] shrink-0 flex flex-col gap-4">
+    <div class="card p-5">
+      <h2 class="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
+        <div class="w-6 h-6 rounded-lg bg-[#F0EDFF] text-[#6C5CE7] flex items-center justify-center"><i data-lucide="layout-list" class="w-3.5 h-3.5"></i></div>
+        脚本分段配图
+      </h2>
+      <p class="text-xs text-gray-500 leading-relaxed mb-4">
+        脚本已按行自动分段。你可以为每个段落上传一张自定义图片，视频生成时该段落将以该图片为背景。
+      </p>
+      <p class="text-[11px] text-gray-400 leading-relaxed mb-4">
+        <span class="font-semibold text-gray-500">未上传图片的段落</span>将自动使用 PV 视频片段或纯色背景。
+      </p>
+      <div class="text-[11px] text-gray-400 bg-gray-50 rounded-xl p-3 space-y-1">
+        <div>支持 JPG / PNG / WEBP</div>
+        <div>建议尺寸：1080×1920（竖屏）</div>
+      </div>
+    </div>
+
+    <div class="card p-5">
+      <div class="text-[11px] text-gray-500 mb-2">
+        共 <span id="seg-count" class="font-bold text-gray-700">0</span> 个段落，
+        已配图 <span id="img-count" class="font-bold text-[#6C5CE7]">0</span> 个
+      </div>
+      <button id="btn-go-video" class="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2">
+        <i data-lucide="play" class="w-4 h-4"></i> 生成视频
+      </button>
+      <p class="text-[10px] text-gray-400 mt-2 text-center">点击后跳转视频生成页</p>
+    </div>
+  </div>
+
+  <!-- 右：分段列表 -->
+  <div class="flex-1 flex flex-col min-w-0 overflow-y-auto scroll-y gap-3" id="segments-container">
+    <div class="text-xs text-gray-400 py-8 text-center" id="seg-empty">正在加载脚本…</div>
+  </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── 读取 sessionStorage ──────────────────────────────────────
+let _previewData = null;
+let _segments = []; // [{index, text, image_b64?}]
+
+try {
+  const raw = sessionStorage.getItem('scriptPreviewData');
+  if (raw) _previewData = JSON.parse(raw);
+} catch(e) { console.warn('scriptPreviewData 读取失败:', e); }
+
+function escapeHtml(s) {
+  return (s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── 分段：按行拆分，过滤空行 ─────────────────────────────────
+function parseSegments(text) {
+  return text.split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0)
+    .map((text, index) => ({ index, text, image_b64: null }));
+}
+
+// ── 渲染段落列表 ──────────────────────────────────────────────
+function renderSegments(segs) {
+  const container = document.getElementById('segments-container');
+  const empty = document.getElementById('seg-empty');
+  if (!segs.length) {
+    empty.textContent = '脚本为空，请返回改写页重新生成。';
+    return;
+  }
+  empty.classList.add('hidden');
+
+  container.innerHTML = '';
+  segs.forEach((seg, i) => {
+    const card = document.createElement('div');
+    card.className = 'card p-4 shrink-0';
+    card.innerHTML = `
+      <div class="flex gap-4">
+        <div class="w-6 h-6 rounded-full bg-[#F0EDFF] text-[#6C5CE7] flex items-center justify-center text-[11px] font-bold shrink-0 mt-0.5">${i + 1}</div>
+        <div class="flex-1 min-w-0">
+          <textarea class="seg-text w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs resize-none focus:outline-none focus:border-[#6C5CE7] transition-all scroll-y"
+                    rows="3" data-idx="${i}">${escapeHtml(seg.text)}</textarea>
+        </div>
+        <div class="w-32 shrink-0 flex flex-col gap-2 items-center">
+          <div class="seg-thumb w-28 h-20 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex flex-col items-center justify-center text-gray-300 overflow-hidden cursor-pointer hover:border-[#6C5CE7] transition-colors" data-idx="${i}">
+            <i data-lucide="image-plus" class="w-5 h-5 mb-1"></i>
+            <span class="text-[10px]">点击上传</span>
+          </div>
+          <input type="file" accept="image/*" class="seg-file-input hidden" data-idx="${i}">
+          <button class="seg-clear-btn hidden text-[10px] text-red-400 hover:text-red-600 transition-colors" data-idx="${i}">
+            <i data-lucide="trash-2" class="w-3 h-3 inline"></i> 清除
+          </button>
+        </div>
+      </div>
+    `;
+    container.appendChild(card);
+
+    // 同步文本编辑到 _segments
+    card.querySelector('.seg-text').addEventListener('input', (e) => {
+      _segments[i].text = e.target.value;
+    });
+
+    // 点缩略图区触发文件选择
+    const thumb = card.querySelector('.seg-thumb');
+    const fileInput = card.querySelector('.seg-file-input');
+    const clearBtn = card.querySelector('.seg-clear-btn');
+    thumb.addEventListener('click', () => fileInput.click());
+
+    fileInput.addEventListener('change', () => {
+      const file = fileInput.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const b64 = ev.target.result; // data:image/...;base64,...
+        _segments[i].image_b64 = b64;
+        // 显示缩略图
+        thumb.innerHTML = `<img src="${b64}" class="w-full h-full object-cover rounded-lg">`;
+        clearBtn.classList.remove('hidden');
+        updateCounts();
+      };
+      reader.readAsDataURL(file);
+      fileInput.value = '';
+    });
+
+    clearBtn.addEventListener('click', () => {
+      _segments[i].image_b64 = null;
+      thumb.innerHTML = `<i data-lucide="image-plus" class="w-5 h-5 mb-1"></i><span class="text-[10px]">点击上传</span>`;
+      clearBtn.classList.add('hidden');
+      updateCounts();
+      if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [thumb] });
+    });
+  });
+
+  if (typeof lucide !== 'undefined') lucide.createIcons();
+  updateCounts();
+}
+
+function updateCounts() {
+  document.getElementById('seg-count').textContent = _segments.length;
+  document.getElementById('img-count').textContent = _segments.filter(s => s.image_b64).length;
+}
+
+// ── 初始化 ────────────────────────────────────────────────────
+(function init() {
+  if (!_previewData || !_previewData.script_text) {
+    document.getElementById('seg-empty').textContent = '未找到脚本数据，请返回改写页重新生成。';
+    return;
+  }
+  _segments = parseSegments(_previewData.script_text);
+  renderSegments(_segments);
+})();
+
+// ── 生成视频 ──────────────────────────────────────────────────
+document.getElementById('btn-go-video').addEventListener('click', () => {
+  if (!_segments.length) { alert('脚本为空'); return; }
+
+  const baseItem = (_previewData && _previewData.base_item) || {};
+  const allItems = (_previewData && _previewData.items) || [];
+
+  const payload = {
+    items: [{
+      ...baseItem,
+      script_segments: _segments.map(s => ({ index: s.index, text: s.text, image_b64: s.image_b64 || null })),
+      _is_script: true,
+      _is_script_preview: true,
+    }]
+  };
+
+  try { sessionStorage.setItem('videoItems', JSON.stringify(payload)); } catch(e) {}
+  window.location.href = '/video';
+});
+</script>
+{% endblock %}

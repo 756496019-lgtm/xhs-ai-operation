@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}Reddit 编辑 - Content Monitor{% endblock %}
+{% block page_title %}Reddit 截图编辑{% endblock %}
+{% block page_subtitle %}截图 → AI翻译字幕 → 一键发布{% endblock %}
+
+{% block main %}
+<div class="flex gap-6 h-full min-h-0">
+
+  <!-- 左：上传 + 配置 -->
+  <div class="w-72 shrink-0 flex flex-col gap-4 overflow-y-auto scroll-y">
+
+    <!-- 截图上传 -->
+    <div class="card p-5">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">截图上传</h2>
+      <div id="drop-zone"
+           class="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center bg-gray-50/50 hover:bg-gray-50 transition-colors cursor-pointer">
+        <i data-lucide="image-plus" class="w-8 h-8 text-gray-300 mx-auto mb-2"></i>
+        <p class="text-xs text-gray-500 font-medium">点击上传 或 <kbd class="px-1.5 py-0.5 bg-gray-200 rounded text-[10px]">Ctrl+V</kbd> 粘贴</p>
+        <p class="text-[10px] text-gray-400 mt-1">最多 5 张 · Win+Shift+S 截图后粘贴</p>
+        <input id="file-input" type="file" accept="image/*" multiple class="hidden">
+      </div>
+      <div id="image-list" class="mt-3 space-y-2 hidden"></div>
+    </div>
+
+    <!-- 帖子信息 -->
+    <div class="card p-5">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">帖子信息</h2>
+      <div>
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">小红书标题
+          <span class="text-gray-400 font-normal ml-1">（最多20字）</span>
+        </label>
+        <input id="xhs-title" type="text" maxlength="20"
+               class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF4500] focus:ring-2 focus:ring-[#FF4500]/10 transition-all"
+               placeholder="【reddit热帖】…">
+      </div>
+      <div class="mt-3">
+        <label class="block text-xs font-semibold text-gray-500 mb-1.5">发布文案
+          <span class="text-gray-400 font-normal ml-1">（可编辑）</span>
+        </label>
+        <textarea id="xhs-content" rows="6"
+                  class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm resize-none focus:outline-none focus:border-[#FF4500] focus:ring-2 focus:ring-[#FF4500]/10 transition-all scroll-y"></textarea>
+      </div>
+    </div>
+
+    <!-- 翻译按钮 -->
+    <button id="btn-translate" disabled
+            class="w-full py-3 text-sm font-semibold rounded-xl text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
+            style="background:linear-gradient(135deg,#FF4500,#FF6B35);">
+      <i data-lucide="languages" class="w-4 h-4"></i> AI 识别并翻译
+    </button>
+    <div id="translate-status" class="text-[11px] text-gray-400 text-center -mt-2 min-h-[16px]"></div>
+  </div>
+
+  <!-- 右：预览 + 发布 -->
+  <div class="flex-1 flex flex-col min-w-0 gap-4">
+
+    <!-- 空状态 -->
+    <div id="empty-preview" class="card flex-1 flex flex-col items-center justify-center py-20 text-gray-300">
+      <i data-lucide="image" class="w-12 h-12 mb-3"></i>
+      <p class="text-sm font-medium">粘贴截图后点击「AI 识别并翻译」</p>
+      <p class="text-xs mt-1">生成结果会在这里预览</p>
+    </div>
+
+    <!-- 预览网格 -->
+    <div id="preview-area" class="card flex-1 flex flex-col min-h-0 overflow-hidden hidden">
+      <div class="px-5 py-4 border-b border-gray-50 shrink-0 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+          <div class="w-6 h-6 rounded-lg bg-[#FFF0EC] text-[#FF4500] flex items-center justify-center">
+            <i data-lucide="images" class="w-3.5 h-3.5"></i>
+          </div>
+          翻译结果
+        </h2>
+        <div class="flex items-center gap-3">
+          <span id="preview-count" class="text-xs text-gray-400"></span>
+          <button id="btn-download-all" onclick="downloadAllReddit()"
+                  class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 text-xs font-medium hover:bg-gray-50 transition-colors">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            导出全部
+          </button>
+        </div>
+      </div>
+      <div id="preview-grid" class="flex-1 overflow-auto p-4 grid grid-cols-2 gap-4 scroll-y content-start"></div>
+    </div>
+
+    <!-- 发布面板 -->
+    <div id="publish-section" class="card p-5 hidden shrink-0">
+      <h2 class="text-sm font-bold text-gray-700 mb-4 flex items-center gap-2">
+        <div class="w-6 h-6 rounded-lg bg-[#FFF0EC] text-[#FF4500] flex items-center justify-center">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+        </div>
+        一键发布
+      </h2>
+      <div class="space-y-3">
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">小红书 Cookie</label>
+          <input id="xhs-cookie" type="password" placeholder="粘贴 cookie 字符串…"
+                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#FF4500] focus:ring-2 focus:ring-[#FF4500]/10 transition-all">
+        </div>
+        <!-- 发布模式单选 -->
+        <div class="flex gap-3">
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" name="reddit-publish-mode" value="now" checked
+                   class="accent-[#FF4500]">
+            <span class="text-xs text-gray-600">立即发布</span>
+          </label>
+          <label class="flex items-center gap-1.5 cursor-pointer">
+            <input type="radio" name="reddit-publish-mode" value="draft"
+                   class="accent-[#FF4500]">
+            <span class="text-xs text-gray-600">发至草稿箱</span>
+          </label>
+        </div>
+        <div id="publish-status" class="text-[11px] text-gray-400 min-h-[14px]"></div>
+        <div class="flex gap-2">
+          <button id="btn-publish"
+                  class="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-all hover:opacity-90 disabled:opacity-40 flex items-center justify-center gap-1.5"
+                  style="background:linear-gradient(135deg,#FF4500,#FF6B35);">
+            <i data-lucide="send" class="w-3.5 h-3.5"></i> 一键发布到小红书
+          </button>
+          <button id="btn-open-editor"
+                  class="px-4 py-2.5 rounded-xl border border-gray-200 text-gray-500 text-sm font-medium hover:bg-gray-50 transition-colors shrink-0">
+            先去编辑器
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<script src="{{ url_for('static', filename='js/reddit_edit.js') }}?v=5"></script>
+{% endblock %}

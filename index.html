@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小红书运营 · AI 内容生产闭环｜个人创作者的 6 环节闭环 Demo</title>
+<meta name="description" content="基于 WorkBuddy 搭建的内容创作与发布分析系统。4 个月小红书账号 0→2978 粉的真实工作流。">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-0: #0A0F18;
+    --bg-1: #0F1722;
+    --bg-2: #131D2C;
+    --bg-card: #16202E;
+    --border: #1F2D40;
+    --border-strong: #2A3A52;
+    --text-1: #F1F5FB;
+    --text-2: #9BAAC2;
+    --text-3: #6A7A92;
+    --orange: #E8820C;
+    --orange-soft: #F5B820;
+    --orange-glow: rgba(232, 130, 12, 0.12);
+    --green: #4ADE80;
+    --green-glow: rgba(74, 222, 128, 0.10);
+    --blue: #4A90D9;
+    --purple: #A78BFA;
+    --red: #E86060;
+    --cyan: #22D3EE;
+    --gold: #F5B820;
+    --cream: #FFFDF9;
+    --grad-hero: linear-gradient(135deg, #1A2B47 0%, #0F1722 50%, #1A1410 100%);
+    --grad-orange: linear-gradient(135deg, #E8820C 0%, #F5B820 100%);
+    --grad-card: linear-gradient(180deg, rgba(232,130,12,0.04) 0%, rgba(232,130,12,0) 100%);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.3);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.4);
+    --shadow-lg: 0 16px 48px rgba(0,0,0,0.5);
+    --shadow-orange: 0 8px 32px rgba(232,130,12,0.18);
+  }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg-0);
+    color: var(--text-1);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--orange); color: #fff; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ========== 顶部导航 ========== */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    background: rgba(10, 15, 24, 0.72);
+    border-bottom: 1px solid rgba(31, 45, 64, 0.6);
+    transition: all .3s ease;
+  }
+  .nav-inner {
+    max-width: 1200px; margin: 0 auto; padding: 14px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .nav-brand {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 800; font-size: 15px; letter-spacing: 0.5px;
+  }
+  .nav-brand-mark {
+    width: 28px; height: 28px;
+    background: var(--grad-orange);
+    border-radius: 8px;
+    display: grid; place-items: center;
+    font-size: 14px; font-weight: 900;
+    color: #0F1722;
+    box-shadow: 0 4px 12px rgba(232,130,12,0.3);
+  }
+  .nav-links {
+    display: flex; gap: 28px;
+    font-size: 13px; color: var(--text-2);
+  }
+  .nav-links a { transition: color .2s; }
+  .nav-links a:hover { color: var(--orange-soft); }
+  .nav-cta {
+    padding: 8px 16px; font-size: 12px; font-weight: 600;
+    border: 1px solid var(--border-strong); border-radius: 8px;
+    color: var(--text-1); transition: all .2s;
+  }
+  .nav-cta:hover { border-color: var(--orange); color: var(--orange-soft); background: var(--orange-glow); }
+
+  /* ========== Hero ========== */
+  .hero {
+    position: relative; min-height: 100vh;
+    background: var(--grad-hero);
+    display: flex; align-items: center;
+    padding: 100px 24px 60px;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute;
+    top: 10%; right: -10%; width: 600px; height: 600px;
+    background: radial-gradient(circle, var(--orange-glow) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
+  }
+  .hero::after {
+    content: ''; position: absolute;
+    bottom: -20%; left: -10%; width: 500px; height: 500px;
+    background: radial-gradient(circle, rgba(74,144,217,0.08) 0%, transparent 70%);
+    border-radius: 50%; pointer-events: none;
+  }
+  .hero-inner {
+    max-width: 1200px; margin: 0 auto; width: 100%;
+    position: relative; z-index: 2;
+    display: grid; grid-template-columns: 1.3fr 1fr; gap: 60px;
+    align-items: center;
+  }
+  .hero-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-radius: 999px;
+    background: var(--orange-glow);
+    border: 1px solid rgba(232,130,12,0.3);
+    color: var(--orange-soft);
+    font-size: 12px; font-weight: 600; letter-spacing: 1.5px;
+    margin-bottom: 24px;
+  }
+  .hero-tag-dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--orange); box-shadow: 0 0 8px var(--orange);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .hero-title {
+    font-size: clamp(36px, 5vw, 56px);
+    font-weight: 900; line-height: 1.1;
+    margin-bottom: 20px; letter-spacing: -0.02em;
+  }
+  .hero-title-accent {
+    background: var(--grad-orange); -webkit-background-clip: text;
+    background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero-sub {
+    font-size: 18px; line-height: 1.6;
+    color: var(--text-2); max-width: 580px;
+    margin-bottom: 36px;
+  }
+  .hero-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 16px; max-width: 540px;
+  }
+  .stat {
+    background: rgba(22, 32, 46, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 14px;
+    backdrop-filter: blur(10px);
+    transition: all .3s;
+  }
+  .stat:hover {
+    border-color: rgba(232,130,12,0.4);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-orange);
+  }
+  .stat-num {
+    font-size: 28px; font-weight: 900;
+    background: var(--grad-orange); -webkit-background-clip: text;
+    background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 11px; color: var(--text-3);
+    margin-top: 6px; letter-spacing: 0.5px;
+  }
+  .hero-cta-row {
+    display: flex; gap: 14px; margin-top: 36px;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px; border-radius: 10px;
+    font-size: 13px; font-weight: 600;
+    transition: all .2s; cursor: pointer;
+    border: 1px solid transparent;
+  }
+  .btn-primary {
+    background: var(--grad-orange); color: #0F1722;
+    box-shadow: var(--shadow-orange);
+  }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 36px rgba(232,130,12,0.32); }
+  .btn-ghost {
+    border-color: var(--border-strong); color: var(--text-1);
+  }
+  .btn-ghost:hover { border-color: var(--orange); background: var(--orange-glow); color: var(--orange-soft); }
+
+  /* Hero 右侧增长曲线 */
+  .hero-chart {
+    position: relative;
+    background: rgba(22, 32, 46, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    backdrop-filter: blur(12px);
+  }
+  .hero-chart-title {
+    font-size: 12px; color: var(--text-3); letter-spacing: 1px;
+    margin-bottom: 4px;
+  }
+  .hero-chart-num {
+    font-size: 36px; font-weight: 900;
+    margin-bottom: 12px;
+  }
+  .hero-chart-num span { color: var(--green); font-size: 14px; font-weight: 600; margin-left: 8px; }
+  .hero-chart-svg { width: 100%; height: 180px; }
+
+  /* ========== Section ========== */
+  section { padding: 100px 24px; position: relative; }
+  .section-inner { max-width: 1200px; margin: 0 auto; }
+  .section-eyebrow {
+    display: inline-block; font-size: 12px; font-weight: 700;
+    letter-spacing: 2px; color: var(--orange);
+    margin-bottom: 12px; text-transform: uppercase;
+  }
+  .section-title {
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 900; line-height: 1.2;
+    margin-bottom: 16px; letter-spacing: -0.01em;
+  }
+  .section-sub {
+    font-size: 16px; color: var(--text-2); max-width: 640px;
+    margin-bottom: 56px;
+  }
+
+  /* ========== 痛点 ========== */
+  .pain-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px;
+  }
+  .pain {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    transition: all .25s;
+    position: relative; overflow: hidden;
+  }
+  .pain::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--orange);
+    transform: scaleX(0); transform-origin: left;
+    transition: transform .35s ease;
+  }
+  .pain:hover {
+    border-color: rgba(232,130,12,0.4);
+    transform: translateY(-3px);
+  }
+  .pain:hover::before { transform: scaleX(1); }
+  .pain-tag {
+    font-size: 11px; font-weight: 700; letter-spacing: 1px;
+    color: var(--orange-soft); margin-bottom: 8px;
+  }
+  .pain-q {
+    font-size: 17px; font-weight: 700; margin-bottom: 8px;
+  }
+  .pain-a { font-size: 14px; color: var(--text-2); line-height: 1.7; }
+
+  /* ========== 6 环节闭环 SVG ========== */
+  .loop-wrap {
+    background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-0) 100%);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    box-shadow: var(--shadow-md);
+  }
+  .loop-svg { width: 100%; height: auto; max-height: 480px; }
+  .loop-legend {
+    display: flex; gap: 20px; flex-wrap: wrap;
+    margin-top: 20px; font-size: 12px; color: var(--text-2);
+    justify-content: center;
+  }
+  .legend-item { display: inline-flex; align-items: center; gap: 6px; }
+  .legend-dot {
+    width: 10px; height: 10px; border-radius: 3px;
+  }
+
+  /* ========== 模块卡片 ========== */
+  .modules-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+  }
+  .module {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px;
+    transition: all .3s;
+    position: relative; overflow: hidden;
+  }
+  .module::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    background: var(--grad-card); pointer-events: none;
+    opacity: 0; transition: opacity .3s;
+  }
+  .module:hover {
+    border-color: rgba(232,130,12,0.5);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+  }
+  .module:hover::before { opacity: 1; }
+  .module-num {
+    font-size: 11px; font-weight: 700;
+    color: var(--orange); letter-spacing: 2px;
+    margin-bottom: 6px;
+  }
+  .module-icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: grid; place-items: center;
+    background: var(--orange-glow);
+    border: 1px solid rgba(232,130,12,0.25);
+    margin-bottom: 16px;
+    color: var(--orange-soft);
+  }
+  .module-icon svg { width: 22px; height: 22px; stroke-width: 1.8; }
+  .module-name {
+    font-size: 18px; font-weight: 800; margin-bottom: 10px;
+    position: relative;
+  }
+  .module-path {
+    font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    font-size: 11px; color: var(--text-3); margin-bottom: 14px;
+    position: relative;
+  }
+  .module-desc {
+    font-size: 13px; color: var(--text-2); line-height: 1.7;
+    position: relative;
+  }
+  .module-tags {
+    display: flex; flex-wrap: wrap; gap: 6px;
+    margin-top: 14px; position: relative;
+  }
+  .tag {
+    padding: 3px 9px; border-radius: 6px;
+    font-size: 11px; font-weight: 600;
+    background: rgba(31, 45, 64, 0.6);
+    color: var(--text-2);
+    border: 1px solid var(--border);
+  }
+  .tag.tag-green { background: var(--green-glow); color: var(--green); border-color: rgba(74,222,128,0.3); }
+  .tag.tag-orange { background: var(--orange-glow); color: var(--orange-soft); border-color: rgba(232,130,12,0.3); }
+
+  /* ========== 亮点 ========== */
+  .highlight-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px;
+  }
+  .highlight {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 30px;
+    position: relative;
+  }
+  .highlight-num {
+    position: absolute; top: 24px; right: 24px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 56px; font-weight: 900;
+    color: var(--orange-glow); line-height: 1;
+    letter-spacing: -0.04em;
+  }
+  .highlight h4 {
+    font-size: 20px; font-weight: 800; margin-bottom: 12px;
+    position: relative; max-width: 80%;
+  }
+  .highlight p {
+    font-size: 14px; color: var(--text-2); line-height: 1.7;
+    position: relative;
+  }
+  .highlight blockquote {
+    margin-top: 16px; padding-left: 16px;
+    border-left: 3px solid var(--orange);
+    font-size: 13px; color: var(--text-3); font-style: italic;
+  }
+
+  /* ========== 演示 / 终端 ========== */
+  .demo-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 24px;
+  }
+  .demo-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .demo-card-head {
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .demo-card-dots {
+    display: flex; gap: 6px;
+  }
+  .demo-card-dots span {
+    width: 12px; height: 12px; border-radius: 50%;
+    display: inline-block;
+  }
+  .demo-card-dots span:nth-child(1) { background: #FF5F57; }
+  .demo-card-dots span:nth-child(2) { background: #FEBC2E; }
+  .demo-card-dots span:nth-child(3) { background: #28C840; }
+  .demo-card-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--text-3);
+  }
+  .demo-card-body {
+    padding: 22px;
+    font-family: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+    font-size: 12.5px; line-height: 1.75;
+    color: var(--text-2);
+    overflow-x: auto;
+  }
+  .demo-card-body .out-tag { color: var(--orange-soft); }
+  .demo-card-body .out-num { color: var(--green); }
+  .demo-card-body .out-warn { color: var(--gold); }
+  .demo-card-body .out-err { color: var(--red); }
+  .demo-card-body .out-comment { color: var(--text-3); }
+  .demo-card-body .out-prompt { color: var(--cyan); }
+
+  /* ========== 技术栈 ========== */
+  .tech-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px;
+  }
+  .tech {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 18px;
+    text-align: center;
+    transition: all .25s;
+  }
+  .tech:hover {
+    border-color: rgba(232,130,12,0.4);
+    transform: translateY(-2px);
+  }
+  .tech-cat {
+    font-size: 11px; color: var(--orange-soft);
+    font-weight: 700; letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+  .tech-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px; font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .tech-note {
+    font-size: 11px; color: var(--text-3);
+  }
+
+  /* ========== 哲学 ========== */
+  .philo {
+    background: linear-gradient(135deg, rgba(232,130,12,0.12) 0%, rgba(15,23,34,0.6) 100%);
+    border: 1px solid rgba(232,130,12,0.3);
+    border-radius: 24px;
+    padding: 56px 48px;
+    text-align: center;
+  }
+  .philo-quote {
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 900; line-height: 1.3;
+    margin-bottom: 24px; letter-spacing: -0.01em;
+  }
+  .philo-quote em {
+    font-style: normal;
+    background: var(--grad-orange); -webkit-background-clip: text;
+    background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .philo-byline {
+    font-size: 14px; color: var(--text-3); margin-bottom: 36px;
+    letter-spacing: 1px;
+  }
+  .philo-table {
+    max-width: 720px; margin: 0 auto;
+    border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden;
+    background: var(--bg-card);
+    text-align: left;
+  }
+  .philo-row {
+    display: grid; grid-template-columns: 1.5fr 1fr 2fr;
+    padding: 14px 22px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13.5px;
+    align-items: center;
+  }
+  .philo-row:last-child { border-bottom: 0; }
+  .philo-row.head {
+    background: rgba(31,45,64,0.6);
+    font-size: 11px; color: var(--text-3);
+    letter-spacing: 1px; font-weight: 700;
+    text-transform: uppercase;
+  }
+  .philo-row .lvl-high { color: var(--green); font-weight: 700; }
+  .philo-row .lvl-mid { color: var(--orange-soft); font-weight: 700; }
+  .philo-row .lvl-low { color: var(--red); font-weight: 700; }
+
+  /* ========== 源代码索引 ========== */
+  .code-index {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+  }
+  .code-index-row {
+    display: grid; grid-template-columns: 1fr 2fr 1.5fr;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+    font-size: 13px; gap: 20px;
+    align-items: center;
+    transition: background .15s;
+  }
+  .code-index-row:hover { background: rgba(31,45,64,0.4); }
+  .code-index-row:last-child { border-bottom: 0; }
+  .code-index-row.head {
+    background: rgba(31,45,64,0.6);
+    font-size: 11px; letter-spacing: 1px; color: var(--text-3);
+    font-weight: 700; text-transform: uppercase;
+  }
+  .code-path {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--orange-soft); font-size: 12px;
+    transition: color .15s;
+  }
+  a.code-path { text-decoration: none; }
+  a.code-path:hover { color: var(--orange); text-decoration: underline; }
+  a.code-path::after {
+    content: ' ↗';
+    opacity: 0.5;
+    font-size: 10px;
+  }
+  .code-role { color: var(--text-2); }
+  .code-stack { font-size: 11px; color: var(--text-3); }
+
+  /* GitHub CTA 区 */
+  .github-cta {
+    margin-top: 32px;
+    padding: 28px 32px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .github-cta-text { flex: 1; min-width: 240px; }
+  .github-cta-title { font-size: 18px; font-weight: 800; margin-bottom: 6px; }
+  .github-cta-sub { font-size: 13px; color: var(--text-3); font-family: 'JetBrains Mono', monospace; }
+  .github-cta-btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 12px 22px; border-radius: 10px;
+    background: var(--grad-orange); color: #0F1722;
+    font-size: 13px; font-weight: 700;
+    box-shadow: var(--shadow-orange);
+    transition: transform .2s;
+  }
+  .github-cta-btn:hover { transform: translateY(-1px); }
+
+  /* ========== Footer ========== */
+  .footer {
+    padding: 60px 24px 40px;
+    border-top: 1px solid var(--border);
+    background: var(--bg-1);
+    text-align: center;
+  }
+  .footer-inner { max-width: 1200px; margin: 0 auto; }
+  .footer-brand {
+    font-size: 22px; font-weight: 900;
+    background: var(--grad-orange); -webkit-background-clip: text;
+    background-clip: text; -webkit-text-fill-color: transparent;
+    margin-bottom: 12px;
+  }
+  .footer-meta {
+    color: var(--text-3); font-size: 12px;
+    line-height: 1.8;
+  }
+  .footer-meta a { color: var(--orange-soft); }
+
+  /* ========== Scroll fade-in ========== */
+  .reveal {
+    opacity: 0; transform: translateY(24px);
+    transition: opacity .7s ease, transform .7s ease;
+  }
+  .reveal.in { opacity: 1; transform: none; }
+
+  /* ========== Responsive ========== */
+  @media (max-width: 960px) {
+    .hero-inner { grid-template-columns: 1fr; gap: 40px; }
+    .nav-links { display: none; }
+    .pain-grid, .modules-grid, .demo-grid, .highlight-grid { grid-template-columns: 1fr; }
+    .tech-grid { grid-template-columns: repeat(2, 1fr); }
+    .philo-row { grid-template-columns: 1fr 0.6fr 1.4fr; padding: 14px 16px; font-size: 12px; }
+    section { padding: 70px 20px; }
+    .philo { padding: 40px 24px; }
+    .manifesto { padding: 80px 20px; }
+    .manifesto-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  }
+
+  /* ========== Manifesto 声明区 · 一个必须先说清楚的事 ========== */
+  .manifesto {
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(232,130,12,0.22) 0%, transparent 55%),
+      radial-gradient(ellipse at 85% 80%, rgba(245,184,32,0.10) 0%, transparent 55%),
+      linear-gradient(180deg, rgba(232,130,12,0.06) 0%, rgba(10,15,24,1) 100%);
+    border-top: 1px solid rgba(232,130,12,0.35);
+    border-bottom: 1px solid rgba(232,130,12,0.35);
+    padding: 120px 24px;
+    position: relative;
+    overflow: hidden;
+  }
+  .manifesto::before {
+    content: ''; position: absolute;
+    top: 30px; right: -100px; width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(232,130,12,0.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .manifesto-inner { max-width: 1100px; margin: 0 auto; position: relative; z-index: 2; }
+  .manifesto-eyebrow {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 10px 20px; border-radius: 999px;
+    background: rgba(232,130,12,0.12);
+    border: 1px solid rgba(232,130,12,0.5);
+    color: var(--orange-soft);
+    font-size: 13px; font-weight: 700; letter-spacing: 2.5px;
+    margin-bottom: 36px;
+  }
+  .manifesto-eyebrow::before {
+    content: '⚠'; font-size: 16px;
+  }
+  .manifesto-title {
+    font-size: clamp(42px, 6vw, 88px);
+    font-weight: 900; line-height: 1.08;
+    letter-spacing: -0.03em;
+    margin-bottom: 40px;
+  }
+  .manifesto-title em {
+    font-style: normal;
+    background: linear-gradient(135deg, #E8820C 0%, #F5B820 50%, #E8820C 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    padding: 0 4px;
+  }
+  .manifesto-title .neg {
+    text-decoration: line-through;
+    text-decoration-color: var(--red);
+    text-decoration-thickness: 4px;
+    color: var(--text-2);
+  }
+  .manifesto-body {
+    font-size: clamp(17px, 1.8vw, 24px);
+    line-height: 1.85;
+    color: var(--text-1);
+    max-width: 880px;
+    margin-bottom: 48px;
+  }
+  .manifesto-body strong {
+    color: var(--orange-soft);
+    font-weight: 800;
+    background: linear-gradient(120deg, transparent 0%, rgba(232,130,12,0.18) 30%, rgba(232,130,12,0.18) 70%, transparent 100%);
+    padding: 0 4px;
+  }
+  .manifesto-axiom {
+    display: inline-flex; flex-wrap: wrap;
+    gap: 14px 22px; align-items: center;
+    padding: 22px 36px;
+    background: linear-gradient(135deg, rgba(232,130,12,0.16) 0%, rgba(245,184,32,0.06) 100%);
+    border: 2px solid rgba(232,130,12,0.55);
+    border-radius: 18px;
+    box-shadow: 0 12px 40px rgba(232,130,12,0.18);
+    font-size: clamp(18px, 1.7vw, 24px);
+    font-weight: 800;
+  }
+  .manifesto-axiom .ax-eq {
+    color: var(--orange); font-size: 1.3em; font-weight: 900;
+  }
+  .manifesto-axiom .ax-key {
+    background: linear-gradient(135deg, #E8820C 0%, #F5B820 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .manifesto-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr);
+    gap: 10px; margin-top: 56px;
+  }
+  .ratio-card {
+    background: rgba(22, 32, 46, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 12px;
+    text-align: center;
+    transition: all .25s;
+  }
+  .ratio-card:hover {
+    border-color: rgba(232,130,12,0.5);
+    transform: translateY(-2px);
+  }
+  .ratio-name {
+    font-size: 12px; font-weight: 700;
+    color: var(--text-2); margin-bottom: 12px;
+    line-height: 1.3;
+    min-height: 32px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ratio-bar {
+    height: 60px; width: 100%;
+    border-radius: 6px; overflow: hidden;
+    display: flex;
+    background: var(--bg-1);
+    border: 1px solid var(--border);
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .ratio-bar .h { /* 人工 */
+    background: linear-gradient(180deg, #E8820C 0%, #C0700A 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.18);
+  }
+  .ratio-bar .a { /* AI */
+    background: linear-gradient(180deg, #2A3A52 0%, #1F2D40 100%);
+  }
+  .ratio-pct {
+    font-size: 13px; font-weight: 800;
+    color: var(--orange-soft);
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .ratio-pct .small { color: var(--text-3); font-size: 11px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ========== 顶部导航 ========== -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-brand">
+      <span class="nav-brand-mark">小</span>
+      <span>小红书运营 · AI 闭环</span>
+    </div>
+    <div class="nav-links">
+      <a href="#overview">概览</a>
+      <a href="#manifesto" style="color: var(--orange-soft); font-weight: 700;">必读</a>
+      <a href="#loop">闭环</a>
+      <a href="#modules">模块</a>
+      <a href="#highlights">亮点</a>
+      <a href="#demo">演示</a>
+      <a href="#code">源代码</a>
+    </div>
+    <a href="https://github.com/756496019-lgtm/xhs-ai-operation" class="nav-cta" target="_blank" rel="noopener">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: -2px; margin-right: 6px;"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>GitHub</a>
+  </div>
+</nav>
+
+<!-- ========== Hero ========== -->
+<header class="hero" id="overview">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-tag">
+        <span class="hero-tag-dot"></span>
+        WorkBuddy · 内容创作与发布分析系统
+      </div>
+      <h1 class="hero-title">
+        一个人的<br>
+        <span class="hero-title-accent">小红书内容生产闭环</span>
+      </h1>
+      <p class="hero-sub">
+        基于 WorkBuddy 把"素材采集 → 选题生成 → 内容生产 → 内容改写 → 发布计划 → 数据回收"<br>
+        6 个环节串成一个真实跑过 4 个月的闭环，让一个人能像团队一样持续产出小红书精品内容。
+      </p>
+      <div class="hero-stats">
+        <div class="stat">
+          <div class="stat-num">2978</div>
+          <div class="stat-label">4 个月真实粉丝增长</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">6</div>
+          <div class="stat-label">闭环环节全打通</div>
+        </div>
+        <div class="stat">
+          <div class="stat-num">14</div>
+          <div class="stat-label">多源素材爬虫</div>
+        </div>
+      </div>
+      <div class="hero-cta-row">
+        <a href="#loop" class="btn btn-primary">看系统架构 →</a>
+        <a href="#demo" class="btn btn-ghost">看实跑演示</a>
+      </div>
+    </div>
+
+    <!-- 增长曲线 SVG -->
+    <div class="hero-chart">
+      <div class="hero-chart-title">XHS FOLLOWERS · 4 MONTHS</div>
+      <div class="hero-chart-num">2,978 <span>+2,978 ▲</span></div>
+      <svg class="hero-chart-svg" viewBox="0 0 400 180" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#E8820C" stop-opacity="0.4"/>
+            <stop offset="100%" stop-color="#E8820C" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <!-- grid -->
+        <line x1="0" y1="40" x2="400" y2="40" stroke="#1F2D40" stroke-dasharray="2,4"/>
+        <line x1="0" y1="90" x2="400" y2="90" stroke="#1F2D40" stroke-dasharray="2,4"/>
+        <line x1="0" y1="140" x2="400" y2="140" stroke="#1F2D40" stroke-dasharray="2,4"/>
+        <!-- area -->
+        <path d="M 0 170 L 20 168 L 60 162 L 100 145 L 140 130 L 180 110 L 220 85 L 260 65 L 300 50 L 340 35 L 380 22 L 400 18 L 400 180 L 0 180 Z" fill="url(#growthGrad)"/>
+        <!-- line -->
+        <path d="M 0 170 L 20 168 L 60 162 L 100 145 L 140 130 L 180 110 L 220 85 L 260 65 L 300 50 L 340 35 L 380 22 L 400 18" stroke="#E8820C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <!-- dots -->
+        <circle cx="0" cy="170" r="3" fill="#E8820C"/>
+        <circle cx="100" cy="145" r="3" fill="#E8820C"/>
+        <circle cx="200" cy="98" r="3" fill="#E8820C"/>
+        <circle cx="300" cy="50" r="3" fill="#E8820C"/>
+        <circle cx="400" cy="18" r="4" fill="#F5B820" stroke="#0F1722" stroke-width="2"/>
+        <!-- x labels -->
+        <text x="0" y="178" fill="#6A7A92" font-size="9" font-family="monospace">M0</text>
+        <text x="100" y="178" fill="#6A7A92" font-size="9" font-family="monospace">M1</text>
+        <text x="200" y="178" fill="#6A7A92" font-size="9" font-family="monospace">M2</text>
+        <text x="300" y="178" fill="#6A7A92" font-size="9" font-family="monospace">M3</text>
+        <text x="380" y="178" fill="#F5B820" font-size="9" font-family="monospace">M4</text>
+      </svg>
+    </div>
+  </div>
+</header>
+
+<!-- ========== Manifesto · 醒目声明 ========== -->
+<section id="manifesto" class="manifesto">
+  <div class="manifesto-inner">
+    <div class="manifesto-eyebrow reveal">一个必须先说清楚的事</div>
+    <h2 class="manifesto-title reveal">
+      这个账号 <span class="neg">不是</span> AI 做出来的。<br>
+      AI 只负责 <em>跑腿</em>。
+    </h2>
+    <p class="manifesto-body reveal">
+      判断、温度、节奏、视觉、口吻——<strong>全部由人定</strong>。<br>
+      AI 帮我节省了 60% 的素材搬运、初稿撰写、调度时间，但<br>
+      「这条选题要不要做」、「标题怎么改才有钩子」、「封面留哪一帧」——<br>
+      这些<strong>决定 80% 点击率</strong>的事，AI 一个字都不出。
+    </p>
+    <div class="manifesto-axiom reveal">
+      <span class="ax-key">人工参与比例</span>
+      <span class="ax-eq">∝</span>
+      <span class="ax-key">账号精品程度</span>
+    </div>
+
+    <!-- 7 环节 · 人工 vs AI 占比柱状条 -->
+    <div class="manifesto-grid reveal">
+      <div class="ratio-card">
+        <div class="ratio-name">素材采集</div>
+        <div class="ratio-bar">
+          <div class="h" style="width:30%"></div>
+          <div class="a" style="width:70%"></div>
+        </div>
+        <div class="ratio-pct">30 <span class="small">: 70</span></div>
+      </div>
+      <div class="ratio-card">
+        <div class="ratio-name">选题判断</div>
+        <div class="ratio-bar">
+          <div class="h" style="width:75%"></div>
+          <div class="a" style="width:25%"></div>
+        </div>
+        <div class="ratio-pct">75 <span class="small">: 25</span></div>
+      </div>
+      <div class="ratio-card">
+        <div class="ratio-name">内容初稿</div>
+        <div class="ratio-bar">
+          <div class="h" style="width:40%"></div>
+          <div class="a" style="width:60%"></div>
+        </div>
+        <div class="ratio-pct">40 <span class="small">: 60</span></div>
+      </div>
+      <div class="ratio-card">
+        <div class="ratio-name">文案精修</div>
+        <div class="ratio-bar">
+          <div class="h" style="width:90%"></div>
+          <div class="a" style="width:10%"></div>
+        </div>
+        <div class="ratio-pct">90 <span class="small">: 10</span></div>
+      </div>
+      <div class="ratio-card">
+        <div class="ratio-name">标题 / 封面</div>
+        <div class="ratio-bar">
+          <div class="h" style="width:95%"></div>
+          <div class="a" style="width:5%"></div>
+        </div>
+        <div class="ratio-pct">95 <span class="small">: 5</span></div>
+      </div>
+      <div class="ratio-card">
+        <div class="ratio-name">发布调度</div>
+        <div class="ratio-bar">
+          <div class="h" style="width:25%"></div>
+          <div class="a" style="width:75%"></div>
+        </div>
+        <div class="ratio-pct">25 <span class="small">: 75</span></div>
+      </div>
+      <div class="ratio-card">
+        <div class="ratio-name">数据复盘</div>
+        <div class="ratio-bar">
+          <div class="h" style="width:65%"></div>
+          <div class="a" style="width:35%"></div>
+        </div>
+        <div class="ratio-pct">65 <span class="small">: 35</span></div>
+      </div>
+    </div>
+    <div class="reveal" style="margin-top: 20px; font-size: 13px; color: var(--text-3); letter-spacing: 1px; display: flex; gap: 24px; align-items: center;">
+      <span style="display: inline-flex; align-items: center; gap: 8px;">
+        <span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(180deg, #E8820C, #C0700A);"></span>
+        人工
+      </span>
+      <span style="display: inline-flex; align-items: center; gap: 8px;">
+        <span style="width:12px;height:12px;border-radius:3px;background:linear-gradient(180deg, #2A3A52, #1F2D40);"></span>
+        AI
+      </span>
+      <span style="margin-left: auto; font-style: italic;">— 4 个月真实运营拆出来的占比，不是估算</span>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 痛点 ========== -->
+<section id="pain">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-eyebrow">PROBLEM</div>
+      <h2 class="section-title">个人创作者的 4 个核心痛点</h2>
+      <p class="section-sub">
+        赛题原文："素材分散、创作流程割裂、内容质量不稳定、数据反馈难闭环"。我们 4 个月真实运营踩过每一个。
+      </p>
+    </div>
+    <div class="pain-grid">
+      <div class="pain reveal">
+        <div class="pain-tag">PAIN 01</div>
+        <div class="pain-q">素材分散在 N 个工具里</div>
+        <div class="pain-a">Reddit 看了截图、B 站存了收藏夹、TapTap 开了 20 个标签——回头都找不到。</div>
+      </div>
+      <div class="pain reveal">
+        <div class="pain-tag">PAIN 02</div>
+        <div class="pain-q">创作流程割裂</div>
+        <div class="pain-a">文案在 Notion，配音用 Edge，剪辑用剪映，封面打开 PS——一条片切 5 个工具。</div>
+      </div>
+      <div class="pain reveal">
+        <div class="pain-tag">PAIN 03</div>
+        <div class="pain-q">质量不稳定</div>
+        <div class="pain-a">这周写得好，下周就崩；爆款无法复用，踩坑反复踩。</div>
+      </div>
+      <div class="pain reveal">
+        <div class="pain-tag">PAIN 04</div>
+        <div class="pain-q">数据反馈难闭环</div>
+        <div class="pain-a">知道某条爆了，但不知道为什么爆；下次选题靠拍脑袋。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 6 环节闭环 ========== -->
+<section id="loop" style="background: var(--bg-1);">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-eyebrow">ARCHITECTURE</div>
+      <h2 class="section-title">6 环节闭环 · 全部跑通</h2>
+      <p class="section-sub">
+        每个环节对应一个独立模块。WorkBuddy 是"对话主导"层——它读 skill 文档、跑命令、处理错误，运营全程不敲命令。
+      </p>
+    </div>
+    <div class="loop-wrap reveal">
+      <svg class="loop-svg" viewBox="0 0 1100 460" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="boxGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#1F2D40" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#16202E" stop-opacity="1"/>
+          </linearGradient>
+          <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <polygon points="0,0 10,3 0,6" fill="#E8820C"/>
+          </marker>
+          <marker id="arrowDash" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+            <polygon points="0,0 10,3 0,6" fill="#A78BFA"/>
+          </marker>
+        </defs>
+
+        <!-- 节点：6 环节 -->
+        <!-- 1. 素材库 -->
+        <g>
+          <rect x="40" y="40" width="180" height="80" rx="14" fill="url(#boxGrad)" stroke="#E8820C" stroke-width="1.5"/>
+          <text x="130" y="65" fill="#E8820C" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1.5">01 · MATERIAL</text>
+          <text x="130" y="88" fill="#F1F5FB" font-size="15" font-weight="800" text-anchor="middle">素材库构建</text>
+          <text x="130" y="106" fill="#9BAAC2" font-size="11" text-anchor="middle">crawler/ · 14 scrapers</text>
+        </g>
+        <!-- 2. 选题 -->
+        <g>
+          <rect x="280" y="40" width="180" height="80" rx="14" fill="url(#boxGrad)" stroke="#1F2D40"/>
+          <text x="370" y="65" fill="#9BAAC2" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1.5">02 · TOPIC</text>
+          <text x="370" y="88" fill="#F1F5FB" font-size="15" font-weight="800" text-anchor="middle">选题生成</text>
+          <text x="370" y="106" fill="#9BAAC2" font-size="11" text-anchor="middle">规则评分 + AI 精排</text>
+        </g>
+        <!-- 3. 内容生产 -->
+        <g>
+          <rect x="520" y="40" width="180" height="80" rx="14" fill="url(#boxGrad)" stroke="#1F2D40"/>
+          <text x="610" y="65" fill="#9BAAC2" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1.5">03 · CREATE</text>
+          <text x="610" y="88" fill="#F1F5FB" font-size="15" font-weight="800" text-anchor="middle">内容生产</text>
+          <text x="610" y="106" fill="#9BAAC2" font-size="11" text-anchor="middle">creator/ · 6 skills</text>
+        </g>
+        <!-- 4. 内容改写 -->
+        <g>
+          <rect x="760" y="40" width="180" height="80" rx="14" fill="url(#boxGrad)" stroke="#4ADE80" stroke-width="1.5"/>
+          <text x="850" y="65" fill="#4ADE80" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1.5">04 · REWRITE</text>
+          <text x="850" y="88" fill="#F1F5FB" font-size="15" font-weight="800" text-anchor="middle">内容改写 + 事实核查</text>
+          <text x="850" y="106" fill="#9BAAC2" font-size="11" text-anchor="middle">qwen-max · fact_check</text>
+        </g>
+        <!-- 对标补充（环节1+） -->
+        <g>
+          <rect x="40" y="180" width="180" height="80" rx="14" fill="url(#boxGrad)" stroke="#A78BFA" stroke-width="1.5"/>
+          <text x="130" y="205" fill="#A78BFA" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1.5">01+ · BENCHMARK</text>
+          <text x="130" y="228" fill="#F1F5FB" font-size="15" font-weight="800" text-anchor="middle">对标账号监控</text>
+          <text x="130" y="246" fill="#9BAAC2" font-size="11" text-anchor="middle">benchmark/ · playwright</text>
+        </g>
+        <!-- 5. 发布 -->
+        <g>
+          <rect x="760" y="180" width="180" height="80" rx="14" fill="url(#boxGrad)" stroke="#1F2D40"/>
+          <text x="850" y="205" fill="#9BAAC2" font-size="10" font-weight="700" text-anchor="middle" letter-spacing="1.5">05 · PUBLISH</text>
+          <text x="850" y="228" fill="#F1F5FB" font-size="15" font-weight="800" text-anchor="middle">发布计划</text>
+          <text x="850" y="246" fill="#9BAAC2" font-size="11" text-anchor="middle">草稿箱 · 多平台导出</text>
+        </g>
+        <!-- 6. 数据回收 -->
+        <g>
+          <rect x="430" y="320" width="240" height="100" rx="14" fill="url(#boxGrad)" stroke="#E8820C" stroke-width="2.5"/>
+          <text x="550" y="350" fill="#E8820C" font-size="11" font-weight="700" text-anchor="middle" letter-spacing="2">★ 06 · DATA REVIEW</text>
+          <text x="550" y="376" fill="#F1F5FB" font-size="17" font-weight="900" text-anchor="middle">数据回收 → 反哺选题</text>
+          <text x="550" y="396" fill="#9BAAC2" font-size="12" text-anchor="middle">analytics/ · CSV → SQLite</text>
+          <text x="550" y="412" fill="#F5B820" font-size="11" text-anchor="middle" font-weight="700">闭环关键节点</text>
+        </g>
+
+        <!-- 箭头：横向流 -->
+        <line x1="220" y1="80" x2="280" y2="80" stroke="#E8820C" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="460" y1="80" x2="520" y2="80" stroke="#E8820C" stroke-width="2" marker-end="url(#arrow)"/>
+        <line x1="700" y1="80" x2="760" y2="80" stroke="#E8820C" stroke-width="2" marker-end="url(#arrow)"/>
+        <!-- 4 → 5 -->
+        <path d="M 850 120 L 850 180" stroke="#E8820C" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+        <!-- 5 → 6 -->
+        <path d="M 760 220 Q 700 220 670 320" stroke="#E8820C" stroke-width="2" fill="none" marker-end="url(#arrow)"/>
+        <!-- benchmark → 选题 -->
+        <path d="M 220 220 Q 280 220 320 120" stroke="#A78BFA" stroke-width="1.8" fill="none" stroke-dasharray="5,4" marker-end="url(#arrowDash)"/>
+        <!-- 6 反哺 → 选题 (核心闭环) -->
+        <path d="M 430 380 Q 200 380 200 120 Q 200 70 280 80" stroke="#F5B820" stroke-width="2.5" fill="none" stroke-dasharray="6,4" marker-end="url(#arrow)"/>
+        <text x="240" y="280" fill="#F5B820" font-size="11" font-weight="700" letter-spacing="1">★ 反哺</text>
+      </svg>
+      <div class="loop-legend">
+        <span class="legend-item"><span class="legend-dot" style="background:#E8820C;"></span> 主流程</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#A78BFA;"></span> 对标补充</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#F5B820;"></span> 数据反哺（闭环关键）</span>
+        <span class="legend-item"><span class="legend-dot" style="background:#4ADE80;"></span> 质量保障（事实核查）</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 模块卡片 ========== -->
+<section id="modules">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-eyebrow">MODULES</div>
+      <h2 class="section-title">5 个核心模块 · 各自能跑也能串成闭环</h2>
+      <p class="section-sub">
+        每个模块在仓里对应一个独立子目录，有自己的 README 和入口命令。snapshot 模块来自日常生产仓，新写模块 100% 本仓自给自足。
+      </p>
+    </div>
+    <div class="modules-grid">
+
+      <div class="module reveal">
+        <div class="module-num">01 / SNAPSHOT</div>
+        <div class="module-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        </div>
+        <div class="module-name">crawler/</div>
+        <div class="module-path">snapshot · D:/project/content-monitor</div>
+        <div class="module-desc">14 个 scrapers 多源素材采集（Reddit / 微博超话 / B站 / TapTap / 触乐 / 游民 / Epic / Steam / eShop / ...）+ 双路径改写 + 视频流水线 + fact_check。</div>
+        <div class="module-tags">
+          <span class="tag tag-orange">环节 1</span>
+          <span class="tag tag-orange">环节 4</span>
+          <span class="tag">9 MB · 已 snapshot</span>
+        </div>
+      </div>
+
+      <div class="module reveal">
+        <div class="module-num">02 / SNAPSHOT</div>
+        <div class="module-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"/></svg>
+        </div>
+        <div class="module-name">creator/</div>
+        <div class="module-path">snapshot · xhs_console_agent</div>
+        <div class="module-desc">6 个独立 skill 的对话式生产流水线：素材采集 / 文案 / 配音（Edge TTS 9 音色） / 剪辑 / 封面 / 图文笔记。配套对话主导的运营操作手册。</div>
+        <div class="module-tags">
+          <span class="tag tag-orange">环节 3</span>
+          <span class="tag">6 skills · WorkBuddy 协议</span>
+        </div>
+      </div>
+
+      <div class="module reveal">
+        <div class="module-num">03 / NEW</div>
+        <div class="module-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        </div>
+        <div class="module-name">benchmark/</div>
+        <div class="module-path">新写 · playwright + XHR 监听</div>
+        <div class="module-desc">对标账号监控。<strong>不依赖 Agent-Reach / OpenCLI / 任何外部 CLI</strong>，自己写 playwright 直驱，**不登录、不暴露你账号**——靠游客 session 拉首屏笔记。已实测 11 条全拿到。</div>
+        <div class="module-tags">
+          <span class="tag tag-green">已实测跑通</span>
+          <span class="tag tag-orange">环节 1+</span>
+          <span class="tag">零登录</span>
+        </div>
+      </div>
+
+      <div class="module reveal">
+        <div class="module-num">04 / NEW · ★</div>
+        <div class="module-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+        </div>
+        <div class="module-name">analytics/</div>
+        <div class="module-path">新写 · 闭环关键节点</div>
+        <div class="module-desc">数据回收闭环。CSV → SQLite → 互动率/时段/标题分析 → qwen-max 出周复盘 → 选题反哺到 02-script-writer skill。一条命令端到端跑通。</div>
+        <div class="module-tags">
+          <span class="tag tag-green">已实测跑通</span>
+          <span class="tag tag-orange">环节 6</span>
+          <span class="tag">SQLite · qwen-max</span>
+        </div>
+      </div>
+
+      <div class="module reveal">
+        <div class="module-num">05 / DOC</div>
+        <div class="module-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        </div>
+        <div class="module-name">docs/操作手册.html</div>
+        <div class="module-path">运营入门手册（团队内部已验证）</div>
+        <div class="module-desc">"对话主导"操作手册：教运营怎么和 WorkBuddy 说话，配示例图。"新人第一天到岗，半小时能独立出片"。</div>
+        <div class="module-tags">
+          <span class="tag tag-orange">复用性高</span>
+          <span class="tag">非工程师可读</span>
+        </div>
+      </div>
+
+      <div class="module reveal">
+        <div class="module-num">06 / RENDER</div>
+        <div class="module-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"/></svg>
+        </div>
+        <div class="module-name">analytics/_vendor/</div>
+        <div class="module-path">单文件 vendor · render_xhs_cards</div>
+        <div class="module-desc">复用 xhs-weeklyreport 的双风格卡片渲染器（暗黑 #0C1520 + 奶油 #FFFDF9）。一份分析数据 → 双风格 HTML，浏览器导 JPG 直接发布。</div>
+        <div class="module-tags">
+          <span class="tag tag-orange">复用</span>
+          <span class="tag">375×500 卡片规范</span>
+        </div>
+      </div>
+
+      <div class="module reveal">
+        <div class="module-num">07 / NEW</div>
+        <div class="module-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+        </div>
+        <div class="module-name">creator/motion-remotion/</div>
+        <div class="module-path">新写 · React + Remotion 动效视频</div>
+        <div class="module-desc">代码驱动的动效视频生成。<strong>2 个示例 Composition</strong>：4 个月增长动画（28 秒）+ 周复盘卡片动画（26 秒）。1080×1920 竖屏，npm run dev 实时预览，npm run build 一键 render。</div>
+        <div class="module-tags">
+          <span class="tag tag-green">已渲染验证</span>
+          <span class="tag tag-orange">环节 3 补充</span>
+          <span class="tag">React 18 · TS 5</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ========== 亮点 ========== -->
+<section id="highlights" style="background: var(--bg-1);">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-eyebrow">WHAT MAKES IT DIFFERENT</div>
+      <h2 class="section-title">4 个真实跑出来的差异点</h2>
+      <p class="section-sub">每一条都不是 PPT 画饼，是 4 个月运营实际踩坑沉淀的工程纪律。</p>
+    </div>
+    <div class="highlight-grid">
+
+      <div class="highlight reveal">
+        <div class="highlight-num">01</div>
+        <h4>双路径改写 + fact_check 事实核查</h4>
+        <p>所有 AI 生成的文案在进入"图文生成"或"视频生成"前自动跑 <code style="font-family: 'JetBrains Mono', monospace; color: var(--orange-soft);">fact_check_content()</code>，黄色弹窗逐条列出无源断言，一键返回修改。</p>
+        <blockquote>W17 编了"中国市场已成为卡普空核心增长极"——无源断言。<br>W21 同一类错误又犯。从那时起所有改写都先过 fact_check，编错率 30% → &lt; 5%。</blockquote>
+      </div>
+
+      <div class="highlight reveal">
+        <div class="highlight-num">02</div>
+        <h4>Skill 协议 + 对话主导操作手册</h4>
+        <p>WorkBuddy 在项目目录里读 <code style="font-family: 'JetBrains Mono', monospace; color: var(--orange-soft);">SKILL.md</code>，自己跑命令、自己处理错误。运营全程不敲一行命令。</p>
+        <blockquote>新人第一天到岗，看完 docs/操作手册.html，半小时能独立出片。<br>这套架构换一个题材（不止游戏）就能跑。</blockquote>
+      </div>
+
+      <div class="highlight reveal">
+        <div class="highlight-num">03</div>
+        <h4>数据回收 → 选题反哺闭环</h4>
+        <p>analytics 模块出的 <code style="font-family: 'JetBrains Mono', monospace; color: var(--orange-soft);">next_week_prompt_W{N}.md</code> 末尾自动生成 WorkBuddy 触发话术，复制粘贴回 creator 即可起一轮新生产。</p>
+        <blockquote>"基于阅读/互动数据优化下一轮选题"—— 赛题原话。<br>从样本数据自动识别出 22:00 是黄金时段、16-20 字标题最优。</blockquote>
+      </div>
+
+      <div class="highlight reveal">
+        <div class="highlight-num">04</div>
+        <h4>对标监控不登录、不暴露账号</h4>
+        <p>benchmark 自己写 playwright + XHR 监听，靠浏览器自动建立的<strong>游客 session</strong>就能拉对标账号首屏笔记。不要 Agent-Reach、不要 OpenCLI、不要 cookie。</p>
+        <blockquote>已实测：监控小红书 TapTap 官方账号，11 条笔记全部拉到，含标题/点赞/封面/置顶。<br>fresh chromium context 每次新游客身份，反爬识别概率最低。</blockquote>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ========== 演示 ========== -->
+<section id="demo">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-eyebrow">LIVE DEMO</div>
+      <h2 class="section-title">实跑输出 · 不是 mock</h2>
+      <p class="section-sub">下面两段是真实跑出来的终端日志（脱敏样本数据 + TapTap 公开主页），可在仓里复现。</p>
+    </div>
+
+    <div class="demo-grid">
+      <!-- analytics 跑通 -->
+      <div class="demo-card reveal">
+        <div class="demo-card-head">
+          <div class="demo-card-dots"><span></span><span></span><span></span></div>
+          <div class="demo-card-title">analytics/ · python cli.py --import ... --analyze --suggest --render</div>
+        </div>
+        <div class="demo-card-body">
+<span class="out-comment"># 一条命令端到端跑通</span>
+<span class="out-prompt">$</span> python cli.py --import examples/sample_export.csv \
+    --analyze --suggest --render
+
+<span class="out-tag">[import]</span> 检测到字段映射: {笔记ID, 标题, 发布时间, 浏览量, ...}
+<span class="out-tag">[import]</span> 导入笔记 <span class="out-num">30</span> 条；快照 <span class="out-num">30</span> 条
+
+<span class="out-comment">=== 整体面板 ===</span>
+笔记总数: 30   总阅读: <span class="out-num">222,860</span>
+整体点赞率 <span class="out-num">7.93%</span>   收藏率 <span class="out-num">9.9%</span>
+
+<span class="out-comment">=== 互动率 Top 5 ===</span>
+1. [<span class="out-num">23.02%</span>] 魂系新人怎么选|从血源到艾尔登法环
+2. [<span class="out-num">22.54%</span>] 2026目前最值得买的5款国产单机
+3. [<span class="out-num">22.17%</span>] Switch 2评测出了|首发买不买
+
+<span class="out-comment">=== 发布时段分布 ===</span>
+22:00    4 笔  平均互动 <span class="out-num">20.1%</span> ←最佳
+
+<span class="out-comment">=== 标题长度 vs 表现 ===</span>
+16-20字  15 笔  平均互动 <span class="out-num">19.15%</span> ←甜点区
+
+<span class="out-tag">[suggest]</span> 调用 qwen-max 生成下期选题候选 ...
+<span class="out-tag">[suggest]</span> 事实核查 <span class="out-warn">⚠</span> 检测到 2 条未发生事件
+<span class="out-tag">[suggest]</span> 已写入 next_week_prompt_2026-W27.md
+<span class="out-tag">[render]</span> 已写入 W27_dashboard.html
+            <span class="out-comment">↑ 双风格卡片报告，浏览器导 JPG 即可发布</span>
+        </div>
+      </div>
+
+      <!-- benchmark 跑通 -->
+      <div class="demo-card reveal">
+        <div class="demo-card-head">
+          <div class="demo-card-dots"><span></span><span></span><span></span></div>
+          <div class="demo-card-title">benchmark/ · python monitor.py --user-url ...</div>
+        </div>
+        <div class="demo-card-body">
+<span class="out-comment"># 监控小红书 TapTap 官方账号 · 不登录</span>
+<span class="out-prompt">$</span> python monitor.py --user-url \
+    "https://www.xiaohongshu.com/user/profile/<span class="out-num">5b6919df...</span>"
+
+<span class="out-tag">[monitor]</span> 页面标题: TapTap - 小红书
+<span class="out-tag">[monitor]</span> 监听到的相关 XHR 端点 (<span class="out-num">10</span> 个):
+  - .../api/sns/web/v1/login/qrcode/create
+  - .../api/sns/web/v2/user/me   <span class="out-comment">← guest session 初始化</span>
+  - .../api/sns/web/v1/user_posted?...  <span class="out-num">code:0</span>
+
+<span class="out-tag">[monitor]</span> 提取到笔记 <span class="out-num">11</span> 条
+
+<span class="out-comment"># 按点赞排序：</span>
+  <span class="out-num">6565</span> 赞   纸嫁衣9 限免段·7月16日上线!
+  <span class="out-num">5303</span> 赞   女团公司 × 骑士护盾局 PPT版
+   <span class="out-num">127</span> 赞   TapTap 游戏发布会，全片合集了!
+   <span class="out-num">104</span> 赞   首款AI国创大作《Steam页面》
+    <span class="out-num">95</span> 赞   你们摆烂1块的样子...
+[置顶] <span class="out-num">59</span> 赞   TapTap游戏发布会，50+款游戏即将登场!
+   ...
+
+<span class="out-tag">[monitor]</span> 已写入 data/TapTap_20260629.json
+            <span class="out-comment">↑ 反哺到 analytics 做"对方在打但我没打"分析</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== AI 哲学 ========== -->
+<section id="philo">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="philo">
+        <div class="philo-quote">
+          精品账号的"精品感"，<br>
+          在 <em>AI 该退场</em> 的地方。
+        </div>
+        <div class="philo-byline">— 4 个月真实运营踩出来的判断</div>
+        <div class="philo-table">
+          <div class="philo-row head">
+            <div>环节</div>
+            <div>AI 用得多吗</div>
+            <div>为什么</div>
+          </div>
+          <div class="philo-row"><div>素材采集</div><div class="lvl-high">✓ 多</div><div>重复劳动，AI 节省 80% 时间</div></div>
+          <div class="philo-row"><div>选题生成</div><div class="lvl-mid">△ 中</div><div>AI 出候选，人手做最终判断</div></div>
+          <div class="philo-row"><div>内容生产（一稿）</div><div class="lvl-high">✓ 多</div><div>起草是效率核心</div></div>
+          <div class="philo-row"><div>内容改写（精修）</div><div class="lvl-low">✗ 少</div><div>温度、节奏、口吻必须人手过</div></div>
+          <div class="philo-row"><div>标题 / 封面</div><div class="lvl-low">✗ 少</div><div>决定 80% 点击率，人手专属</div></div>
+          <div class="philo-row"><div>发布计划</div><div class="lvl-high">✓ 多</div><div>调度劳动</div></div>
+          <div class="philo-row"><div>数据复盘</div><div class="lvl-mid">△ 中</div><div>AI 出建议，人手定方向</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 技术栈 ========== -->
+<section id="tech">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-eyebrow">TECH STACK</div>
+      <h2 class="section-title">技术栈</h2>
+      <p class="section-sub">没有花哨的依赖，全部围绕"git clone 一个仓就能跑通"设计。</p>
+    </div>
+    <div class="tech-grid">
+      <div class="tech reveal"><div class="tech-cat">RUNTIME</div><div class="tech-name">Python 3.11</div><div class="tech-note">stdlib 优先</div></div>
+      <div class="tech reveal"><div class="tech-cat">AI</div><div class="tech-name">qwen-max / turbo</div><div class="tech-note">DashScope · OpenAI 兼容</div></div>
+      <div class="tech reveal"><div class="tech-cat">SCRAPING</div><div class="tech-name">playwright 1.58</div><div class="tech-note">XHR 监听 · stealth</div></div>
+      <div class="tech reveal"><div class="tech-cat">STORAGE</div><div class="tech-name">SQLite</div><div class="tech-note">stdlib · 跨周时间序列</div></div>
+      <div class="tech reveal"><div class="tech-cat">WEB</div><div class="tech-name">Flask</div><div class="tech-note">crawler 监控面板</div></div>
+      <div class="tech reveal"><div class="tech-cat">VIDEO</div><div class="tech-name">edge-tts · MoviePy</div><div class="tech-note">9 音色 · imageio-ffmpeg</div></div>
+      <div class="tech reveal"><div class="tech-cat">RENDER</div><div class="tech-name">html-to-image</div><div class="tech-note">浏览器侧 JPG 导出</div></div>
+      <div class="tech reveal"><div class="tech-cat">UI 协议</div><div class="tech-name">SKILL.md</div><div class="tech-note">WorkBuddy · Anthropic 协议兼容</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ========== 源代码索引 ========== -->
+<section id="code" style="background: var(--bg-1);">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-eyebrow">SOURCE CODE</div>
+      <h2 class="section-title">关键文件索引</h2>
+      <p class="section-sub">每个文件都跟它在赛题里的角色一一对应。点开看代码即可验证。</p>
+    </div>
+    <div class="code-index reveal">
+      <div class="code-index-row head">
+        <div>路径</div>
+        <div>角色</div>
+        <div>关键依赖</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/analytics/cli.py" target="_blank" rel="noopener">analytics/cli.py</a>
+        <div class="code-role">一键入口 · import / analyze / suggest / render 串起来</div>
+        <div class="code-stack">argparse · sqlite3</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/analytics/csv_importer.py" target="_blank" rel="noopener">analytics/csv_importer.py</a>
+        <div class="code-role">小红书创作中心 CSV 解析 · 列名 autodetect · 容错（万/k/逗号）</div>
+        <div class="code-stack">csv · 中英双语别名</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/analytics/schema.py" target="_blank" rel="noopener">analytics/schema.py</a>
+        <div class="code-role">SQLite schema · notes / snapshots / followers 三表 · 跨周时间序列</div>
+        <div class="code-stack">sqlite3 stdlib</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/analytics/analyzer.py" target="_blank" rel="noopener">analytics/analyzer.py</a>
+        <div class="code-role">互动率 / 时段 / 标题模式分析 · pretty print 中文报告</div>
+        <div class="code-stack">collections.defaultdict</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/analytics/qwen_bridge.py" target="_blank" rel="noopener">analytics/qwen_bridge.py</a>
+        <div class="code-role">桥接 crawler/content-monitor/qwen_client.py · 复用 19 个 AI 函数</div>
+        <div class="code-stack">sys.path import</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/analytics/topic_recommender.py" target="_blank" rel="noopener">analytics/topic_recommender.py</a>
+        <div class="code-role">qwen-max 出 5 条选题 + 自动 fact_check + WorkBuddy 触发话术</div>
+        <div class="code-stack">qwen-max · prompt engineering</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/analytics/report_renderer.py" target="_blank" rel="noopener">analytics/report_renderer.py</a>
+        <div class="code-role">分析结果 → cards JSON → 双风格卡片 HTML</div>
+        <div class="code-stack">vendored render_xhs_cards</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/benchmark/xhs_scraper.py" target="_blank" rel="noopener">benchmark/xhs_scraper.py</a>
+        <div class="code-role">playwright 直驱 · XHR 监听 · 游客 session · cover URL fallback ID</div>
+        <div class="code-stack">playwright sync · stealth</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/benchmark/monitor.py" target="_blank" rel="noopener">benchmark/monitor.py</a>
+        <div class="code-role">CLI 入口 · 含 --browse 找 URL 工具模式</div>
+        <div class="code-stack">argparse</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/crawler/content-monitor/qwen_client.py" target="_blank" rel="noopener">crawler/content-monitor/qwen_client.py</a>
+        <div class="code-role">19 个 AI 函数（生成评测 / 改写 / fact_check / 周报文章 / ...）</div>
+        <div class="code-stack">openai SDK · DashScope</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/tree/main/crawler/content-monitor/scrapers" target="_blank" rel="noopener">crawler/content-monitor/scrapers/*.py</a>
+        <div class="code-role">14 个独立 scraper · Reddit / 微博超话 / B 站 / TapTap / 触乐 / ...</div>
+        <div class="code-stack">requests · feedparser · playwright</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/tree/main/creator/xhs_console_agent/skills" target="_blank" rel="noopener">creator/xhs_console_agent/skills/*/SKILL.md</a>
+        <div class="code-role">6 个 skill 协议文档 · WorkBuddy 自动读取并执行</div>
+        <div class="code-stack">Anthropic SKILL 协议</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/blob/main/creator/motion-remotion/src/Root.tsx" target="_blank" rel="noopener">creator/motion-remotion/src/Root.tsx</a>
+        <div class="code-role">Remotion 入口 · 注册 GrowthAnimation + WeeklyDashboard 两个 composition</div>
+        <div class="code-stack">React 18 · Remotion 4</div>
+      </div>
+      <div class="code-index-row">
+        <a class="code-path" href="https://github.com/756496019-lgtm/xhs-ai-operation/tree/main/creator/motion-remotion/src/compositions" target="_blank" rel="noopener">creator/motion-remotion/src/compositions/*.tsx</a>
+        <div class="code-role">数据可视化动效（增长曲线 / 周复盘）· 1080×1920 竖屏</div>
+        <div class="code-stack">spring · interpolate · SVG</div>
+      </div>
+    </div>
+
+    <div class="github-cta reveal">
+      <div class="github-cta-text">
+        <div class="github-cta-title">完整代码 + 提交历史在 GitHub</div>
+        <div class="github-cta-sub">git clone https://github.com/756496019-lgtm/xhs-ai-operation.git</div>
+      </div>
+      <a href="https://github.com/756496019-lgtm/xhs-ai-operation" class="github-cta-btn" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+        在 GitHub 打开
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ========== Footer ========== -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">小红书运营 · AI 闭环</div>
+    <div class="footer-meta">
+      WorkBuddy · 内容创作与发布分析系统<br>
+      仓库位置: <code style="font-family: 'JetBrains Mono', monospace; color: var(--text-2);">D:/project/xhs-yunying/</code><br>
+      4 个月真实运营沉淀 · <a href="#overview">回到顶部</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Scroll fade-in
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        e.target.classList.add('in');
+        io.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // 顶部导航 scroll 透明度
+  const nav = document.querySelector('.nav');
+  let lastY = 0;
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    if (y > 40) {
+      nav.style.background = 'rgba(10, 15, 24, 0.92)';
+      nav.style.borderBottomColor = 'rgba(31, 45, 64, 0.9)';
+    } else {
+      nav.style.background = 'rgba(10, 15, 24, 0.72)';
+      nav.style.borderBottomColor = 'rgba(31, 45, 64, 0.6)';
+    }
+    lastY = y;
+  }, { passive: true });
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+{
+  "_comment": "steam_spring 风格的布局: 白色标题色块 + 黑色描边大字; 中部 6 格游戏拼图; 底部白色副标题胶囊",
+  "size": [
+    1080,
+    1440
+  ],
+  "title_text": {
+    "x": 540,
+    "y": 210,
+    "size": 120,
+    "max_width": 960,
+    "color": "#1a1a1a",
+    "stroke_color": "#ffffff",
+    "stroke_width": 2,
+    "anchor": "mm"
+  },
+  "subtitle_text": {
+    "x": 540,
+    "y": 1340,
+    "size": 50,
+    "color": "#1a1a1a",
+    "stroke_color": "#ffffff",
+    "stroke_width": 1,
+    "anchor": "mm"
+  },
+  "grid": {
+    "x": 60,
+    "y": 420,
+    "w": 960,
+    "h": 840,
+    "padding": 22,
+    "corner_radius": 18
+  },
+  "label_overlay": true
+}

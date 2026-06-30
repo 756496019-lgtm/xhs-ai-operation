@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>二游联动实录 · 小红书图文</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1A1F2E;
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── 顶部操作栏 ── */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(8, 12, 20, 0.97);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(232,130,12,0.3);
+    height: 52px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  #top-bar .logo {
+    font-size: 12px; font-weight: 700; color: #E8820C;
+    letter-spacing: 0.12em; font-family: 'Inter', sans-serif;
+    margin-right: 8px;
+  }
+  #top-bar .hint { font-size: 11px; color: #4A6080; flex: 1; }
+  #top-bar .edit-tip {
+    font-size: 11px; color: #6A8050;
+    background: rgba(232,130,12,0.08);
+    border: 1px solid rgba(232,130,12,0.22);
+    border-radius: 5px; padding: 3px 10px;
+  }
+  .btn-dl {
+    background: #E8820C; color: #fff; border: none;
+    border-radius: 8px; padding: 7px 16px;
+    font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    letter-spacing: 0.04em;
+    transition: background 0.2s;
+  }
+  .btn-dl:hover { background: #C56D08; }
+  .btn-dl-all {
+    background: #0A1220; color: #8AA0C0; border: 1px solid #1E2D40;
+    border-radius: 8px; padding: 7px 16px;
+    font-size: 12px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-dl-all:hover { background: #1E2D40; color: #fff; }
+
+  /* ── 主体布局 ── */
+  #stage {
+    padding: 72px 24px 48px;
+    display: flex; flex-wrap: wrap; gap: 32px; justify-content: center;
+  }
+
+  /* ── 单张卡片容器 ── */
+  .card-unit { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .card-label { font-size: 11px; color: #3A5070; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; }
+  .card-actions { display: flex; gap: 8px; }
+  .card-actions button {
+    background: #0A1220; border: 1px solid #1E2D40;
+    color: #4A6080; border-radius: 6px;
+    padding: 5px 12px; font-size: 11px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif; transition: all 0.2s;
+  }
+  .card-actions button:hover { background: #1E2D40; color: #E8820C; border-color: #E8820C; }
+
+  /* ── 小红书卡片本体 375px ── */
+  .xhs-card {
+    width: 375px; position: relative; overflow: visible;
+    flex-shrink: 0; box-shadow: 0 16px 48px rgba(0,0,0,0.7); border-radius: 2px;
+  }
+
+  /* ══ 通用卡片结构 ══ */
+  .intel-card {
+    background: #0F1824;
+    display: flex; flex-direction: column;
+    min-height: 500px;
+  }
+  .card-top-stripe {
+    height: 3px; background: #E8820C; flex-shrink: 0;
+  }
+  .card-badge-bar {
+    background: #0A1220;
+    padding: 8px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .cbrand { color: #E8820C; font-size: 11px; font-weight: 700; letter-spacing: 0.15em; font-family: 'Inter', sans-serif; }
+  .ctag { color: #4A6080; font-size: 10px; letter-spacing: 0.08em; font-family: 'Inter', sans-serif; }
+  .card-body { flex: 1; padding: 22px 20px 18px; display: flex; flex-direction: column; }
+  .card-footer {
+    background: #E8820C; padding: 10px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .card-footer .cfl { color: #fff; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
+  .card-footer .cfr { color: #fff; font-size: 10px; letter-spacing: 0.12em; opacity: 0.85; font-family: 'Inter', sans-serif; }
+
+  /* ══ 卡片1：封面 ══ */
+  .cover-badge {
+    display: inline-block;
+    background: #E8820C;
+    color: #fff; font-size: 10px; font-weight: 700;
+    padding: 4px 12px; border-radius: 20px;
+    letter-spacing: 0.1em; margin-bottom: 22px;
+    font-family: 'Inter', sans-serif; text-transform: uppercase;
+    width: fit-content;
+  }
+  .cover-main-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 26px; font-weight: 700; color: #FFFFFF;
+    line-height: 1.5; letter-spacing: 0.02em; margin-bottom: 14px;
+  }
+  .cover-main-title .hl { color: #F5B820; }
+  .cover-main-title .hl-red { color: #EF4444; }
+  .cover-main-title .hl-green { color: #34D399; }
+  .cover-divider { height: 3px; background: #E8820C; width: 48px; margin-bottom: 16px; }
+  .cover-sub {
+    font-size: 12px; color: #6080A0; line-height: 1.7; letter-spacing: 0.04em;
+  }
+
+  /* 封面双格 */
+  .cover-compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 22px;
+  }
+  .cov-box {
+    border-radius: 6px; padding: 14px 10px; text-align: center;
+  }
+  .cov-box.red-box {
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.28);
+  }
+  .cov-box.green-box {
+    background: rgba(52,211,153,0.08); border: 1px solid rgba(52,211,153,0.22);
+  }
+  .cb-game { font-size: 11px; font-weight: 700; margin-bottom: 6px; }
+  .cov-box.red-box .cb-game { color: #FCA5A5; }
+  .cov-box.green-box .cb-game { color: #6EE7B7; }
+  .cb-status {
+    font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 800; line-height: 1.1;
+  }
+  .cov-box.red-box .cb-status { color: #F87171; }
+  .cov-box.green-box .cb-status { color: #34D399; }
+  .cb-label { font-size: 10px; line-height: 1.5; margin-top: 6px; }
+  .cov-box.red-box .cb-label { color: #6A3030; }
+  .cov-box.green-box .cb-label { color: #2A5A40; }
+
+  /* ══ 内页共用 ══ */
+  .section-title {
+    font-size: 17px; font-weight: 900; color: #FFFFFF;
+    margin-bottom: 16px; letter-spacing: 0.04em;
+    line-height: 1.4;
+  }
+  .section-title .hl { color: #F5B820; }
+
+  /* 新闻条目 */
+  .news-item {
+    display: flex; gap: 12px; padding: 12px 0;
+  }
+  .news-item + .news-item { border-top: 1px solid #1E2D40; }
+  .news-stripe {
+    width: 3px; background: #E8820C;
+    flex-shrink: 0; border-radius: 2px; min-height: 36px;
+  }
+  .news-title { font-size: 13px; font-weight: 700; color: #F5B820; margin-bottom: 4px; line-height: 1.5; }
+  .news-body { font-size: 12px; color: #7898B8; line-height: 1.6; }
+
+  /* ── 双栏时间线 ── */
+  .dual-tl {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0;
+    margin: 10px 0; position: relative;
+  }
+  .dual-tl::before {
+    content: ''; position: absolute; left: 50%; top: 0; bottom: 0;
+    width: 1px; background: #1E2D40; transform: translateX(-50%);
+  }
+  .dtl-col { display: flex; flex-direction: column; }
+  .dtl-col.left { padding-right: 10px; }
+  .dtl-col.right { padding-left: 10px; }
+  .dtl-header {
+    font-size: 9px; font-weight: 800; letter-spacing: 0.1em;
+    padding: 5px 8px; border-radius: 3px; text-align: center;
+    margin-bottom: 10px; font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+  }
+  .dtl-header.red { background: rgba(239,68,68,0.18); color: #F87171; border: 1px solid rgba(239,68,68,0.3); }
+  .dtl-header.green { background: rgba(52,211,153,0.12); color: #34D399; border: 1px solid rgba(52,211,153,0.25); }
+  .dtl-item { display: flex; flex-direction: column; gap: 2px; padding: 8px 0; border-bottom: 1px solid #1A2530; }
+  .dtl-item:last-child { border-bottom: none; }
+  .dtl-empty { padding: 8px 0; border-bottom: 1px solid #1A2530; }
+  .dtl-empty:last-child { border-bottom: none; }
+  .dtl-date { font-size: 9px; font-weight: 700; font-family: 'Inter', sans-serif; letter-spacing: 0.06em; margin-bottom: 2px; }
+  .dtl-date.amber { color: #E8820C; }
+  .dtl-date.red { color: #EF4444; }
+  .dtl-date.green { color: #34D399; }
+  .dtl-date.gray { color: #4A6080; }
+  .dtl-text { font-size: 11px; color: #7898B8; line-height: 1.55; }
+  .dtl-text strong { color: #C8D8E8; }
+  .dtl-text em { font-style: normal; font-weight: 700; }
+  .dtl-text em.red { color: #F87171; }
+  .dtl-text em.green { color: #34D399; }
+
+  /* 引用块 */
+  .mini-quote {
+    border-left: 3px solid #E8820C;
+    background: rgba(232,130,12,0.07);
+    padding: 10px 12px; border-radius: 0 4px 4px 0;
+    font-size: 12px; color: #8AA0B8; line-height: 1.65;
+    margin: 10px 0;
+  }
+  .mini-quote strong { color: #F5B820; }
+  .mini-quote.red-q {
+    border-left-color: #EF4444;
+    background: rgba(239,68,68,0.07);
+    color: #B08080;
+  }
+  .mini-quote.red-q strong { color: #F87171; }
+
+  /* 数据对比表 */
+  .dc-table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+  .dc-table .dc-head td {
+    padding: 6px 10px; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.08em; text-transform: uppercase;
+    background: #0A1220; color: #4A6080;
+    border-bottom: 1px solid #1E2D40;
+    font-family: 'Inter', sans-serif;
+  }
+  .dc-table .dc-head .dc-ha { color: #F87171; }
+  .dc-table .dc-head .dc-hb { color: #34D399; }
+  .dc-table tr:nth-child(odd) td { background: #131D2A; }
+  .dc-table tr:nth-child(even) td { background: #0F1824; }
+  .dc-table td { padding: 9px 10px; font-size: 11px; vertical-align: middle; }
+  .dc-table .dc-label { color: #6080A0; }
+  .dc-table .dc-va { color: #F87171; font-weight: 700; text-align: right; }
+  .dc-table .dc-vb { color: #34D399; font-weight: 700; text-align: right; }
+
+  /* VS 双栏 */
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+  .vs-card { border-radius: 6px; padding: 12px; }
+  .vs-card.a-side { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.22); }
+  .vs-card.b-side { background: rgba(52,211,153,0.07); border: 1px solid rgba(52,211,153,0.2); }
+  .vs-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 8px; display: block; text-transform: uppercase; font-family: 'Inter', sans-serif; }
+  .vs-card.a-side .vs-tag { color: #EF4444; }
+  .vs-card.b-side .vs-tag { color: #34D399; }
+  .vs-item { font-size: 11px; color: #7898B8; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; align-items: flex-start; gap: 5px; line-height: 1.5; }
+  .vs-item:last-child { border-bottom: none; }
+  .vs-item::before { flex-shrink: 0; font-size: 9px; font-weight: 700; margin-top: 1px; }
+  .vs-card.a-side .vs-item::before { content: '!'; color: #EF4444; }
+  .vs-card.b-side .vs-item::before { content: '✓'; color: #34D399; }
+
+  /* 结论尾页徽章列表 */
+  .verdict-list { display: flex; flex-direction: column; gap: 16px; flex: 1; margin-top: 4px; }
+  .verdict-row { display: flex; gap: 12px; align-items: flex-start; }
+  .verdict-icon {
+    width: 22px; height: 22px; border-radius: 3px;
+    background: rgba(232,130,12,0.15); border: 1px solid rgba(232,130,12,0.35);
+    color: #E8820C; font-size: 11px; font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .verdict-text { font-size: 12px; color: #7898B8; line-height: 1.65; }
+  .verdict-text strong { color: #C8D8E8; }
+
+  /* toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #0A1220; color: #E8820C; border: 1px solid #E8820C;
+    padding: 10px 20px; border-radius: 8px; font-size: 12px;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+    font-family: 'Inter', sans-serif; letter-spacing: 0.06em;
+  }
+  #toast.show { opacity: 1; }
+
+  /* contenteditable 高亮 */
+  [contenteditable]:focus {
+    outline: 1px solid rgba(232,130,12,0.6);
+    border-radius: 2px;
+    background: rgba(232,130,12,0.05);
+  }
+</style>
+</head>
+<body>
+
+<!-- 操作栏 -->
+<div id="top-bar">
+  <div class="logo">GAME RADAR HQ</div>
+  <div class="hint">375px · 共 5 张 · 二游联动实录</div>
+  <div class="edit-tip">✏️ 点击文字可直接编辑</div>
+  <button class="btn-dl-all" onclick="downloadAll()">全部导出</button>
+  <button class="btn-dl" onclick="downloadCard('card-0')">下载当前</button>
+</div>
+
+<div id="stage">
+
+  <!-- ══ 卡片1：封面 ══ -->
+  <div class="card-unit">
+    <div class="card-label">01 · 封面</div>
+    <div class="xhs-card" id="card-0">
+      <div class="intel-card">
+        <div class="card-top-stripe"></div>
+        <div class="card-badge-bar">
+          <span class="cbrand">GAME RADAR HQ</span>
+          <span class="ctag">二游联动实录 · 2026.03</span>
+        </div>
+        <div class="card-body" style="justify-content:space-between; min-height:440px;">
+          <div>
+            <div class="cover-badge" contenteditable="true">游戏联动 · 2026.03.02</div>
+            <div class="cover-main-title" contenteditable="true">同一天被举报<br>一个<span class="hl-red">停服至今</span><br>一个换个地方继续开</div>
+            <div class="cover-divider"></div>
+            <div class="cover-sub" contenteditable="true">《尘白禁区》无限期停服<br>《恋与深空》活动照常举行</div>
+            <div class="cover-compare">
+              <div class="cov-box red-box">
+                <div class="cb-game" contenteditable="true">《尘白禁区》</div>
+                <div class="cb-status" contenteditable="true">无限期停服</div>
+                <div class="cb-label" contenteditable="true">× 中国邮政<br>截至今日未重开</div>
+              </div>
+              <div class="cov-box green-box">
+                <div class="cb-game" contenteditable="true">《恋与深空》</div>
+                <div class="cb-status" contenteditable="true">换场继续</div>
+                <div class="cb-label" contenteditable="true">× 中国美术学院<br>活动如期举行</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span class="cfl" contenteditable="true">游戏雷达局</span>
+          <span class="cfr">INTEL · 01 / 05</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-0')">下载此张</button></div>
+  </div>
+
+  <!-- ══ 卡片2：双栏时间线 ══ -->
+  <div class="card-unit">
+    <div class="card-label">02 · 时间线对比</div>
+    <div class="xhs-card" id="card-1">
+      <div class="intel-card">
+        <div class="card-top-stripe"></div>
+        <div class="card-badge-bar">
+          <span class="cbrand">GAME RADAR HQ</span>
+          <span class="ctag">Timeline · 同一天，两条线</span>
+        </div>
+        <div class="card-body">
+          <div class="section-title" contenteditable="true">两件事，<span class="hl">同一天晚上</span>发公告</div>
+          <div style="font-size:12px; color:#4A6080; margin-bottom:14px; letter-spacing:0.04em;" contenteditable="true">经过不同，结果截然不同</div>
+
+          <div class="dual-tl">
+            <!-- 左栏：尘白禁区 -->
+            <div class="dtl-col left">
+              <div class="dtl-header red" contenteditable="true">《尘白禁区》</div>
+              <div class="dtl-item">
+                <div class="dtl-date amber" contenteditable="true">2月24日</div>
+                <div class="dtl-text" contenteditable="true">× 中国邮政联名公告发出，五城邮局快闪活动</div>
+              </div>
+              <div class="dtl-item">
+                <div class="dtl-date red" contenteditable="true">2月26日</div>
+                <div class="dtl-text" contenteditable="true"><em class="red">联名48小时叫停</em>，录取通知书谣言发酵，邮政辟谣</div>
+              </div>
+              <div class="dtl-empty"></div>
+              <div class="dtl-item">
+                <div class="dtl-date red" contenteditable="true">3月2日 23:59</div>
+                <div class="dtl-text" contenteditable="true"><em class="red">游戏无限期停服</em><br>B站视频大规模下架<br>"维护周期可能较长"</div>
+              </div>
+              <div class="dtl-item">
+                <div class="dtl-date gray" contenteditable="true">3月15日</div>
+                <div class="dtl-text" contenteditable="true"><strong>至今未重开</strong><br>无明确时间表</div>
+              </div>
+            </div>
+            <!-- 右栏：恋与深空 -->
+            <div class="dtl-col right">
+              <div class="dtl-header green" contenteditable="true">《恋与深空》</div>
+              <div class="dtl-empty"></div>
+              <div class="dtl-empty"></div>
+              <div class="dtl-item">
+                <div class="dtl-date amber" contenteditable="true">活动公告</div>
+                <div class="dtl-text" contenteditable="true">× 中国美术学院，授予祁煜"荣誉导师"称号，遭举报"师生联想"</div>
+              </div>
+              <div class="dtl-item">
+                <div class="dtl-date green" contenteditable="true">3月2日</div>
+                <div class="dtl-text" contenteditable="true"><em class="green">高校合作终止</em><br>改至杭州莲美术馆<br>安排接驳车继续</div>
+              </div>
+              <div class="dtl-item">
+                <div class="dtl-date green" contenteditable="true">3月15日</div>
+                <div class="dtl-text" contenteditable="true"><em class="green"><strong>活动如期举行</strong></em></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mini-quote" contenteditable="true">
+            补偿：尘白禁区可自选五星角色 + 五星武器，每满24小时追加道具。
+          </div>
+        </div>
+        <div class="card-footer">
+          <span class="cfl" contenteditable="true">游戏雷达局</span>
+          <span class="cfr">INTEL · 02 / 05</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-1')">下载此张</button></div>
+  </div>
+
+  <!-- ══ 卡片3：对比数据 ══ -->
+  <div class="card-unit">
+    <div class="card-label">03 · 对比分析</div>
+    <div class="xhs-card" id="card-2">
+      <div class="intel-card">
+        <div class="card-top-stripe"></div>
+        <div class="card-badge-bar">
+          <span class="cbrand">GAME RADAR HQ</span>
+          <span class="ctag">Compare · 同一天，两个结果</span>
+        </div>
+        <div class="card-body">
+          <div class="section-title" contenteditable="true">同一天，同样被举报<br><span class="hl">结果为什么不一样</span></div>
+          <div style="font-size:12px; color:#4A6080; margin-bottom:14px;" contenteditable="true">两件事发生的时间完全一致，结果截然不同</div>
+
+          <table class="dc-table">
+            <tr class="dc-head">
+              <td class="dc-label"></td>
+              <td class="dc-ha" contenteditable="true">《尘白禁区》</td>
+              <td class="dc-hb" contenteditable="true">《恋与深空》</td>
+            </tr>
+            <tr>
+              <td class="dc-label" contenteditable="true">联动对象</td>
+              <td class="dc-va" contenteditable="true">中国邮政<br>（国有全年龄段）</td>
+              <td class="dc-vb" contenteditable="true">中国美术学院<br>（高校）</td>
+            </tr>
+            <tr>
+              <td class="dc-label" contenteditable="true">游戏分级</td>
+              <td class="dc-va" contenteditable="true">18岁以下<br>限制登录</td>
+              <td class="dc-vb" contenteditable="true">全年龄段</td>
+            </tr>
+            <tr>
+              <td class="dc-label" contenteditable="true">联动对象属性</td>
+              <td class="dc-va" contenteditable="true">国有<br>全年龄段品牌</td>
+              <td class="dc-vb" contenteditable="true">高校<br>（特定场景）</td>
+            </tr>
+            <tr>
+              <td class="dc-label" contenteditable="true">处置结果</td>
+              <td class="dc-va" contenteditable="true">游戏<br>无限期停服</td>
+              <td class="dc-vb" contenteditable="true">活动<br>换场地继续</td>
+            </tr>
+            <tr>
+              <td class="dc-label" contenteditable="true">截至今日</td>
+              <td class="dc-va" contenteditable="true">至今未开服</td>
+              <td class="dc-vb" contenteditable="true">活动如期举行</td>
+            </tr>
+          </table>
+
+          <div class="mini-quote" contenteditable="true">
+            国内目前没有正式游戏分级制度，但实际执行中已有<strong>事实分级</strong>——"18岁以下限制登录"本质上是一种软分级标签，带着这个标签进入无差别覆盖的公共品牌，是这次风波的根源。
+          </div>
+        </div>
+        <div class="card-footer">
+          <span class="cfl" contenteditable="true">游戏雷达局</span>
+          <span class="cfr">INTEL · 03 / 05</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-2')">下载此张</button></div>
+  </div>
+
+  <!-- ══ 卡片4：玩家动态 ══ -->
+  <div class="card-unit">
+    <div class="card-label">04 · 玩家动态</div>
+    <div class="xhs-card" id="card-3">
+      <div class="intel-card">
+        <div class="card-top-stripe"></div>
+        <div class="card-badge-bar">
+          <span class="cbrand">GAME RADAR HQ</span>
+          <span class="ctag">Players · 玩家在做什么</span>
+        </div>
+        <div class="card-body">
+          <div class="section-title" contenteditable="true">玩家在<span class="hl">互相举报</span></div>
+          <div style="font-size:12px; color:#4A6080; margin-bottom:14px;" contenteditable="true">两个平时没有交集的玩家群体，在这场风波里正面交锋</div>
+
+          <div class="vs-grid">
+            <div class="vs-card a-side">
+              <span class="vs-tag" contenteditable="true">二游玩家举报</span>
+              <div class="vs-item" contenteditable="true">截图乙游联名内容</div>
+              <div class="vs-item" contenteditable="true">投诉"低俗内容"</div>
+              <div class="vs-item" contenteditable="true">认为师生设定不当</div>
+            </div>
+            <div class="vs-card b-side">
+              <span class="vs-tag" contenteditable="true">乙游玩家反举报</span>
+              <div class="vs-item" contenteditable="true">截图二游宣传图</div>
+              <div class="vs-item" contenteditable="true">投诉"擦边内容"</div>
+              <div class="vs-item" contenteditable="true">指向角色服装问题</div>
+            </div>
+          </div>
+
+          <div class="mini-quote red-q" contenteditable="true">
+            17173报道标题：<strong>《互相举报的后果将会是都别玩了》</strong>
+          </div>
+
+          <div class="news-item" style="margin-top:8px;">
+            <div class="news-stripe"></div>
+            <div contenteditable="true">
+              <div class="news-title">现状</div>
+              <div class="news-body">《尘白禁区》玩家目前在等一个<strong style="color:#C8D8E8">没有时间表的开服公告</strong>。《恋与深空》玩家正常参与了活动。<br><br>用同一把规则打对手——前提是自己先经得起同样的规则。</div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span class="cfl" contenteditable="true">游戏雷达局</span>
+          <span class="cfr">INTEL · 04 / 05</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-3')">下载此张</button></div>
+  </div>
+
+  <!-- ══ 卡片5：局长观察 ══ -->
+  <div class="card-unit">
+    <div class="card-label">05 · 局长观察</div>
+    <div class="xhs-card" id="card-4">
+      <div class="intel-card">
+        <div class="card-top-stripe"></div>
+        <div class="card-badge-bar">
+          <span class="cbrand">GAME RADAR HQ</span>
+          <span class="ctag">Observation · 局长观察</span>
+        </div>
+        <div class="card-body">
+          <div class="section-title" contenteditable="true">结果不同<br>源于<span class="hl">事实分级</span>的差距</div>
+
+          <div class="verdict-list">
+            <div class="verdict-row">
+              <div class="verdict-icon">①</div>
+              <div class="verdict-text" contenteditable="true"><strong>中国没有正式游戏分级，但事实分级已存在</strong><br>"18岁以下限制登录"是目前执行中最接近成人分级的标签</div>
+            </div>
+            <div class="verdict-row">
+              <div class="verdict-icon">②</div>
+              <div class="verdict-text" contenteditable="true"><strong>带着分级标签，进了无分级的公共空间</strong><br>中国邮政覆盖所有年龄段，与有年龄限制的游戏联动，调性冲突是结构性的，不是设计失误</div>
+            </div>
+            <div class="verdict-row">
+              <div class="verdict-icon">③</div>
+              <div class="verdict-text" contenteditable="true"><strong>《恋与深空》是场景问题，不是分级问题</strong><br>游戏本身无年龄限制，换一个非高校场地，问题就不存在了</div>
+            </div>
+            <div class="verdict-row">
+              <div class="verdict-icon">→</div>
+              <div class="verdict-text" contenteditable="true"><strong>两款游戏面对的，从一开始就不是同一道题</strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-footer">
+          <span class="cfl" contenteditable="true">游戏雷达局 · 2026.03.15</span>
+          <span class="cfr">INTEL · 05 / 05</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-4')">下载此张</button></div>
+  </div>
+
+</div><!-- /#stage -->
+
+<div id="toast">正在渲染图片…</div>
+
+<script>
+function downloadCard(id) {
+  const el = document.getElementById(id);
+  document.activeElement.blur();
+  showToast('正在渲染图片…');
+  htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true })
+    .then(() => htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true }))
+    .then(dataUrl => {
+      saveAs(dataUrl, `erji-liandon-xhs-${id}.png`);
+      showToast('下载成功！');
+    })
+    .catch(e => { showToast('生成失败，请重试'); console.error(e); });
+}
+
+async function downloadAll() {
+  const ids = ['card-0','card-1','card-2','card-3','card-4'];
+  document.activeElement.blur();
+  for (let i = 0; i < ids.length; i++) {
+    showToast(`导出第 ${i+1} / ${ids.length} 张…`);
+    const el = document.getElementById(ids[i]);
+    try {
+      await htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true });
+      const dataUrl = await htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true });
+      saveAs(dataUrl, `erji-liandon-xhs-${String(i+1).padStart(2,'0')}.png`);
+      await new Promise(r => setTimeout(r, 500));
+    } catch(e) { console.error(ids[i], e); }
+  }
+  showToast('全部导出完成！');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

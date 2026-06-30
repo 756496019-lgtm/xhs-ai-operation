@@ -1,0 +1,24 @@
+{
+  "name": "motion-remotion",
+  "version": "1.0.0",
+  "description": "代码驱动的动效视频生成（Remotion / React）。creator/xhs_console_agent/04-video-editor 的 PV 拼接路线之外，另一条互补的'数据可视化 + 字卡动画'路线。",
+  "private": true,
+  "scripts": {
+    "dev": "remotion studio",
+    "preview": "remotion studio",
+    "build:growth": "remotion render GrowthAnimation out/growth.mp4",
+    "build:weekly": "remotion render WeeklyDashboard out/weekly.mp4",
+    "build:all": "npm run build:growth && npm run build:weekly"
+  },
+  "dependencies": {
+    "@remotion/cli": "^4.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "remotion": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.0",
+    "@types/react-dom": "^18.3.0",
+    "typescript": "^5.4.0"
+  }
+}

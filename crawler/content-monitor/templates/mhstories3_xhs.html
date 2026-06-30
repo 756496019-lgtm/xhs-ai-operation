@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>怪猎物语3 首发危机 · 小红书图文</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111827;
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── 顶部操作栏 ── */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,16,28,0.97);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(220,38,38,0.25);
+    height: 52px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  #top-bar .logo {
+    font-size: 12px; font-weight: 700; color: #DC2626;
+    letter-spacing: 0.1em; font-family: 'Inter', sans-serif;
+    margin-right: 8px;
+  }
+  #top-bar .hint { font-size: 11px; color: #3A5070; flex: 1; }
+  .btn-dl {
+    background: #DC2626; color: #fff; border: none;
+    border-radius: 8px; padding: 7px 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: background 0.2s;
+  }
+  .btn-dl:hover { background: #b91c1c; }
+  .btn-dl-all {
+    background: #1E3050; color: #C8D8E8; border: 1px solid #2A4060;
+    border-radius: 8px; padding: 7px 16px;
+    font-size: 12px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-dl-all:hover { background: #253858; color: #fff; }
+
+  /* ── 主体布局 ── */
+  #stage {
+    padding: 72px 24px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+  }
+
+  /* ── 单张卡片容器 ── */
+  .card-unit {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .card-label { font-size: 11px; color: #3A5070; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; }
+  .card-actions { display: flex; gap: 8px; }
+  .card-actions button {
+    background: #1E2D40; border: 1px solid #2A3E56;
+    color: #6A8AAA; border-radius: 6px;
+    padding: 5px 12px; font-size: 11px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.2s;
+  }
+  .card-actions button:hover { background: #253858; color: #DC2626; border-color: #DC2626; }
+
+  /* ── 小红书卡片本体 375px 宽，高度自适应 ── */
+  .xhs-card {
+    width: 375px;
+    position: relative;
+    overflow: visible;
+    flex-shrink: 0;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+    border-radius: 2px;
+  }
+
+  /* ══════ 卡片1：封面（深色） ══════ */
+  .card-cover {
+    background: linear-gradient(155deg, #1A0505 0%, #2D0A0A 55%, #120202 100%);
+  }
+  .card-cover .grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(220,38,38,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(220,38,38,0.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+  .card-cover .glow {
+    position: absolute; top: -60px; right: -60px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, rgba(220,38,38,0.18) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .card-cover .inner {
+    position: relative;
+    padding: 40px 32px 32px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-height: 520px;
+  }
+  .card-cover .tag {
+    display: inline-flex; align-items: center;
+    background: rgba(220,38,38,0.15);
+    border: 1px solid rgba(220,38,38,0.35);
+    color: #F87171; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; padding: 4px 10px; border-radius: 2px;
+    font-family: 'Inter', sans-serif; text-transform: uppercase;
+    width: fit-content;
+  }
+  .card-cover .title-block { margin-top: 28px; }
+  .card-cover .eyebrow {
+    font-size: 11px; color: #5A3030; letter-spacing: 0.08em;
+    margin-bottom: 14px; font-family: 'Inter', sans-serif;
+  }
+  .card-cover h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 28px; font-weight: 700; color: #F5E8E8;
+    line-height: 1.4; letter-spacing: 0.02em;
+  }
+  .card-cover h1 em { color: #DC2626; font-style: normal; }
+  .card-cover .subtitle {
+    margin-top: 16px;
+    font-size: 12px; color: #7A4040; line-height: 1.7;
+    border-left: 2px solid rgba(220,38,38,0.4);
+    padding-left: 10px;
+  }
+  .score-row {
+    display: flex; gap: 12px; margin-top: 24px;
+  }
+  .score-box {
+    flex: 1; background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px; padding: 12px 8px; text-align: center;
+  }
+  .score-box .s-num {
+    font-family: 'Inter', sans-serif; font-size: 26px; font-weight: 900;
+    color: #F5E8E8; line-height: 1;
+  }
+  .score-box .s-num.red { color: #DC2626; }
+  .score-box .s-label { font-size: 10px; color: #7A4040; margin-top: 5px; line-height: 1.4; }
+  .card-cover .footer-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 16px;
+  }
+  .card-cover .footer-bar .brand { font-size: 11px; color: #4A2020; letter-spacing: 0.08em; font-family: 'Inter', sans-serif; }
+  .card-cover .footer-bar .page-num { font-size: 10px; color: #3A1818; font-family: 'Inter', sans-serif; }
+
+  /* ══════ 通用白底页面结构（卡片2-5） ══════ */
+  .xhs-page { background: #fff; position: relative; }
+  .page-header {
+    padding: 16px 24px 12px;
+    border-bottom: 1px solid #F0F2F5;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .page-header-left { display: flex; align-items: center; gap: 8px; }
+  .page-num-badge {
+    width: 22px; height: 22px; border-radius: 4px;
+    background: #DC2626; color: #fff;
+    font-size: 11px; font-weight: 800; font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .page-topic { font-size: 10px; font-weight: 700; color: #999; letter-spacing: 0.08em; text-transform: uppercase; }
+  .page-brand { font-size: 10px; color: #CCC; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; }
+  .page-body { padding: 16px 24px 4px; }
+  .page-footer {
+    padding: 10px 24px 14px;
+    border-top: 1px solid #F0F2F5;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px;
+  }
+  .page-footer-text { font-size: 10px; color: #CCC; }
+  .page-footer-dot { width: 6px; height: 6px; border-radius: 50%; background: #DC2626; flex-shrink: 0; }
+
+  /* 页内大标题 */
+  .body-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 17px; font-weight: 700; color: #111;
+    line-height: 1.45; margin-bottom: 6px;
+  }
+  .body-title em { color: #DC2626; font-style: normal; }
+  .body-lead { font-size: 12px; color: #888; line-height: 1.6; margin-bottom: 14px; }
+
+  /* 评分对比块 */
+  .score-compare {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0;
+  }
+  .sc-item {
+    border-radius: 8px; padding: 14px 10px; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .sc-item.media { background: #F0FFF4; border: 1px solid #BBF7D0; }
+  .sc-item.player { background: #FFF5F5; border: 1px solid #FECACA; }
+  .sc-item::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  }
+  .sc-item.media::before { background: #22C55E; }
+  .sc-item.player::before { background: #DC2626; }
+  .sc-num {
+    font-family: 'Inter', sans-serif; font-size: 32px; font-weight: 900; line-height: 1;
+  }
+  .sc-item.media .sc-num { color: #16A34A; }
+  .sc-item.player .sc-num { color: #DC2626; }
+  .sc-num span { font-size: 16px; font-weight: 700; }
+  .sc-label { font-size: 10px; color: #888; margin-top: 5px; line-height: 1.4; }
+
+  /* 问题条目 */
+  .issue-list { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+  .issue-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #FAFAFA; border: 1px solid #EAECEF;
+    border-left: 3px solid #DC2626;
+    border-radius: 0 6px 6px 0; padding: 12px;
+  }
+  .issue-icon {
+    font-size: 16px; flex-shrink: 0; margin-top: 1px;
+  }
+  .issue-body {}
+  .issue-title { font-size: 12px; font-weight: 700; color: #111; margin-bottom: 3px; }
+  .issue-desc { font-size: 11px; color: #666; line-height: 1.55; }
+  .issue-desc strong { color: #DC2626; }
+
+  /* mini 引用块 */
+  .mini-quote {
+    border-left: 2px solid #DC2626;
+    background: #FFF5F5;
+    padding: 10px 12px; border-radius: 0 4px 4px 0;
+    font-size: 12px; color: #7A1A1A; line-height: 1.65;
+    margin: 10px 0;
+  }
+  .mini-quote strong { color: #DC2626; }
+
+  /* 数据条 */
+  .mini-bar-list { display: flex; flex-direction: column; gap: 9px; margin: 10px 0; }
+  .mini-bar-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; margin-bottom: 4px;
+  }
+  .mini-bar-label { color: #555; }
+  .mini-bar-val { font-weight: 800; font-family: 'Inter', sans-serif; color: #DC2626; }
+  .mini-bar-val.green { color: #16A34A; }
+  .mini-track { height: 6px; background: #F0F2F5; border-radius: 3px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #DC2626, #F87171); }
+  .mini-fill.green { background: linear-gradient(90deg, #16A34A, #4ADE80); }
+
+  /* 对比两列 */
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+  .vs-card { border-radius: 6px; padding: 12px; }
+  .vs-card.media { background: #F0FFF4; border: 1px solid #BBF7D0; }
+  .vs-card.player { background: #FFF5F5; border: 1px solid #FECACA; }
+  .vs-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 8px; display: block; }
+  .vs-card.media .vs-tag { color: #16A34A; }
+  .vs-card.player .vs-tag { color: #DC2626; }
+  .vs-item { font-size: 11px; color: #555; padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: flex-start; gap: 4px; }
+  .vs-item::before { content: '·'; color: #CCC; }
+  .vs-card.player .vs-item::before { content: '!'; color: #DC2626; font-size: 10px; font-weight: 700; }
+
+  /* 结论卡片（深色尾页） */
+  .card-end {
+    background: linear-gradient(155deg, #0D1217 0%, #141E2A 55%, #0A0F18 100%);
+  }
+  .card-end .grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(220,38,38,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(220,38,38,0.05) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+  }
+  .card-end .inner {
+    position: relative;
+    padding: 40px 32px;
+    display: flex; flex-direction: column;
+    min-height: 500px;
+    gap: 20px;
+  }
+  .card-end .end-label {
+    font-size: 10px; font-weight: 700; color: #DC2626;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+  }
+  .card-end .end-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 20px; font-weight: 700; color: #EAF0F8;
+    line-height: 1.5;
+  }
+  .card-end .end-title em { color: #DC2626; font-style: normal; }
+  .verdict-list { display: flex; flex-direction: column; gap: 14px; flex: 1; }
+  .verdict-row { display: flex; gap: 12px; align-items: flex-start; }
+  .verdict-icon {
+    width: 22px; height: 22px; border-radius: 4px;
+    background: rgba(220,38,38,0.15); border: 1px solid rgba(220,38,38,0.3);
+    color: #DC2626; font-size: 11px; font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .verdict-text { font-size: 13px; color: #B8C8D8; line-height: 1.65; }
+  .verdict-text strong { color: #EAF0F8; }
+  .card-end .bottom-bar {
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-end .bottom-brand { font-size: 11px; color: #3A5A7A; font-family: 'Inter', sans-serif; letter-spacing: 0.08em; }
+  .card-end .bottom-src { font-size: 10px; color: #2A4060; }
+
+  /* toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #111; color: #fff; padding: 10px 20px;
+    border-radius: 8px; font-size: 12px;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- 操作栏 -->
+<div id="top-bar">
+  <div class="logo">GAME RADAR</div>
+  <div class="hint">375px · 共 6 张 · 怪猎物语3首发危机</div>
+  <button class="btn-dl-all" onclick="downloadAll()">全部导出</button>
+  <button class="btn-dl" onclick="downloadCard('card-0')">下载当前</button>
+</div>
+
+<div id="stage">
+
+  <!-- ══════ 卡片1：封面 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">01 · 封面</div>
+    <div class="xhs-card card-cover" id="card-0">
+      <div class="grid-bg"></div>
+      <div class="glow"></div>
+      <div class="inner">
+        <div>
+          <div class="tag">MH Stories 3 · 2026.03.13</div>
+          <div class="title-block">
+            <div class="eyebrow">LAUNCH DAY ANALYSIS</div>
+            <h1>媒体9分<br>玩家差评<em>过半</em><br>发生了什么？</h1>
+            <p class="subtitle">
+              存档食言 · 首发16个付费DLC<br>PC崩溃 · 信任危机
+            </p>
+          </div>
+          <div class="score-row">
+            <div class="score-box">
+              <div class="s-num">86</div>
+              <div class="s-label">Metacritic<br>媒体均分</div>
+            </div>
+            <div class="score-box">
+              <div class="s-num">9</div>
+              <div class="s-label">IGN<br>评测得分</div>
+            </div>
+            <div class="score-box">
+              <div class="s-num red">&lt;50<span style="font-size:14px">%</span></div>
+              <div class="s-label">Steam国区<br>好评率</div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <span class="brand">GAME RADAR · 游戏雷达</span>
+          <span class="page-num">1 / 6</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-0')">下载此张</button></div>
+  </div>
+
+  <!-- ══════ 卡片2：数据割裂 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">02 · 数据割裂</div>
+    <div class="xhs-card" id="card-1">
+      <div class="xhs-page">
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="page-num-badge">01</div>
+            <span class="page-topic">Score Gap · 评分割裂</span>
+          </div>
+          <span class="page-brand">GAME RADAR</span>
+        </div>
+        <div class="page-body">
+          <div class="body-title">媒体 86分<br><em>≠</em> 玩家认可</div>
+          <div class="body-lead">这种割裂不是第一次出现，但今天的原因值得认真拆解</div>
+
+          <div class="score-compare">
+            <div class="sc-item media">
+              <div class="sc-num">86</div>
+              <div class="sc-label">Metacritic<br>媒体均分</div>
+            </div>
+            <div class="sc-item player">
+              <div class="sc-num">&lt;50<span>%</span></div>
+              <div class="sc-label">Steam国区<br>玩家好评率</div>
+            </div>
+          </div>
+
+          <div class="mini-quote">
+            媒体评测的是<strong>游戏质量</strong>，玩家差评的是<strong>购买体验</strong>——这两件事，本来就不是同一个维度。
+          </div>
+
+          <div class="vs-grid">
+            <div class="vs-card media">
+              <span class="vs-tag">媒体评测维度</span>
+              <div class="vs-item">战斗系统深度</div>
+              <div class="vs-item">剧情完成度</div>
+              <div class="vs-item">画面表现力</div>
+              <div class="vs-item">系列进化程度</div>
+            </div>
+            <div class="vs-card player">
+              <span class="vs-tag">玩家差评维度</span>
+              <div class="vs-item">承诺是否兑现</div>
+              <div class="vs-item">首发定价合理性</div>
+              <div class="vs-item">技术状态就绪度</div>
+              <div class="vs-item">信任感受</div>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-footer-text">怪物猎人物语3 · 2026.03.13 首发分析</span>
+          <div class="page-footer-dot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-1')">下载此张</button></div>
+  </div>
+
+  <!-- ══════ 卡片3：存档食言 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">03 · 存档食言</div>
+    <div class="xhs-card" id="card-2">
+      <div class="xhs-page">
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="page-num-badge">02</div>
+            <span class="page-topic">Promise Broken · 官方食言</span>
+          </div>
+          <span class="page-brand">GAME RADAR</span>
+        </div>
+        <div class="page-body">
+          <div class="body-title">问题一<br><em>存档继承，官方食言</em></div>
+          <div class="body-lead">差评里出现频率最高的一条——这不是技术Bug</div>
+
+          <div class="mini-quote">
+            Capcom在多个渠道<strong>明确宣传</strong>：试玩版存档可以完整导入正式版。
+            <br><br>
+            今天上线之后，这个功能不存在。
+            <br>没有公告，没有补偿，没有任何解释。
+          </div>
+
+          <div class="issue-list">
+            <div class="issue-item">
+              <div class="issue-icon">⏱</div>
+              <div class="issue-body">
+                <div class="issue-title">为什么这条伤害更大？</div>
+                <div class="issue-desc">物语系列核心玩法是<strong>培育伙伴兽、配种刷技能</strong>。试玩版玩家花时间攒的配置，本应作为起点带入正式版——这是官方主动创造的期待。</div>
+              </div>
+            </div>
+            <div class="issue-item">
+              <div class="issue-icon">💔</div>
+              <div class="issue-body">
+                <div class="issue-title">信任是怎么被消耗的</div>
+                <div class="issue-desc">这不是程序崩溃的技术事故，是<strong>承诺落空</strong>。它告诉玩家：官方发的宣传内容，不能当真。这个认知一旦形成，很难修复。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-footer-text">怪物猎人物语3 · 2026.03.13 首发分析</span>
+          <div class="page-footer-dot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-2')">下载此张</button></div>
+  </div>
+
+  <!-- ══════ 卡片4：DLC问题 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">04 · DLC策略</div>
+    <div class="xhs-card" id="card-3">
+      <div class="xhs-page">
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="page-num-badge" style="background:#B45309">03</div>
+            <span class="page-topic">DLC · 首发定价策略</span>
+          </div>
+          <span class="page-brand">GAME RADAR</span>
+        </div>
+        <div class="page-body">
+          <div class="body-title">问题二<br>首发 <em>16个付费DLC</em></div>
+          <div class="body-lead">18项DLC，16项付费，部分服装拆开单独定价</div>
+
+          <div class="mini-bar-list">
+            <div>
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">今日上线DLC总数</span>
+                <span class="mini-bar-val" style="color:#B45309">18项</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill" style="background:linear-gradient(90deg,#B45309,#D97706);width:100%"></div></div>
+            </div>
+            <div>
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">其中付费项目</span>
+                <span class="mini-bar-val" style="color:#DC2626">16项</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill" style="width:89%"></div></div>
+            </div>
+            <div>
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">免费内容</span>
+                <span class="mini-bar-val green">2项</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill green" style="width:11%"></div></div>
+            </div>
+          </div>
+
+          <div class="mini-quote" style="margin-top:12px">
+            这不只是钱的问题，更核心的是：<br>
+            它在发售第一天就迫使玩家追问——<br>
+            <strong>「我现在买的，是完整的游戏吗？」</strong>
+          </div>
+
+          <div style="font-size:11px; color:#888; line-height:1.65; margin-top:10px;">
+            卡普空在DLC策略上有长期积累的"口碑"，玩家并不陌生。但集中在发售首日，传递的信号非常清晰：后续还会更多。
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-footer-text">怪物猎人物语3 · 2026.03.13 首发分析</span>
+          <div class="page-footer-dot" style="background:#B45309"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-3')">下载此张</button></div>
+  </div>
+
+  <!-- ══════ 卡片5：技术问题 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">05 · 技术问题</div>
+    <div class="xhs-card" id="card-4">
+      <div class="xhs-page">
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="page-num-badge" style="background:#7C3AED">04</div>
+            <span class="page-topic">Tech · PC版技术状态</span>
+          </div>
+          <span class="page-brand">GAME RADAR</span>
+        </div>
+        <div class="page-body">
+          <div class="body-title">问题三<br>PC版技术状态<em>不达标</em></div>
+          <div class="body-lead">RTX 5090也在崩溃，Capcom至今无任何回应</div>
+
+          <div class="issue-list">
+            <div class="issue-item" style="border-left-color:#7C3AED">
+              <div class="issue-icon">💻</div>
+              <div class="issue-body">
+                <div class="issue-title">随机崩溃 / 闪退</div>
+                <div class="issue-desc">覆盖多种硬件配置，<strong>RTX 5090高配机器未能幸免</strong>。DLSS开启后帧率稳定性存在明显问题。</div>
+              </div>
+            </div>
+            <div class="issue-item" style="border-left-color:#7C3AED">
+              <div class="issue-icon">🔒</div>
+              <div class="issue-body">
+                <div class="issue-title">Denuvo 设备激活限制</div>
+                <div class="issue-desc">每日激活上限<strong>5台设备</strong>。Steam家庭共享库用户、多设备玩家首当其冲。</div>
+              </div>
+            </div>
+            <div class="issue-item" style="border-left-color:#7C3AED">
+              <div class="issue-icon">🔇</div>
+              <div class="issue-body">
+                <div class="issue-title">官方：零回应</div>
+                <div class="issue-desc">截至今日，Capcom<strong>尚未发布任何技术说明或修复时间表</strong>。沉默，有时比问题本身更伤玩家。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-footer-text">怪物猎人物语3 · 2026.03.13 首发分析</span>
+          <div class="page-footer-dot" style="background:#7C3AED"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-4')">下载此张</button></div>
+  </div>
+
+  <!-- ══════ 卡片6：结论尾页 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">06 · 结论</div>
+    <div class="xhs-card card-end" id="card-5">
+      <div class="grid-bg"></div>
+      <div class="inner">
+        <div class="end-label">Verdict · 最终判断</div>
+        <div class="end-title">质量好，<em>不等于</em><br>发售策略做对了</div>
+        <div class="verdict-list">
+          <div class="verdict-row">
+            <div class="verdict-icon">✓</div>
+            <div class="verdict-text"><strong>游戏本身值得玩</strong><br>媒体评分可信，系列最成熟一作，战斗与剧情均有进化</div>
+          </div>
+          <div class="verdict-row">
+            <div class="verdict-icon">!</div>
+            <div class="verdict-text"><strong>但现在买要想清楚</strong><br>存档继承失效 · DLC密度未知 · PC版未修复</div>
+          </div>
+          <div class="verdict-row">
+            <div class="verdict-icon">→</div>
+            <div class="verdict-text"><strong>建议等一个月</strong><br>等补丁稳定，等DLC轮廓清晰，等卡普空给出回应。首发溢价从来不只是价格。</div>
+          </div>
+          <div class="verdict-row">
+            <div class="verdict-icon">◎</div>
+            <div class="verdict-text"><strong>促销一定会来</strong><br>卡普空的游戏不会跑，错过首发只是少了个话题可聊</div>
+          </div>
+        </div>
+        <div class="bottom-bar">
+          <span class="bottom-brand">GAME RADAR · 游戏雷达</span>
+          <span class="bottom-src">2026.03.13</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-5')">下载此张</button></div>
+  </div>
+
+</div><!-- /#stage -->
+
+<div id="toast">正在生成图片…</div>
+
+<script>
+function downloadCard(id) {
+  const el = document.getElementById(id);
+  showToast('正在渲染图片…');
+  // 渲染两次确保字体加载完毕
+  htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true })
+    .then(() => htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true }))
+    .then(dataUrl => {
+      saveAs(dataUrl, `mhstories3-xhs-${id}.png`);
+      showToast('下载成功！');
+    })
+    .catch(e => { showToast('生成失败，请重试'); console.error(e); });
+}
+
+async function downloadAll() {
+  const ids = ['card-0','card-1','card-2','card-3','card-4','card-5'];
+  for (let i = 0; i < ids.length; i++) {
+    showToast(`导出第 ${i+1} / ${ids.length} 张…`);
+    const el = document.getElementById(ids[i]);
+    try {
+      await htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true });
+      const dataUrl = await htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true });
+      saveAs(dataUrl, `mhstories3-xhs-${String(i+1).padStart(2,'0')}.png`);
+      await new Promise(r => setTimeout(r, 500));
+    } catch(e) { console.error(ids[i], e); }
+  }
+  showToast('全部导出完成！');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

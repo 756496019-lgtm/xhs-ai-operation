@@ -1,0 +1,251 @@
+{% extends "base.html" %}
+{% block title %}游戏评测聚合 - Content Monitor{% endblock %}
+{% block page_title %}游戏评测聚合{% endblock %}
+{% block page_subtitle %}多关键词搜索 → 收藏文章 → 融合生成 → 一键发布{% endblock %}
+
+{% block header_actions %}
+<a href="/" class="flex items-center gap-1.5 text-xs text-gray-400 hover:text-[#F39C12] transition-colors font-medium">
+  <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> 返回面板
+</a>
+{% endblock %}
+
+{% block main %}
+<div class="flex gap-6 h-full min-h-0">
+
+  <!-- 左栏：搜索 + 来源列表 + 已收藏 -->
+  <div class="flex-1 flex flex-col min-w-0 gap-4 overflow-y-auto scroll-y">
+
+    <!-- 搜索框 -->
+    <div class="card p-5 shrink-0">
+      <h2 class="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
+        <div class="w-6 h-6 rounded-lg bg-[#FFF5E0] text-[#F39C12] flex items-center justify-center">
+          <i data-lucide="search" class="w-3.5 h-3.5"></i>
+        </div>
+        搜索游戏评测
+        <span class="text-[10px] text-gray-400 font-normal">可多次搜索不同关键词，逐步收藏文章</span>
+      </h2>
+      <div class="flex gap-2">
+        <input id="game-name-input" type="text"
+               class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F39C12] focus:ring-2 focus:ring-[#F39C12]/10 transition-all"
+               placeholder="如：生化危机9、安魂曲、Resident Evil…"
+               onkeydown="if(event.key==='Enter') searchReviews()">
+        <button onclick="searchReviews()"
+                class="px-4 py-2 rounded-xl bg-[#F39C12] hover:bg-[#E08E0B] text-white text-sm font-semibold transition-all flex items-center gap-1.5 shrink-0">
+          <i data-lucide="search" class="w-3.5 h-3.5"></i> 搜索
+        </button>
+      </div>
+      <div id="search-status" class="mt-2 text-[11px] text-gray-400"></div>
+    </div>
+
+    <!-- 搜索结果列表 -->
+    <div class="card shrink-0 flex flex-col overflow-hidden" style="max-height:42vh;">
+      <div class="px-4 py-3 border-b border-gray-50 flex items-center justify-between shrink-0">
+        <h3 class="text-xs font-bold text-gray-600 flex items-center gap-2">
+          <i data-lucide="list" class="w-3.5 h-3.5 text-[#F39C12]"></i>
+          当次搜索结果
+          <span id="results-count" class="text-[10px] text-gray-400 font-normal"></span>
+        </h3>
+        <button onclick="addAllToSaved()"
+                class="text-[10px] text-[#F39C12] hover:underline font-semibold flex items-center gap-1">
+          <i data-lucide="bookmark-plus" class="w-3 h-3"></i> 全部存入
+        </button>
+      </div>
+      <div id="results-list" class="flex-1 overflow-y-auto p-3 space-y-2">
+        <p class="text-xs text-gray-400 text-center py-8">输入游戏名称后点击搜索，将优先从机核、游戏茶馆、游民星空、IGN中文、游戏日报、游戏动力查找，不足时用 Bing 补充</p>
+      </div>
+    </div>
+
+    <!-- 已收藏文章（跨搜索持久，默认隐藏） -->
+    <div id="saved-panel" class="card p-4 shrink-0 hidden">
+      <div class="flex items-center justify-between mb-2">
+        <h3 class="text-xs font-bold text-gray-700 flex items-center gap-2">
+          <i data-lucide="bookmark" class="w-3.5 h-3.5 text-[#F39C12]"></i>
+          已收藏文章
+          <span id="saved-count" class="text-[10px] text-[#F39C12] font-semibold"></span>
+          <span class="text-[10px] text-gray-400 font-normal">将用于生成评测</span>
+        </h3>
+        <button onclick="clearSaved()"
+                class="text-[10px] text-gray-400 hover:text-red-500 transition-colors">清空</button>
+      </div>
+      <div id="saved-list" class="space-y-1.5 max-h-48 overflow-y-auto mb-3"></div>
+    </div>
+
+    <!-- 手动填入链接 -->
+    <div class="card p-4 shrink-0">
+      <h3 class="text-xs font-bold text-gray-700 flex items-center gap-2 mb-2">
+        <div class="w-5 h-5 rounded-md bg-[#EBF5FB] text-[#2E86C1] flex items-center justify-center">
+          <i data-lucide="link" class="w-3 h-3"></i>
+        </div>
+        手动填入链接
+        <span class="text-[10px] text-gray-400 font-normal">每行一个 URL，直接爬取正文存入收藏池</span>
+      </h3>
+      <textarea id="manual-urls" rows="3"
+                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-mono resize-none focus:outline-none focus:border-[#2E86C1] focus:ring-2 focus:ring-[#2E86C1]/10 transition-all"
+                placeholder="https://www.gcores.com/articles/...&#10;https://www.gamersky.com/review/..."></textarea>
+      <div class="flex items-center justify-between mt-2">
+        <span id="url-fetch-status" class="text-[11px] text-gray-400"></span>
+        <button onclick="fetchManualUrls()"
+                id="btn-fetch-urls"
+                class="px-3 py-1.5 rounded-lg border border-[#2E86C1] text-[#2E86C1] hover:bg-[#2E86C1] hover:text-white text-xs font-semibold transition-all flex items-center gap-1.5 shrink-0">
+          <i data-lucide="download" class="w-3 h-3"></i> 爬取并存入
+        </button>
+      </div>
+    </div>
+
+    <!-- Steam 玩家评论 -->
+    <div class="card shrink-0">
+      <!-- 标题栏（点击折叠） -->
+      <div class="px-4 py-3 flex items-center justify-between cursor-pointer select-none"
+           onclick="toggleSteamPanel()">
+        <h3 class="text-xs font-bold text-gray-600 flex items-center gap-2">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+               stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+          </svg>
+          Steam 玩家评论
+          <span id="steam-badge" class="hidden text-[9px] font-semibold px-1.5 py-0.5 rounded-full"
+                style="background:#1B2838;color:#c7d5e0;"></span>
+        </h3>
+        <i data-lucide="chevron-down" id="steam-chevron"
+           class="w-3.5 h-3.5 text-gray-400 transition-transform duration-200"></i>
+      </div>
+
+      <!-- 折叠内容 -->
+      <div id="steam-panel" class="hidden px-4 pb-4 border-t border-gray-50 pt-3 space-y-3">
+
+        <!-- 搜索行 -->
+        <div class="flex gap-2">
+          <input id="steam-search-input" type="text"
+                 placeholder="游戏名（支持中文/英文）"
+                 class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-[#1B2838] transition-all"
+                 onkeydown="if(event.key==='Enter') searchSteamGame()">
+          <button onclick="searchSteamGame()"
+                  id="btn-steam-search"
+                  class="px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-colors shrink-0"
+                  style="background:#1B2838;">
+            查找
+          </button>
+        </div>
+
+        <!-- 搜索结果列表（点击选择游戏） -->
+        <div id="steam-games-list" class="hidden space-y-1"></div>
+
+        <!-- 已选游戏 + 评论摘要 -->
+        <div id="steam-summary" class="hidden p-3 rounded-xl" style="background:#1B283810;border:1px solid #1B283820;">
+          <div class="flex items-center gap-2 mb-2">
+            <img id="steam-game-img" src="" class="w-8 h-8 rounded object-cover" alt="">
+            <div class="min-w-0">
+              <div id="steam-game-title" class="text-xs font-bold text-gray-700 truncate"></div>
+              <div id="steam-score-line" class="text-[10px] text-gray-500 mt-0.5"></div>
+            </div>
+            <button onclick="clearSteamSelection()"
+                    class="ml-auto text-gray-400 hover:text-red-500 transition-colors shrink-0">
+              <i data-lucide="x" class="w-3 h-3"></i>
+            </button>
+          </div>
+          <!-- 进度条：好评率 -->
+          <div class="flex items-center gap-2">
+            <div class="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+              <div id="steam-ratio-bar" class="h-full rounded-full transition-all" style="background:#1a9c3e;width:0%"></div>
+            </div>
+            <span id="steam-ratio-text" class="text-[10px] text-gray-600 shrink-0"></span>
+          </div>
+        </div>
+
+        <!-- 加载评论按钮 -->
+        <button id="btn-load-reviews" onclick="loadSteamReviews()"
+                class="hidden w-full py-1.5 rounded-lg text-xs font-semibold transition-colors"
+                style="border:1px solid #1B2838;color:#1B2838;">
+          加载玩家评论
+        </button>
+
+        <!-- 评论预览列表 -->
+        <div id="steam-reviews-preview" class="hidden max-h-36 overflow-y-auto space-y-1.5"></div>
+
+        <!-- AI 深度分析结果 -->
+        <div id="steam-analysis-wrap" class="hidden">
+          <div class="flex items-center gap-1.5 mb-1.5">
+            <svg width="12" height="12" viewBox="0 0 18 18" fill="none" style="color:#1B2838;flex-shrink:0">
+              <path d="M9 1 L10.5 6.5 L16 8 L10.5 9.5 L9 15 L7.5 9.5 L2 8 L7.5 6.5 Z" fill="currentColor"/>
+            </svg>
+            <span class="text-[10px] font-bold text-gray-600">AI 口碑分析（基于 300 条评论样本）</span>
+          </div>
+          <div id="steam-analysis"
+               class="text-[10px] text-gray-600 leading-relaxed bg-[#1B283808] border border-[#1B283818] rounded-xl px-3 py-2.5 max-h-64 overflow-y-auto scroll-y whitespace-pre-wrap"></div>
+        </div>
+
+        <!-- 融入生成选项 -->
+        <label id="steam-include-row" class="hidden items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="steam-include" checked class="accent-[#1B2838]">
+          <span class="text-[11px] text-gray-600 font-medium">将 Steam 口碑分析融入生成</span>
+        </label>
+
+        <div id="steam-status" class="text-[11px] text-gray-400 min-h-[14px]"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 右栏：观点 + 生成结果 -->
+  <div class="flex-1 flex flex-col min-w-0 gap-4">
+
+    <!-- 核心观点 + 生成按钮 -->
+    <div class="card p-5 shrink-0">
+      <h2 class="text-sm font-bold text-gray-700 flex items-center gap-2 mb-3">
+        <div class="w-6 h-6 rounded-lg bg-[#E8FFF5] text-[#00B894] flex items-center justify-center">
+          <i data-lucide="message-circle" class="w-3.5 h-3.5"></i>
+        </div>
+        我的核心观点
+        <span class="text-[10px] text-gray-400 font-normal">（可选，AI 会融入评测）</span>
+      </h2>
+      <textarea id="user-opinion" rows="3"
+                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs resize-none focus:outline-none focus:border-[#00B894] focus:ring-2 focus:ring-[#00B894]/10 transition-all mb-3"
+                placeholder="例如：主角体验差但世界观很赞；画面优秀但优化极差；适合休闲玩家但对硬核玩家不够友好…"></textarea>
+      <div class="flex gap-2">
+        <button id="btn-generate"
+                onclick="generateReview()"
+                disabled
+                class="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                style="background: linear-gradient(135deg, #6C5CE7, #a29bfe);">
+          <i data-lucide="wand-2" class="w-3.5 h-3.5"></i> 生成评测
+        </button>
+        <button id="btn-deep-review"
+                onclick="generateDeepReview()"
+                disabled
+                class="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-all flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
+                style="background: linear-gradient(135deg, #E17055, #FAB1A0);">
+          <i data-lucide="book-open" class="w-3.5 h-3.5"></i> 深度长文
+        </button>
+      </div>
+      <p class="mt-2 text-[10px] text-gray-400 text-center">「深度长文」需先加载 Steam 评论，约 30-60 秒</p>
+      <div id="generate-status" class="mt-2 text-[11px] text-gray-400"></div>
+    </div>
+
+    <!-- 生成结果 -->
+    <div class="card flex-1 flex flex-col overflow-hidden min-h-0">
+      <div class="px-5 py-3 border-b border-gray-50 shrink-0 flex items-center justify-between">
+        <h2 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+          <div class="w-6 h-6 rounded-lg bg-[#F0EDFF] text-[#6C5CE7] flex items-center justify-center">
+            <i data-lucide="file-check" class="w-3.5 h-3.5"></i>
+          </div>
+          评测文章
+        </h2>
+        <button id="btn-to-xhs"
+                onclick="openXhsGenerator()"
+                class="hidden items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold transition-all"
+                style="background: linear-gradient(135deg, #FF2442, #FF6B81);">
+          <i data-lucide="image-plus" class="w-3 h-3"></i> 进入图文生成器
+        </button>
+      </div>
+      <textarea id="output-article"
+                class="flex-1 w-full px-5 py-4 text-sm bg-white border-0 outline-none resize-none scroll-y leading-relaxed"
+                placeholder="生成后的评测文章将显示在这里，可直接编辑修改…"></textarea>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/review.js') }}?v=6"></script>
+{% endblock %}

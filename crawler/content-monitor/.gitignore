@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+playwright_chrome_profile/
+xhs_chrome_profile/
+.env
+xhs_uploads/
+video_outputs/
+server.log
+server_new.log
+scrapers/.qimai_cache.json
+xhs_drafts.json

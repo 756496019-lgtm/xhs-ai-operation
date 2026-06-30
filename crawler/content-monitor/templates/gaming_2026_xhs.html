@@ -1,0 +1,820 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>解读 Epyllion 2026 报告 · 小红书图文</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #0F1419;
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── 顶部操作栏 ── */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(8,12,22,0.97);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(99,179,237,0.18);
+    height: 52px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  #top-bar .logo {
+    font-size: 12px; font-weight: 700; color: #63B3ED;
+    letter-spacing: 0.1em; font-family: 'Inter', sans-serif;
+    margin-right: 8px;
+  }
+  #top-bar .hint { font-size: 11px; color: #3A5070; flex: 1; }
+  .btn-dl {
+    background: #2B6CB0; color: #fff; border: none;
+    border-radius: 8px; padding: 7px 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: background 0.2s;
+  }
+  .btn-dl:hover { background: #2C5282; }
+  .btn-dl-all {
+    background: #1A2D45; color: #C8D8E8; border: 1px solid #2A4060;
+    border-radius: 8px; padding: 7px 16px;
+    font-size: 12px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-dl-all:hover { background: #1E3A5A; color: #fff; }
+
+  /* ── 主体布局 ── */
+  #stage {
+    padding: 72px 24px 48px;
+    display: flex; flex-wrap: wrap; gap: 32px; justify-content: center;
+  }
+
+  /* ── 单张卡片容器 ── */
+  .card-unit { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .card-label { font-size: 11px; color: #3A5070; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; }
+  .card-actions { display: flex; gap: 8px; }
+  .card-actions button {
+    background: #1E2D40; border: 1px solid #2A3E56;
+    color: #6A8AAA; border-radius: 6px;
+    padding: 5px 12px; font-size: 11px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif; transition: all 0.2s;
+  }
+  .card-actions button:hover { background: #253858; color: #63B3ED; border-color: #63B3ED; }
+
+  /* ── 小红书卡片本体：375px 宽 ── */
+  .xhs-card {
+    width: 375px; position: relative; overflow: visible;
+    flex-shrink: 0; box-shadow: 0 16px 48px rgba(0,0,0,0.6); border-radius: 2px;
+  }
+
+  /* ══ 卡片1：封面（深色） ══ */
+  .card-cover {
+    background: linear-gradient(155deg, #0A1628 0%, #0E2040 50%, #071220 100%);
+    min-height: 520px;
+  }
+  .card-cover .noise-bg {
+    position: absolute; inset: 0; pointer-events: none; opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 128px;
+  }
+  .card-cover .grid-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(99,179,237,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,179,237,0.06) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  .card-cover .glow-top {
+    position: absolute; top: -100px; right: -80px;
+    width: 350px; height: 350px;
+    background: radial-gradient(circle, rgba(99,179,237,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .card-cover .glow-bot {
+    position: absolute; bottom: -60px; left: -60px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, rgba(128,90,213,0.1) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .card-cover .inner {
+    position: relative; padding: 44px 32px 36px;
+    display: flex; flex-direction: column; justify-content: space-between; min-height: 520px;
+  }
+  .cover-badge {
+    display: inline-flex; align-items: center;
+    background: rgba(99,179,237,0.12); border: 1px solid rgba(99,179,237,0.28);
+    color: #90CDF4; font-size: 9px; font-weight: 700;
+    letter-spacing: 0.14em; padding: 4px 10px; border-radius: 2px;
+    font-family: 'Inter', sans-serif; text-transform: uppercase; width: fit-content;
+  }
+  .cover-eyebrow {
+    font-size: 10px; color: #4A6A8A; letter-spacing: 0.08em;
+    margin: 20px 0 10px; font-family: 'Inter', sans-serif;
+  }
+  .cover-h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 28px; font-weight: 700; color: #EAF4FF;
+    line-height: 1.4; letter-spacing: 0.02em;
+  }
+  .cover-h1 .hl { color: #63B3ED; }
+  .cover-h1 .hl2 { color: #B794F4; }
+  .cover-sub {
+    margin-top: 14px; font-size: 12px; color: #4A6A8A; line-height: 1.7;
+    border-left: 2px solid rgba(99,179,237,0.35); padding-left: 10px;
+  }
+  .cover-big-num {
+    margin-top: 24px; display: flex; align-items: flex-end; gap: 8px;
+  }
+  .cover-big-num .num {
+    font-family: 'Inter', sans-serif; font-size: 52px; font-weight: 900;
+    color: #EAF4FF; line-height: 1;
+  }
+  .cover-big-num .unit { font-size: 22px; font-weight: 700; color: #63B3ED; line-height: 1.4; }
+  .cover-big-num .label { font-size: 11px; color: #4A6A8A; margin-bottom: 6px; }
+  .cover-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
+  .cover-pill {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09);
+    color: #6A8AAA; font-size: 10px; padding: 4px 10px; border-radius: 20px;
+  }
+  .cover-footer {
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; margin-top: 20px;
+  }
+  .cover-footer .brand { font-size: 10px; color: #2A4060; letter-spacing: 0.1em; font-family: 'Inter', sans-serif; }
+  .cover-footer .pnum { font-size: 10px; color: #1E3050; font-family: 'Inter', sans-serif; }
+
+  /* ══ 通用白色页面 ══ */
+  .xhs-page { background: #fff; position: relative; }
+  .page-header {
+    padding: 16px 22px 12px; border-bottom: 1px solid #F0F2F5;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .page-header-left { display: flex; align-items: center; gap: 8px; }
+  .page-num-badge {
+    width: 22px; height: 22px; border-radius: 4px;
+    background: #2B6CB0; color: #fff;
+    font-size: 11px; font-weight: 800; font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .page-topic { font-size: 10px; font-weight: 700; color: #999; letter-spacing: 0.08em; text-transform: uppercase; }
+  .page-brand { font-size: 10px; color: #CCC; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; }
+  .page-body { padding: 16px 22px 4px; }
+  .page-footer {
+    padding: 10px 22px 14px; border-top: 1px solid #F0F2F5;
+    display: flex; align-items: center; justify-content: space-between; margin-top: 12px;
+  }
+  .page-footer-text { font-size: 10px; color: #CCC; }
+  .page-footer-dot { width: 6px; height: 6px; border-radius: 50%; background: #2B6CB0; flex-shrink: 0; }
+
+  /* 正文大标题 */
+  .body-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 16px; font-weight: 700; color: #111;
+    line-height: 1.45; margin-bottom: 5px;
+  }
+  .body-title .hl { color: #2B6CB0; font-style: normal; }
+  .body-title .hl2 { color: #6B46C1; font-style: normal; }
+  .body-lead { font-size: 11px; color: #888; line-height: 1.65; margin-bottom: 12px; }
+
+  /* 大数字网格 */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 10px 0; }
+  .stat-item {
+    background: #FAFBFC; border: 1px solid #E8ECEF;
+    border-radius: 6px; padding: 12px 10px; text-align: center; position: relative; overflow: hidden;
+  }
+  .stat-item::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: #2B6CB0;
+  }
+  .stat-item.c-blue::before  { background: #2B6CB0; }
+  .stat-item.c-teal::before  { background: #0694A2; }
+  .stat-item.c-purple::before{ background: #6B46C1; }
+  .stat-item.c-red::before   { background: #C53030; }
+  .stat-item.c-green::before { background: #276749; }
+  .stat-big { font-family: 'Inter', sans-serif; font-size: 26px; font-weight: 900; color: #111; line-height: 1; }
+  .stat-big span { font-size: 14px; font-weight: 700; }
+  .stat-small { font-size: 10px; color: #999; margin-top: 4px; line-height: 1.4; }
+
+  /* 数据条 */
+  .bar-list { display: flex; flex-direction: column; gap: 9px; margin: 10px 0; }
+  .bar-item {}
+  .bar-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 3px; }
+  .bar-label { color: #555; }
+  .bar-val { font-weight: 800; font-family: 'Inter', sans-serif; color: #2B6CB0; }
+  .bar-val.tv { color: #0694A2; }
+  .bar-val.pv { color: #6B46C1; }
+  .bar-val.rv { color: #C53030; }
+  .bar-val.gv { color: #276749; }
+  .bar-track { height: 5px; background: #F0F2F5; border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #2B6CB0, #4299E1); }
+  .bar-fill.t { background: linear-gradient(90deg, #0694A2, #38B2AC); }
+  .bar-fill.p { background: linear-gradient(90deg, #6B46C1, #9F7AEA); }
+  .bar-fill.r { background: linear-gradient(90deg, #C53030, #F56565); }
+  .bar-fill.g { background: linear-gradient(90deg, #276749, #38A169); }
+
+  /* 引用块 */
+  .mini-quote {
+    border-left: 2px solid #2B6CB0;
+    background: #EBF8FF;
+    padding: 10px 12px; border-radius: 0 4px 4px 0;
+    font-size: 11px; color: #1A365D; line-height: 1.7; margin: 10px 0;
+  }
+  .mini-quote strong { color: #2B6CB0; }
+  .mini-quote.q-purple { border-color: #6B46C1; background: #FAF5FF; color: #322659; }
+  .mini-quote.q-purple strong { color: #6B46C1; }
+  .mini-quote.q-red { border-color: #C53030; background: #FFF5F5; color: #63171B; }
+  .mini-quote.q-red strong { color: #C53030; }
+  .mini-quote.q-teal { border-color: #0694A2; background: #E6FFFA; color: #1D4044; }
+  .mini-quote.q-teal strong { color: #0694A2; }
+  .mini-quote.q-green { border-color: #276749; background: #F0FFF4; color: #1C4532; }
+  .mini-quote.q-green strong { color: #276749; }
+
+  /* VS 对比 */
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+  .vs-card { border-radius: 6px; padding: 11px; }
+  .vs-card.old { background: #F8F9FA; border: 1px solid #E2E8F0; }
+  .vs-card.new { background: #EBF8FF; border: 1px solid #BEE3F8; }
+  .vs-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 7px; display: block; }
+  .vs-card.old .vs-tag { color: #AAA; }
+  .vs-card.new .vs-tag { color: #2B6CB0; }
+  .vs-item { font-size: 11px; color: #555; padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: flex-start; gap: 4px; }
+  .vs-item::before { content: '·'; color: #CCC; }
+  .vs-card.new .vs-item::before { content: '▸'; color: #2B6CB0; font-size: 9px; margin-top: 2px; }
+
+  /* 图表包裹 */
+  .chart-wrap { position: relative; }
+
+  /* 结论尾页（深色） */
+  .card-end {
+    background: linear-gradient(155deg, #070F1E 0%, #0C1A30 55%, #060E1C 100%);
+    min-height: 520px;
+  }
+  .card-end .grid-bg {
+    position: absolute; inset: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(99,179,237,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,179,237,0.05) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+  .card-end .inner {
+    position: relative; padding: 40px 30px;
+    display: flex; flex-direction: column; justify-content: space-between; min-height: 520px;
+  }
+  .card-end .end-label {
+    font-size: 10px; font-weight: 700; color: #63B3ED;
+    letter-spacing: 0.14em; text-transform: uppercase; font-family: 'Inter', sans-serif;
+  }
+  .end-list { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
+  .end-row { display: flex; gap: 12px; align-items: flex-start; }
+  .end-num {
+    width: 22px; height: 22px; border-radius: 3px;
+    background: rgba(99,179,237,0.15); border: 1px solid rgba(99,179,237,0.3);
+    color: #63B3ED; font-size: 11px; font-weight: 800; font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px;
+  }
+  .end-text { font-size: 12px; color: #A0B8D0; line-height: 1.7; }
+  .end-text strong { color: #D4E8F8; }
+  .end-bottom {
+    border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .end-brand { font-size: 10px; color: #2A4060; font-family: 'Inter', sans-serif; letter-spacing: 0.08em; }
+  .end-src { font-size: 10px; color: #1E3050; }
+
+  /* toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #111; color: #fff; padding: 10px 20px;
+    border-radius: 8px; font-size: 12px;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="top-bar">
+  <div class="logo">DATA RADAR</div>
+  <div class="hint">375 × auto · 共 8 张 · 点击单张「下载此张」或一键导出全部</div>
+  <button class="btn-dl-all" onclick="downloadAll()">全部导出</button>
+  <button class="btn-dl" onclick="downloadCard('card-0')">下载当前</button>
+</div>
+
+<div id="stage">
+
+<!-- ══════════════ 卡片 1：封面 ══════════════ -->
+<div class="card-unit">
+  <div class="card-label">01 · 封面</div>
+  <div class="xhs-card card-cover" id="card-0">
+    <div class="noise-bg"></div>
+    <div class="grid-bg"></div>
+    <div class="glow-top"></div>
+    <div class="glow-bot"></div>
+    <div class="inner">
+      <div>
+        <div class="cover-badge">Epyllion · State of Video Gaming 2026</div>
+        <div class="cover-eyebrow">GLOBAL GAMING MARKET DEEP DIVE</div>
+        <h1 class="cover-h1">解读 Epyllion<br><span class="hl">2026 游戏行业报告</span><br>五大转折信号</h1>
+        <p class="cover-sub">Roblox 独揽 67% 增量 · 主机传统销售跌 11%<br>中国 PC 强势回弹 · 外包占比创历史新高</p>
+        <div class="cover-big-num">
+          <div class="num">195</div>
+          <div>
+            <div class="unit">.6B</div>
+            <div class="label">全球游戏内容销售额（美元）</div>
+          </div>
+        </div>
+        <div class="cover-pills">
+          <span class="cover-pill">+5.3% YoY 增长</span>
+          <span class="cover-pill">全平台数据</span>
+          <span class="cover-pill">专业解读</span>
+        </div>
+      </div>
+      <div class="cover-footer">
+        <span class="brand">DATA RADAR · 数据雷达</span>
+        <span class="pnum">1 / 8</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-0')">下载此张</button></div>
+</div>
+
+<!-- ══════════════ 卡片 2：全局规模 ══════════════ -->
+<div class="card-unit">
+  <div class="card-label">02 · 市场规模</div>
+  <div class="xhs-card" id="card-1">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#2B6CB0">01</div>
+          <span class="page-topic">Market Size · 市场全景</span>
+        </div>
+        <span class="page-brand">DATA RADAR</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">全球游戏规模<br>突破 <span class="hl">1956 亿</span> 美元</div>
+        <div class="body-lead">2025 年同比增长 5.3%，移动端依然压舱石，PC 加速追赶</div>
+
+        <div class="stat-grid">
+          <div class="stat-item c-blue">
+            <div class="stat-big">195<span>.6B</span></div>
+            <div class="stat-small">全球游戏内容<br>总销售额</div>
+          </div>
+          <div class="stat-item c-teal">
+            <div class="stat-big">+5.3<span>%</span></div>
+            <div class="stat-small">2025 年<br>同比增长</div>
+          </div>
+          <div class="stat-item c-purple">
+            <div class="stat-big">41.6<span>B</span></div>
+            <div class="stat-small">主机游戏<br>营收</div>
+          </div>
+          <div class="stat-item c-green">
+            <div class="stat-big">40.7<span>B</span></div>
+            <div class="stat-small">PC 游戏<br>营收</div>
+          </div>
+        </div>
+
+        <div class="bar-list" style="margin-top:10px">
+          <div class="bar-item">
+            <div class="bar-row">
+              <span class="bar-label">PC 相比 2020 年增幅</span>
+              <span class="bar-val tv">+30%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill t" style="width:30%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-row">
+              <span class="bar-label">中国 市占全球玩家支出</span>
+              <span class="bar-val">20%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:20%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-row">
+              <span class="bar-label">中国玩家偏爱国产游戏</span>
+              <span class="bar-val gv">84%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill g" style="width:84%"></div></div>
+          </div>
+        </div>
+
+        <div class="mini-quote">
+          《黑神话：悟空》拉动中国 PC 市场强势反弹，<strong>国产游戏</strong>正在改写全球格局
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Epyllion 2026 报告 · 数据雷达</span>
+        <div class="page-footer-dot" style="background:#2B6CB0"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-1')">下载此张</button></div>
+</div>
+
+<!-- ══════════════ 卡片 3：Roblox 现象 ══════════════ -->
+<div class="card-unit">
+  <div class="card-label">03 · Roblox 现象</div>
+  <div class="xhs-card" id="card-2">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#6B46C1">02</div>
+          <span class="page-topic">Roblox · 一骑绝尘</span>
+        </div>
+        <span class="page-brand">DATA RADAR</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">Roblox 独揽<br><span class="hl2">67%</span> 行业净增量</div>
+        <div class="body-lead">日活超过 PS + Switch + Xbox 之和，用户经济彻底重构</div>
+
+        <div class="stat-grid">
+          <div class="stat-item c-purple" style="grid-column: span 2">
+            <div class="stat-big" style="color:#6B46C1">67<span>%</span></div>
+            <div class="stat-small">Roblox 占全行业 2025 年净增量份额</div>
+          </div>
+        </div>
+
+        <div class="mini-quote q-purple">
+          Roblox <strong>日活跃用户</strong>已超越 PlayStation、Switch、Xbox <strong>三台主机加总</strong>
+        </div>
+
+        <div class="bar-list">
+          <div class="bar-item">
+            <div class="bar-row">
+              <span class="bar-label">Honor of Kings 生命周期收入</span>
+              <span class="bar-val pv">$16.8B</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill p" style="width:100%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-row">
+              <span class="bar-label">PUBG Mobile 生命周期收入</span>
+              <span class="bar-val pv">$11.2B</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill p" style="width:67%"></div></div>
+          </div>
+        </div>
+
+        <div style="background:#FAF5FF; border:1px solid #E9D8FD; border-radius:6px; padding:11px; margin-top:10px">
+          <div style="font-size:11px; font-weight:700; color:#553C9A; margin-bottom:6px">平台增长对比：2025 vs 2020</div>
+          <div class="chart-wrap" style="height:90px">
+            <canvas id="chart-roblox"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Epyllion 2026 报告 · 数据雷达</span>
+        <div class="page-footer-dot" style="background:#6B46C1"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-2')">下载此张</button></div>
+</div>
+
+<!-- ══════════════ 卡片 4：主机 vs PC ══════════════ -->
+<div class="card-unit">
+  <div class="card-label">04 · 平台格局</div>
+  <div class="xhs-card" id="card-3">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#0694A2">03</div>
+          <span class="page-topic">Platform · 平台格局重塑</span>
+        </div>
+        <span class="page-brand">DATA RADAR</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">主机传统销售<span class="hl" style="color:#C53030">跌 11%</span><br>订阅制接管增长</div>
+        <div class="body-lead">PS Plus / Game Pass 拿走 119% 净增量，传统买断制游戏遭重创</div>
+
+        <div class="vs-grid">
+          <div class="vs-card old">
+            <span class="vs-tag">主机 · 危机</span>
+            <div class="vs-item">传统游戏销售 −11%</div>
+            <div class="vs-item">美国 PC/主机 支出 −8%</div>
+            <div class="vs-item">约 −$2.3B（自 2020 年）</div>
+            <div class="vs-item">买断制受众持续收缩</div>
+          </div>
+          <div class="vs-card new" style="background:#E6FFFA; border-color:#81E6D9">
+            <span class="vs-tag" style="color:#0694A2">主机 · 机遇</span>
+            <div class="vs-item" style="color:#2C7A7B">订阅制净增 119%</div>
+            <div class="vs-item" style="color:#2C7A7B">PC 相比 2020 +30%</div>
+            <div class="vs-item" style="color:#2C7A7B">中国 PC 强势反弹</div>
+            <div class="vs-item" style="color:#2C7A7B">黑神话带动效应</div>
+          </div>
+        </div>
+
+        <div class="mini-quote q-teal">
+          订阅服务捕获了<strong>超过 100%</strong> 的主机净增长——意味着传统零售在<strong>绝对收缩</strong>
+        </div>
+
+        <div class="bar-list">
+          <div class="bar-item">
+            <div class="bar-row">
+              <span class="bar-label">订阅服务捕获净增量</span>
+              <span class="bar-val tv">119%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill t" style="width:100%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-row">
+              <span class="bar-label">主机游戏传统销售 YoY</span>
+              <span class="bar-val rv">−11%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill r" style="width:11%"></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Epyllion 2026 报告 · 数据雷达</span>
+        <div class="page-footer-dot" style="background:#0694A2"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-3')">下载此张</button></div>
+</div>
+
+<!-- ══════════════ 卡片 5：裁员与外包 ══════════════ -->
+<div class="card-unit">
+  <div class="card-label">05 · 行业阵痛</div>
+  <div class="xhs-card" id="card-4">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#C53030">04</div>
+          <span class="page-topic">Industry · 阵痛与重构</span>
+        </div>
+        <span class="page-brand">DATA RADAR</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">裁员放缓但<span class="hl" style="color:#C53030">累计伤亡</span>惨重<br>外包渗透创历史新高</div>
+        <div class="body-lead">2022 年以来累计裁员 44,000 人，近半数在加州</div>
+
+        <div class="stat-grid">
+          <div class="stat-item c-red">
+            <div class="stat-big" style="color:#C53030">9,200</div>
+            <div class="stat-small">2025 年<br>裁员人数</div>
+          </div>
+          <div class="stat-item c-red">
+            <div class="stat-big" style="color:#C53030">44K</div>
+            <div class="stat-small">2022 年起<br>累计裁员</div>
+          </div>
+          <div class="stat-item c-blue">
+            <div class="stat-big">35.5<span>%</span></div>
+            <div class="stat-small">开发预算<br>流向外包</div>
+          </div>
+          <div class="stat-item c-blue">
+            <div class="stat-big" style="color:#555">30.6<span>%</span></div>
+            <div class="stat-small">2017 年<br>外包占比</div>
+          </div>
+        </div>
+
+        <div class="mini-quote q-red">
+          <strong>−40%</strong> · 2025 年裁员规模比 2024 年减少 40%，但<strong>资金持续收缩</strong>：<br>私募融资跌幅 <strong>55%</strong>，种子轮跌破 1 亿美元
+        </div>
+
+        <div style="background:#FAFAFA; border:1px solid #E2E8F0; border-radius:6px; padding:11px; margin-top:10px">
+          <div style="font-size:11px; font-weight:700; color:#333; margin-bottom:4px">外包典型案例</div>
+          <div style="font-size:11px; color:#666; line-height:1.7">
+            · <strong>Hollow Knight: Silksong</strong> — 内部 3 人 vs 外部 94 人<br>
+            · <strong>Palworld</strong> — 93 人外部制作团队
+          </div>
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Epyllion 2026 报告 · 数据雷达</span>
+        <div class="page-footer-dot" style="background:#C53030"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-4')">下载此张</button></div>
+</div>
+
+<!-- ══════════════ 卡片 6：注意力争夺战 ══════════════ -->
+<div class="card-unit">
+  <div class="card-label">06 · 注意力争夺</div>
+  <div class="xhs-card" id="card-5">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#B7791F">05</div>
+          <span class="page-topic">Attention · 注意力争夺战</span>
+        </div>
+        <span class="page-brand">DATA RADAR</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">游戏输掉了<br><span class="hl" style="color:#B7791F">用户时间</span>争夺战？</div>
+        <div class="body-lead">短视频、成人内容、加密货币正在蚕食游戏的用户注意力</div>
+
+        <div style="background:#FFFBF0; border:1px solid #FAD783; border-radius:6px; padding:12px; margin-bottom:12px">
+          <div style="font-size:11px; font-weight:700; color:#744210; margin-bottom:8px">注意力竞争对手（游戏外）</div>
+          <div class="bar-list" style="margin:0">
+            <div class="bar-item">
+              <div class="bar-row">
+                <span class="bar-label" style="color:#744210">短视频（抖音/TikTok）</span>
+                <span class="bar-val" style="color:#B7791F">最大威胁</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width:90%; background:linear-gradient(90deg,#B7791F,#ECC94B)"></div></div>
+            </div>
+            <div class="bar-item">
+              <div class="bar-row">
+                <span class="bar-label" style="color:#744210">成人内容平台</span>
+                <span class="bar-val" style="color:#B7791F">高度竞争</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width:72%; background:linear-gradient(90deg,#B7791F,#ECC94B)"></div></div>
+            </div>
+            <div class="bar-item">
+              <div class="bar-row">
+                <span class="bar-label" style="color:#744210">加密货币 / Web3</span>
+                <span class="bar-val" style="color:#B7791F">新兴对手</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width:55%; background:linear-gradient(90deg,#B7791F,#ECC94B)"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mini-quote" style="border-color:#B7791F; background:#FFFBF0; color:#744210">
+          美国 PC/主机 玩家支出自 2020 年<strong style="color:#B7791F">累计减少约 23 亿美元</strong>（−8%），移动端靠新兴市场支撑大局
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Epyllion 2026 报告 · 数据雷达</span>
+        <div class="page-footer-dot" style="background:#B7791F"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-5')">下载此张</button></div>
+</div>
+
+<!-- ══════════════ 卡片 7：五大增长引擎 ══════════════ -->
+<div class="card-unit">
+  <div class="card-label">07 · 增长引擎</div>
+  <div class="xhs-card" id="card-6">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#276749">06</div>
+          <span class="page-topic">Growth · 五大增长引擎</span>
+        </div>
+        <span class="page-brand">DATA RADAR</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">Epyllion 判断<br><span class="hl" style="color:#276749">五大未来增长驱动力</span></div>
+        <div class="body-lead">2026 年及以后，谁在这五个方向布局，谁就拿到先手</div>
+
+        <div style="display:flex; flex-direction:column; gap:8px; margin-top:4px">
+          <div style="display:flex; gap:10px; align-items:flex-start; background:#F0FFF4; border:1px solid #C6F6D5; border-radius:6px; padding:11px">
+            <div style="width:26px; height:26px; border-radius:5px; background:#276749; color:#fff; font-size:12px; font-weight:900; font-family:'Inter',sans-serif; display:flex; align-items:center; justify-content:center; flex-shrink:0">1</div>
+            <div><div style="font-size:12px; font-weight:700; color:#1C4532">新兴市场 / 非核心市场</div><div style="font-size:11px; color:#2F855A; margin-top:2px; line-height:1.5">印度、东南亚等蓝海，未被传统大厂深度渗透</div></div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start; background:#EBF8FF; border:1px solid #BEE3F8; border-radius:6px; padding:11px">
+            <div style="width:26px; height:26px; border-radius:5px; background:#2B6CB0; color:#fff; font-size:12px; font-weight:900; font-family:'Inter',sans-serif; display:flex; align-items:center; justify-content:center; flex-shrink:0">2</div>
+            <div><div style="font-size:12px; font-weight:700; color:#1A365D">广告变现 + 直面用户模型</div><div style="font-size:11px; color:#2C5282; margin-top:2px; line-height:1.5">应用内广告与订阅直购双轮驱动，绕开渠道分成</div></div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start; background:#FAF5FF; border:1px solid #E9D8FD; border-radius:6px; padding:11px">
+            <div style="width:26px; height:26px; border-radius:5px; background:#6B46C1; color:#fff; font-size:12px; font-weight:900; font-family:'Inter',sans-serif; display:flex; align-items:center; justify-content:center; flex-shrink:0">3</div>
+            <div><div style="font-size:12px; font-weight:700; color:#322659">外包与外部开发</div><div style="font-size:11px; color:#553C9A; margin-top:2px; line-height:1.5">35.5% 预算已外包，核心创意任务也在向外转移</div></div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start; background:#E6FFFA; border:1px solid #81E6D9; border-radius:6px; padding:11px">
+            <div style="width:26px; height:26px; border-radius:5px; background:#0694A2; color:#fff; font-size:12px; font-weight:900; font-family:'Inter',sans-serif; display:flex; align-items:center; justify-content:center; flex-shrink:0">4</div>
+            <div><div style="font-size:12px; font-weight:700; color:#1D4044">替代支付渠道</div><div style="font-size:11px; color:#234E52; margin-top:2px; line-height:1.5">直充、礼品卡、第三方支付绕过 App Store 高抽佣</div></div>
+          </div>
+          <div style="display:flex; gap:10px; align-items:flex-start; background:#FFFBF0; border:1px solid #FAD783; border-radius:6px; padding:11px">
+            <div style="width:26px; height:26px; border-radius:5px; background:#B7791F; color:#fff; font-size:12px; font-weight:900; font-family:'Inter',sans-serif; display:flex; align-items:center; justify-content:center; flex-shrink:0">5</div>
+            <div><div style="font-size:12px; font-weight:700; color:#744210">Roblox 生态扩张</div><div style="font-size:11px; color:#975A16; margin-top:2px; line-height:1.5">UGC 创作经济持续放大，年轻用户首选平台地位稳固</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Epyllion 2026 报告 · 数据雷达</span>
+        <div class="page-footer-dot" style="background:#276749"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-6')">下载此张</button></div>
+</div>
+
+<!-- ══════════════ 卡片 8：结论尾页 ══════════════ -->
+<div class="card-unit">
+  <div class="card-label">08 · 核心判断</div>
+  <div class="xhs-card card-end" id="card-7">
+    <div class="grid-bg"></div>
+    <div class="inner">
+      <div class="end-label">Strategic Takeaways · 从业者核心判断</div>
+      <div class="end-list">
+        <div class="end-row">
+          <div class="end-num">📈</div>
+          <div class="end-text"><strong>Roblox 不是对手，是新赛道</strong><br>传统游戏公司需要思考如何在 UGC 平台上创造而非对抗它</div>
+        </div>
+        <div class="end-row">
+          <div class="end-num">🇨🇳</div>
+          <div class="end-text"><strong>中国市场自给率 84%，出海窗口收窄</strong><br>黑神话证明品质路线可以打破壁垒，但对普通团队不具备参考性</div>
+        </div>
+        <div class="end-row">
+          <div class="end-num">💸</div>
+          <div class="end-text"><strong>订阅制吃掉主机增长，买断制需要差异化</strong><br>大作受益于 PS Plus / Game Pass，中小独立游戏处境更难</div>
+        </div>
+        <div class="end-row">
+          <div class="end-num">🌍</div>
+          <div class="end-text"><strong>新兴市场是最后的流量洼地</strong><br>印度、东南亚正在复制中国 2015 年的移动游戏爆发轨迹</div>
+        </div>
+        <div class="end-row">
+          <div class="end-num">⚡</div>
+          <div class="end-text"><strong>融资寒冬未结束，外包是生存策略</strong><br>私募降 55%，外包占比升至 35.5%——精简团队 + 借力外部成主流</div>
+        </div>
+      </div>
+      <div class="end-bottom">
+        <span class="end-brand">DATA RADAR · 数据雷达</span>
+        <span class="end-src">解读 Epyllion 2026 报告</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-7')">下载此张</button></div>
+</div>
+
+</div><!-- /#stage -->
+
+<div id="toast">正在生成图片…</div>
+
+<script>
+Chart.defaults.font.family = "'Inter','Noto Sans SC',sans-serif";
+
+// Roblox 平台增长对比图
+new Chart(document.getElementById('chart-roblox'), {
+  type: 'bar',
+  data: {
+    labels: ['Roblox', 'PC', '主机', '移动'],
+    datasets: [
+      {
+        label: '2020',
+        data: [30, 31.3, 47, 77],
+        backgroundColor: '#CBD5E0',
+        borderRadius: 3, borderSkipped: false
+      },
+      {
+        label: '2025',
+        data: [67, 40.7, 41.6, 95],
+        backgroundColor: '#6B46C1',
+        borderRadius: 3, borderSkipped: false
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { font: { size: 9 }, boxWidth: 8, padding: 6 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw}B$` } }
+    },
+    scales: {
+      y: {
+        min: 0,
+        ticks: { font: { size: 9 }, callback: v => v+'B' },
+        grid: { color: 'rgba(0,0,0,0.05)' }
+      },
+      x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+    }
+  }
+});
+
+// ── 下载单张 ──
+function downloadCard(id) {
+  const el = document.getElementById(id);
+  showToast('正在渲染图片…');
+  htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true })
+    .then(dataUrl => {
+      saveAs(dataUrl, `gaming-2026-${id}.png`);
+      showToast('下载成功！');
+    })
+    .catch(e => { showToast('生成失败，请重试'); console.error(e); });
+}
+
+// ── 全部下载 ──
+async function downloadAll() {
+  const ids = ['card-0','card-1','card-2','card-3','card-4','card-5','card-6','card-7'];
+  for (let i = 0; i < ids.length; i++) {
+    showToast(`导出第 ${i+1} / ${ids.length} 张…`);
+    const el = document.getElementById(ids[i]);
+    try {
+      const dataUrl = await htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true });
+      saveAs(dataUrl, `gaming-2026-${String(i+1).padStart(2,'0')}.png`);
+      await new Promise(r => setTimeout(r, 400));
+    } catch(e) { console.error(ids[i], e); }
+  }
+  showToast('全部导出完成！');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}二次元情报 - 游戏雷达局{% endblock %}
+{% block page_title %}二次元情报{% endblock %}
+{% block page_subtitle %}女性向/二次元内容监控 & 文案生成{% endblock %}
+
+{% block head_extra %}
+<style>
+  .style-card { cursor: pointer; transition: all .2s; border: 2px solid transparent; }
+  .style-card.active { border-color: #E84393; background: #fde8f3; }
+  .style-card:hover:not(.active) { background: #f9f0f5; }
+  .result-row:hover { background: #fdf4f8; }
+  .gen-btn { background: linear-gradient(135deg, #E84393, #fd79a8); color: #fff; border: none; border-radius: 10px; padding: 5px 14px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .2s; }
+  .gen-btn:hover { box-shadow: 0 4px 12px rgba(232,67,147,.35); transform: translateY(-1px); }
+  .gen-btn:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+  .post-preview { background: #fff5f9; border: 1px solid #fbb6d4; border-radius: 12px; padding: 14px; font-size: 13px; line-height: 1.7; white-space: pre-wrap; }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="flex gap-6 h-full min-h-0">
+
+  <!-- 左侧配置 -->
+  <div class="w-[280px] shrink-0 flex flex-col gap-5">
+
+    <!-- 来源选择 -->
+    <div class="card p-5">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">内容来源</h2>
+      <div class="space-y-2">
+        <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer border-2 transition-all has-[:checked]:border-[#E84393] has-[:checked]:bg-[#fde8f3] border-transparent hover:bg-gray-50">
+          <input type="radio" name="anime-source" value="weibo" class="anime-source-radio accent-[#E84393]" checked>
+          <div class="w-7 h-7 rounded-lg bg-[#FF6B2C] flex items-center justify-center text-white text-[10px] font-bold shrink-0">W</div>
+          <span class="text-sm font-semibold text-gray-700">微博超话</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer border-2 transition-all has-[:checked]:border-[#E84393] has-[:checked]:bg-[#fde8f3] border-transparent hover:bg-gray-50">
+          <input type="radio" name="anime-source" value="bilibili" class="anime-source-radio accent-[#E84393]">
+          <div class="w-7 h-7 rounded-lg bg-[#00AEEC] flex items-center justify-center text-white text-[10px] font-bold shrink-0">B</div>
+          <span class="text-sm font-semibold text-gray-700">B站动态</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer border-2 transition-all has-[:checked]:border-[#E84393] has-[:checked]:bg-[#fde8f3] border-transparent hover:bg-gray-50">
+          <input type="radio" name="anime-source" value="taptap" class="anime-source-radio accent-[#E84393]">
+          <div class="w-7 h-7 rounded-lg bg-[#1CAD56] flex items-center justify-center text-white text-[10px] font-bold shrink-0">T</div>
+          <span class="text-sm font-semibold text-gray-700">TapTap</span>
+        </label>
+        <label class="flex items-center gap-3 p-3 rounded-xl cursor-pointer border-2 transition-all has-[:checked]:border-[#E84393] has-[:checked]:bg-[#fde8f3] border-transparent hover:bg-gray-50">
+          <input type="radio" name="anime-source" value="reddit" class="anime-source-radio accent-[#E84393]">
+          <div class="w-7 h-7 rounded-lg bg-[#FF6B2C] flex items-center justify-center text-white text-[10px] font-bold shrink-0">R</div>
+          <span class="text-sm font-semibold text-gray-700">Reddit 二次元</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- 文案风格 -->
+    <div class="card p-5">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">文案风格</h2>
+      <div class="space-y-2" id="style-selector">
+        <div class="style-card active rounded-xl p-3" data-style="otome">
+          <div class="text-sm font-semibold text-[#E84393]">🌸 攻略组</div>
+          <div class="text-[11px] text-gray-500 mt-0.5">温柔有观点，乙女/恋爱养成向</div>
+        </div>
+        <div class="style-card rounded-xl p-3" data-style="gacha">
+          <div class="text-sm font-semibold text-gray-700">🎰 酋长</div>
+          <div class="text-[11px] text-gray-500 mt-0.5">接地气有梗，手游抽卡向</div>
+        </div>
+        <div class="style-card rounded-xl p-3" data-style="indie">
+          <div class="text-sm font-semibold text-gray-700">🔍 独立游戏雷达</div>
+          <div class="text-[11px] text-gray-500 mt-0.5">真诚有温度，国产/独立游戏向</div>
+        </div>
+        <div class="style-card rounded-xl p-3" data-style="general_anime">
+          <div class="text-sm font-semibold text-gray-700">🎮 二次元局长</div>
+          <div class="text-[11px] text-gray-500 mt-0.5">活泼有感情，综合二次元向</div>
+        </div>
+      </div>
+    </div>
+
+    <button id="btn-anime-run" class="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2" style="background:linear-gradient(135deg,#E84393,#fd79a8)">
+      <i data-lucide="search" class="w-4 h-4"></i> 抓取内容
+    </button>
+    <div id="anime-status" class="text-xs text-gray-400 text-center -mt-2"></div>
+
+  </div>
+
+  <!-- 右侧结果 -->
+  <div class="flex-1 min-w-0 flex flex-col gap-4">
+    <div class="flex items-center justify-between">
+      <span id="anime-count" class="text-sm text-gray-500">共 0 条</span>
+    </div>
+
+    <div id="anime-results" class="flex-1 overflow-auto scroll-y space-y-3">
+      <div id="anime-empty" class="flex flex-col items-center justify-center py-20 text-gray-300">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" class="mb-3">
+          <path d="M24 42 C24 42 6 31 6 18 C6 11 12 7 18 7 C21.5 7 24 8.5 24 8.5 C24 8.5 26.5 7 30 7 C36 7 42 11 42 18 C42 31 24 42 24 42Z" fill="currentColor" opacity="0.15"/>
+        </svg>
+        <p class="text-sm">选择来源并抓取，获取二次元/女性向资讯</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- 文案预览弹窗 -->
+<div id="post-modal" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 hidden">
+  <div class="bg-white rounded-2xl shadow-2xl w-[520px] max-h-[80vh] overflow-auto p-6">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-bold text-gray-800">生成的小红书文案</h3>
+      <button id="close-modal" class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+    </div>
+    <div class="mb-3">
+      <div class="text-xs font-semibold text-gray-400 mb-1">标题</div>
+      <div id="modal-title" class="text-sm font-bold text-[#E84393] bg-[#fde8f3] rounded-lg px-3 py-2"></div>
+    </div>
+    <div class="mb-4">
+      <div class="text-xs font-semibold text-gray-400 mb-1">正文</div>
+      <div id="modal-body" class="post-preview text-sm"></div>
+    </div>
+    <div class="flex gap-3">
+      <button id="btn-copy-post" class="flex-1 py-2.5 rounded-xl border border-[#E84393] text-[#E84393] text-sm font-semibold hover:bg-[#fde8f3] transition-all">复制文案</button>
+      <button id="btn-open-xhs" class="flex-1 py-2.5 rounded-xl text-white text-sm font-semibold transition-all" style="background:linear-gradient(135deg,#E84393,#fd79a8)">打开小红书编辑器</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+let _animeItems = [];
+let _currentItem = null;
+let _currentStyle = 'otome';
+
+// 风格选择
+document.querySelectorAll('.style-card').forEach(card => {
+  card.addEventListener('click', () => {
+    document.querySelectorAll('.style-card').forEach(c => c.classList.remove('active'));
+    card.classList.add('active');
+    _currentStyle = card.dataset.style;
+  });
+});
+
+// 抓取内容
+document.getElementById('btn-anime-run').addEventListener('click', async () => {
+  const source = document.querySelector('input[name="anime-source"]:checked').value;
+  const statusEl = document.getElementById('anime-status');
+  const btn = document.getElementById('btn-anime-run');
+  btn.disabled = true;
+  statusEl.textContent = '抓取中...';
+
+  let payload = { source };
+  if (source === 'weibo') {
+    payload.topics = ['genshin','honkai_star','wuthering','blue_archive','otome','gacha'];
+    payload.per_topic = 15;
+  } else if (source === 'bilibili') {
+    payload.uid_keys = [];
+    payload.per_uid = 15;
+  } else if (source === 'taptap') {
+    payload.game_keys = [];
+    payload.per_game = 15;
+  } else if (source === 'reddit') {
+    payload.labels = ['otome','gacha','hsr','genshin','wuwa','ba'];
+    payload.per_label = 10;
+  }
+
+  try {
+    const resp = await fetch('/run', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message || '抓取失败');
+    _animeItems = data.items || [];
+    renderAnimeResults(_animeItems);
+    statusEl.textContent = `完成，共 ${_animeItems.length} 条`;
+  } catch(e) {
+    statusEl.textContent = '出错：' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
+function renderAnimeResults(items) {
+  const container = document.getElementById('anime-results');
+  const empty = document.getElementById('anime-empty');
+  document.getElementById('anime-count').textContent = `共 ${items.length} 条`;
+
+  if (!items.length) {
+    empty.classList.remove('hidden');
+    return;
+  }
+  empty.classList.add('hidden');
+
+  container.innerHTML = '';
+  items.forEach((item, idx) => {
+    const card = document.createElement('div');
+    card.className = 'card p-4 result-row';
+    const label = item.topic || item.game || item.up_name || item.label || '';
+    const timeStr = (item.time || '').slice(0, 16).replace('T', ' ');
+    card.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 mb-1">
+            <span class="badge" style="background:#fde8f3;color:#E84393">${label}</span>
+            <span class="text-[10px] text-gray-400">${timeStr}</span>
+          </div>
+          <div class="text-sm font-semibold text-gray-800 line-clamp-2 mb-1">${item.title || ''}</div>
+          <div class="text-xs text-gray-500 line-clamp-2">${(item.content || '').slice(0,120)}</div>
+        </div>
+        ${item.cover_image ? `<img src="/api/proxy_image?url=${encodeURIComponent(item.cover_image)}" class="w-16 h-16 rounded-lg object-cover shrink-0" onerror="this.style.display='none'">` : ''}
+      </div>
+      <div class="flex justify-end mt-2">
+        <button class="gen-btn" data-idx="${idx}">AI生成文案</button>
+      </div>
+    `;
+    container.appendChild(card);
+  });
+
+  // 绑定生成按钮
+  container.querySelectorAll('.gen-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const idx = parseInt(btn.dataset.idx, 10);
+      _currentItem = _animeItems[idx];
+      btn.disabled = true;
+      btn.textContent = '生成中...';
+      try {
+        const resp = await fetch('/api/generate_anime_post', {
+          method: 'POST',
+          headers: {'Content-Type':'application/json'},
+          body: JSON.stringify({item: _currentItem, style: _currentStyle})
+        });
+        const data = await resp.json();
+        if (data.status !== 'ok') throw new Error(data.message);
+        showPostModal(data.title, data.body);
+      } catch(e) {
+        alert('生成失败：' + e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'AI生成文案';
+      }
+    });
+  });
+}
+
+function showPostModal(title, body) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').textContent = body;
+  document.getElementById('post-modal').classList.remove('hidden');
+}
+
+document.getElementById('close-modal').addEventListener('click', () => {
+  document.getElementById('post-modal').classList.add('hidden');
+});
+
+document.getElementById('btn-copy-post').addEventListener('click', () => {
+  const title = document.getElementById('modal-title').textContent;
+  const body = document.getElementById('modal-body').textContent;
+  navigator.clipboard.writeText(title + '\n\n' + body).then(() => {
+    document.getElementById('btn-copy-post').textContent = '已复制！';
+    setTimeout(() => document.getElementById('btn-copy-post').textContent = '复制文案', 2000);
+  });
+});
+
+document.getElementById('btn-open-xhs').addEventListener('click', async () => {
+  const title = document.getElementById('modal-title').textContent;
+  const body = document.getElementById('modal-body').textContent;
+  try {
+    const resp = await fetch('/api/images_to_xhs', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        image_urls: _currentItem && _currentItem.cover_image ? [_currentItem.cover_image] : [],
+        title, content: body, tag: '', desc: ''
+      })
+    });
+    const data = await resp.json();
+    if (data.token) window.open('/xhs_full?token=' + encodeURIComponent(data.token), '_blank');
+  } catch(e) { alert('跳转失败：' + e.message); }
+});
+</script>
+{% endblock %}

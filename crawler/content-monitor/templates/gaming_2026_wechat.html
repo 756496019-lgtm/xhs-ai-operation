@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>解读 Epyllion 2026 游戏行业报告</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: #0D1520; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; }
+
+/* ── 顶部工具栏 ── */
+#top-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 54px; background: rgba(8,14,26,0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(99,179,237,0.18);
+  display: flex; align-items: center; padding: 0 24px; gap: 12px;
+}
+#top-bar .logo { font-size: 12px; font-weight: 800; color: #63B3ED; letter-spacing: 0.12em; font-family: 'Inter', sans-serif; margin-right: 4px; }
+#top-bar .hint { font-size: 11px; color: #3A5070; flex: 1; }
+.tbtn { border: none; border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; transition: all 0.2s; white-space: nowrap; }
+.tbtn-primary { background: #2B6CB0; color: #fff; }
+.tbtn-primary:hover { background: #2C5282; }
+.tbtn-long { background: linear-gradient(90deg,#276749,#2F855A); color: #fff; }
+.tbtn-long:hover { opacity: 0.88; }
+.tbtn-ghost { background: #1A2840; color: #8899AA; border: 1px solid #243650; }
+.tbtn-ghost:hover { color: #63B3ED; border-color: #63B3ED; }
+
+/* ── 主区域两栏 ── */
+#main { display: flex; padding-top: 54px; min-height: 100vh; }
+
+/* 左侧：章节导航 */
+#sidebar {
+  width: 200px; flex-shrink: 0; background: #0A1220;
+  border-right: 1px solid #1A2840; padding: 20px 0;
+  position: sticky; top: 54px; height: calc(100vh - 54px); overflow-y: auto;
+}
+#sidebar h3 { font-size: 10px; font-weight: 700; color: #3A5070; letter-spacing: 0.12em; text-transform: uppercase; padding: 0 16px 10px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; cursor: pointer; transition: all 0.15s; border-left: 2px solid transparent; }
+.nav-item:hover { background: #111E30; border-left-color: #63B3ED; }
+.nav-item.active { background: #131E2E; border-left-color: #63B3ED; }
+.nav-dot { width: 20px; height: 20px; border-radius: 4px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; font-family: 'Inter', sans-serif; color: #fff; }
+.nav-text { font-size: 11px; color: #6A8AAA; line-height: 1.4; }
+.nav-item.active .nav-text { color: #63B3ED; }
+.nav-sep { height: 1px; background: #131E2E; margin: 6px 16px; }
+
+/* 右侧：预览区 */
+#preview-area { flex: 1; overflow-y: auto; padding: 28px 32px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+
+/* ── 单个章节块 ── */
+.section-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.section-label { font-size: 10px; color: #3A5070; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; align-self: flex-start; }
+
+/* ══════════════════════════════════════
+   wx-block：375px，手机端完美显示
+══════════════════════════════════════ */
+.wx-block {
+  width: 375px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+.wx-block * { box-sizing: border-box; font-family: 'Noto Sans SC', sans-serif; }
+
+/* ── 封面 ── */
+.wx-cover {
+  background: linear-gradient(150deg, #07121E 0%, #0C1E38 55%, #060F1C 100%);
+  padding: 40px 28px 32px; position: relative; overflow: hidden;
+}
+.wx-cover .grid {
+  position: absolute; inset: 0; pointer-events: none;
+  background-image: linear-gradient(rgba(99,179,237,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(99,179,237,0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+.wx-cover .glow { position: absolute; top: -60px; right: -60px; width: 260px; height: 260px; background: radial-gradient(circle, rgba(99,179,237,0.12) 0%, transparent 70%); pointer-events: none; }
+.wx-cover .glow2 { position: absolute; bottom: -50px; left: -50px; width: 200px; height: 200px; background: radial-gradient(circle, rgba(128,90,213,0.08) 0%, transparent 70%); pointer-events: none; }
+.wx-cover .tag { display: inline-flex; background: rgba(99,179,237,0.12); border: 1px solid rgba(99,179,237,0.28); color: #90CDF4; font-size: 9px; font-weight: 700; letter-spacing: 0.1em; padding: 4px 10px; border-radius: 2px; font-family: 'Inter', sans-serif; text-transform: uppercase; position: relative; margin-bottom: 16px; }
+.wx-cover h1 { font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; color: #EAF4FF; line-height: 1.4; letter-spacing: 0.02em; position: relative; margin-bottom: 12px; }
+.wx-cover h1 .hl { color: #63B3ED; }
+.wx-cover .sub { font-size: 11px; color: #4A6080; line-height: 1.75; border-left: 2px solid rgba(99,179,237,0.4); padding-left: 10px; position: relative; margin-bottom: 24px; }
+.cover-bigrow { display: flex; gap: 0; position: relative; padding-bottom: 20px; justify-content: space-between; }
+.cover-bignum { display: flex; flex-direction: column; gap: 4px; }
+.cover-num { font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 900; color: #EAF4FF; line-height: 1; }
+.cover-num .unit { font-size: 14px; color: #63B3ED; }
+.cover-nlabel { font-size: 9px; color: #3A5A7A; max-width: 80px; line-height: 1.4; }
+.wx-cover .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; position: relative; border-top: 1px solid rgba(255,255,255,0.07); padding-top: 16px; }
+.wx-cover .meta-item { display: flex; flex-direction: column; gap: 3px; }
+.wx-cover .meta-label { font-size: 9px; color: #3A5A7A; letter-spacing: 0.06em; text-transform: uppercase; }
+.wx-cover .meta-val { font-size: 11px; color: #7AABBF; font-weight: 500; }
+
+/* ── 章节内容块 ── */
+.wx-section { background: #fff; padding: 28px 22px; }
+.wx-section + .wx-section { border-top: 1px solid #F0F2F5; }
+.sec-header { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 16px; }
+.sec-num { width: 24px; height: 24px; border-radius: 4px; background: #2B6CB0; color: #fff; font-family: 'Inter', sans-serif; font-size: 10px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.sec-title h2 { font-family: 'Noto Serif SC', serif; font-size: 15px; font-weight: 700; color: #111; line-height: 1.4; margin-bottom: 3px; }
+.sec-title p { font-size: 9px; color: #BBB; letter-spacing: 0.04em; }
+.para { font-size: 12px; line-height: 1.9; color: #333; margin-bottom: 12px; }
+.para strong { color: #111; font-weight: 700; }
+.para em { color: #2B6CB0; font-style: normal; font-weight: 600; }
+
+/* 统计卡片 2列 */
+.stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 16px 0; }
+.stat-card { background: #F8F9FA; border: 1px solid #EAECEF; border-radius: 6px; padding: 12px 10px; text-align: center; position: relative; overflow: hidden; }
+.stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: #2B6CB0; }
+.stat-card.teal::before  { background: #0694A2; }
+.stat-card.purple::before{ background: #6B46C1; }
+.stat-card.red::before   { background: #C53030; }
+.stat-card.green::before { background: #276749; }
+.stat-card.amber::before { background: #B7791F; }
+.stat-num { font-family: 'Inter', sans-serif; font-size: 22px; font-weight: 900; color: #111; line-height: 1; margin-bottom: 4px; }
+.stat-num sub { font-size: 13px; font-weight: 700; }
+.stat-desc { font-size: 10px; color: #888; line-height: 1.4; }
+
+/* 大数字横排 */
+.bignum-row { display: flex; justify-content: space-around; align-items: center; padding: 16px 0; border-top: 1px solid #EAECEF; border-bottom: 1px solid #EAECEF; margin: 14px 0; }
+.bignum-item { text-align: center; flex: 1; }
+.bignum { font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 900; color: #2B6CB0; line-height: 1; }
+.bignum.red    { color: #C53030; }
+.bignum.purple { color: #6B46C1; }
+.bignum.teal   { color: #0694A2; }
+.bignum.green  { color: #276749; }
+.bignum-sub { font-size: 10px; color: #999; margin-top: 5px; line-height: 1.4; }
+
+/* 数据条 */
+.bar-list { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.bar-row { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+.bar-lbl { color: #444; font-weight: 500; }
+.bar-val { font-weight: 800; font-family: 'Inter', sans-serif; color: #2B6CB0; }
+.bar-val.red    { color: #C53030; }
+.bar-val.teal   { color: #0694A2; }
+.bar-val.purple { color: #6B46C1; }
+.bar-val.green  { color: #276749; }
+.bar-track { height: 6px; background: #EAECEF; border-radius: 3px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg,#2B6CB0,#4299E1); }
+.bar-fill.red    { background: linear-gradient(90deg,#C53030,#F56565); }
+.bar-fill.teal   { background: linear-gradient(90deg,#0694A2,#38B2AC); }
+.bar-fill.purple { background: linear-gradient(90deg,#6B46C1,#9F7AEA); }
+.bar-fill.green  { background: linear-gradient(90deg,#276749,#38A169); }
+.bar-fill.amber  { background: linear-gradient(90deg,#B7791F,#ECC94B); }
+
+/* 引用块 */
+.pull { border-left: 2px solid #2B6CB0; background: #EBF8FF; padding: 12px 14px; border-radius: 0 4px 4px 0; margin: 14px 0; font-size: 12px; color: #1A365D; line-height: 1.75; }
+.pull strong { color: #2B6CB0; }
+.pull.red    { border-color: #C53030; background: #FFF5F5; color: #63171B; }
+.pull.red strong { color: #C53030; }
+.pull.purple { border-color: #6B46C1; background: #FAF5FF; color: #322659; }
+.pull.purple strong { color: #6B46C1; }
+.pull.teal   { border-color: #0694A2; background: #E6FFFA; color: #1D4044; }
+.pull.teal strong { color: #0694A2; }
+.pull.green  { border-color: #276749; background: #F0FFF4; color: #1C4532; }
+.pull.green strong { color: #276749; }
+.pull.amber  { border-color: #B7791F; background: #FFFBF0; color: #744210; }
+.pull.amber strong { color: #B7791F; }
+
+/* 对比格 */
+.vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 12px 0; }
+.vs-card { border-radius: 6px; padding: 12px; }
+.vs-card.old { background: #F8F9FA; border: 1px solid #EAECEF; }
+.vs-card.new { background: #EBF8FF; border: 1px solid #BEE3F8; }
+.vs-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.06em; margin-bottom: 8px; display: block; }
+.vs-card.old .vs-tag { color: #AAA; }
+.vs-card.new .vs-tag { color: #2B6CB0; }
+.vs-li { font-size: 11px; color: #555; padding: 4px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: flex-start; gap: 4px; }
+.vs-li::before { content: '·'; color: #CCC; }
+.vs-card.new .vs-li::before { content: '▸'; color: #2B6CB0; font-size: 9px; margin-top: 2px; }
+
+/* 图表块 */
+.chart-block { background: #FAFBFC; border: 1px solid #EAECEF; border-radius: 8px; padding: 16px 16px 12px; margin: 16px 0; }
+.chart-title { font-size: 12px; font-weight: 700; color: #333; margin-bottom: 3px; }
+.chart-sub { font-size: 10px; color: #AAA; margin-bottom: 12px; }
+
+/* 结论列表 */
+.concl-list { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.concl-item { display: flex; gap: 10px; align-items: flex-start; background: #FAFAFA; border: 1px solid #EAECEF; border-radius: 6px; padding: 12px; }
+.concl-icon { width: 28px; height: 28px; border-radius: 6px; background: #2B6CB0; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.concl-title { font-size: 12px; font-weight: 700; color: #111; margin-bottom: 3px; }
+.concl-desc { font-size: 11px; color: #666; line-height: 1.65; }
+
+/* 深色尾页 */
+.wx-ending { background: linear-gradient(150deg, #070F1E 0%, #0B1A30 55%, #060D1A 100%); padding: 36px 28px; position: relative; overflow: hidden; }
+.wx-ending .grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(99,179,237,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(99,179,237,0.05) 1px, transparent 1px); background-size: 22px 22px; pointer-events: none; }
+.end-label { font-size: 9px; font-weight: 700; color: #63B3ED; letter-spacing: 0.12em; text-transform: uppercase; font-family: 'Inter', sans-serif; margin-bottom: 20px; position: relative; }
+.end-list { display: flex; flex-direction: column; gap: 14px; position: relative; }
+.end-row { display: flex; gap: 10px; align-items: flex-start; }
+.end-num { width: 20px; height: 20px; border-radius: 3px; background: rgba(99,179,237,0.15); border: 1px solid rgba(99,179,237,0.3); color: #63B3ED; font-size: 10px; font-weight: 800; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.end-text { font-size: 12px; color: #8AAEC8; line-height: 1.75; }
+.end-text strong { color: #D0E8F8; }
+.end-bottom { border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; margin-top: 24px; display: flex; align-items: center; justify-content: space-between; position: relative; }
+.end-brand { font-size: 10px; color: #2A4060; font-family: 'Inter', sans-serif; letter-spacing: 0.08em; }
+.end-src { font-size: 10px; color: #1E3050; }
+
+/* ── 章节分割线（长图中章节间视觉间隔） ── */
+.wx-divider { height: 6px; background: linear-gradient(90deg, #0C1E38, #1A3A60, #0C1E38); }
+
+/* toast */
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+#toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="top-bar">
+  <div class="logo">DATA RADAR</div>
+  <div class="hint">375px · 手机端完美适配 · 导出大长图直接发公众号</div>
+  <button class="tbtn tbtn-ghost" onclick="downloadSection('sec-cover')">下载封面</button>
+  <button class="tbtn tbtn-long" onclick="exportLongImage()">⬇ 导出大长图</button>
+</div>
+
+<div id="main">
+
+<!-- 左侧章节导航 -->
+<div id="sidebar">
+  <h3>章节导航</h3>
+  <div class="nav-item active" onclick="jumpTo('sec-cover')">
+    <div class="nav-dot" style="background:#2B6CB0">★</div>
+    <span class="nav-text">封面</span>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-item" onclick="jumpTo('sec-1')">
+    <div class="nav-dot" style="background:#2B6CB0">01</div>
+    <span class="nav-text">全球市场规模</span>
+  </div>
+  <div class="nav-item" onclick="jumpTo('sec-2')">
+    <div class="nav-dot" style="background:#6B46C1">02</div>
+    <span class="nav-text">Roblox 现象</span>
+  </div>
+  <div class="nav-item" onclick="jumpTo('sec-3')">
+    <div class="nav-dot" style="background:#0694A2">03</div>
+    <span class="nav-text">平台格局重塑</span>
+  </div>
+  <div class="nav-item" onclick="jumpTo('sec-4')">
+    <div class="nav-dot" style="background:#C53030">04</div>
+    <span class="nav-text">裁员与外包</span>
+  </div>
+  <div class="nav-item" onclick="jumpTo('sec-5')">
+    <div class="nav-dot" style="background:#B7791F">05</div>
+    <span class="nav-text">注意力争夺战</span>
+  </div>
+  <div class="nav-item" onclick="jumpTo('sec-6')">
+    <div class="nav-dot" style="background:#276749">06</div>
+    <span class="nav-text">五大增长引擎</span>
+  </div>
+  <div class="nav-sep"></div>
+  <div class="nav-item" onclick="jumpTo('sec-end')">
+    <div class="nav-dot" style="background:#3A5070">→</div>
+    <span class="nav-text">结论与判断</span>
+  </div>
+</div>
+
+<!-- 右侧预览区 -->
+<div id="preview-area">
+
+  <!-- 封面 -->
+  <div class="section-wrap" id="sec-cover">
+    <span class="section-label">封面</span>
+    <div class="wx-block">
+      <div class="wx-cover">
+        <div class="grid"></div>
+        <div class="glow"></div>
+        <div class="glow2"></div>
+        <div class="tag">Epyllion · 2026 游戏行业报告</div>
+        <h1>解读 Epyllion<br><span class="hl">2026 游戏行业报告</span><br>五大转折信号</h1>
+        <p class="sub">
+          1956亿美元的赛场，Roblox 独揽 67% 增量；<br>
+          主机传统销售跌 11%，订阅制接管未来；<br>
+          裁员、外包、融资寒冬——行业在深度重构中寻找出路
+        </p>
+        <div class="cover-bigrow">
+          <div class="cover-bignum">
+            <div class="cover-num">195<span class="unit">.6B</span></div>
+            <div class="cover-nlabel">全球游戏内容销售额（美元）</div>
+          </div>
+          <div class="cover-bignum">
+            <div class="cover-num" style="color:#63B3ED">+5.3<span class="unit">%</span></div>
+            <div class="cover-nlabel">2025年同比增长</div>
+          </div>
+          <div class="cover-bignum">
+            <div class="cover-num" style="color:#9F7AEA">67<span class="unit">%</span></div>
+            <div class="cover-nlabel">Roblox占行业净增量</div>
+          </div>
+        </div>
+        <div class="meta">
+          <div class="meta-item">
+            <span class="meta-label">报告来源</span>
+            <span class="meta-val">Epyllion Research</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">数据周期</span>
+            <span class="meta-val">FY 2025</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">解读出品</span>
+            <span class="meta-val">DATA RADAR</span>
+          </div>
+          <div class="meta-item">
+            <span class="meta-label">发布时间</span>
+            <span class="meta-val">2026 年 3 月</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第一章 -->
+  <div class="section-wrap" id="sec-1">
+    <span class="section-label">第一章 · 全球市场规模</span>
+    <div class="wx-block">
+      <div class="wx-section">
+        <div class="sec-header">
+          <div class="sec-num" style="background:#2B6CB0">01</div>
+          <div class="sec-title">
+            <h2>全球市场突破 1956 亿美元<br>移动、PC、主机三足鼎立</h2>
+            <p>GLOBAL MARKET SIZE · 全平台规模与结构</p>
+          </div>
+        </div>
+        <p class="para">2025 年，全球游戏内容销售总额达到 <em>1956 亿美元</em>，同比增长 <strong>5.3%</strong>。移动端依然是压舱石，PC 持续爬坡，主机则在传统模式与订阅制之间挣扎转型。</p>
+        <div class="stat-row">
+          <div class="stat-card">
+            <div class="stat-num">195<sub>.6B</sub></div>
+            <div class="stat-desc">全球游戏内容<br>总销售额（美元）</div>
+          </div>
+          <div class="stat-card teal">
+            <div class="stat-num" style="color:#0694A2">+5.3<sub>%</sub></div>
+            <div class="stat-desc">2025 年<br>同比增速</div>
+          </div>
+          <div class="stat-card purple">
+            <div class="stat-num" style="color:#6B46C1">40.7<sub>B</sub></div>
+            <div class="stat-desc">PC 游戏<br>平台营收</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">41.6<sub>B</sub></div>
+            <div class="stat-desc">主机游戏<br>平台营收</div>
+          </div>
+        </div>
+        <p class="para">PC 市场是三大平台里最值得关注的正向变量。相比 2020 年，PC 游戏营收增长了 <em>30%</em>。<strong>《黑神话：悟空》</strong>的爆发带动了中国 PC 市场的强势反弹，成为全年最具代表性的现象级事件。</p>
+        <div class="chart-block">
+          <div class="chart-title">三大平台营收规模对比（2025，十亿美元）</div>
+          <div class="chart-sub">移动端数据为估算值</div>
+          <div style="height:140px;position:relative"><canvas id="chart-platform"></canvas></div>
+        </div>
+        <div class="bignum-row">
+          <div class="bignum-item">
+            <div class="bignum">20%</div>
+            <div class="bignum-sub">中国占全球玩家支出</div>
+          </div>
+          <div class="bignum-item">
+            <div class="bignum" style="color:#0694A2">84%</div>
+            <div class="bignum-sub">中国玩家偏爱本土游戏</div>
+          </div>
+          <div class="bignum-item">
+            <div class="bignum" style="color:#276749">+30%</div>
+            <div class="bignum-sub">PC 市场 vs 2020</div>
+          </div>
+        </div>
+        <div class="pull">《黑神话：悟空》证明了<strong>品质驱动的出海路线</strong>在技术与叙事双重成熟之后，具备撬动全球市场的可能性——但这条路的复制门槛极高，普通团队不宜直接类比。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第二章 -->
+  <div class="section-wrap" id="sec-2">
+    <span class="section-label">第二章 · Roblox 现象</span>
+    <div class="wx-block">
+      <div class="wx-section">
+        <div class="sec-header">
+          <div class="sec-num" style="background:#6B46C1">02</div>
+          <div class="sec-title">
+            <h2>Roblox 独揽 67% 行业净增量<br>日活超三大主机之和</h2>
+            <p>THE ROBLOX PHENOMENON · UGC 平台的碾压式增长</p>
+          </div>
+        </div>
+        <p class="para">如果用一个数字来概括 2025 年的行业状况，那一定是 <em>67%</em>——这是 Roblox 一个平台占据整个行业净增量的比例。全行业 5.3% 的增长里，超过三分之二来自这一个平台。</p>
+        <div class="bignum-row">
+          <div class="bignum-item">
+            <div class="bignum purple">67%</div>
+            <div class="bignum-sub">Roblox 占全行业净增量</div>
+          </div>
+          <div class="bignum-item">
+            <div class="bignum purple">&gt;3×</div>
+            <div class="bignum-sub">日活超三大主机合计</div>
+          </div>
+        </div>
+        <p class="para">Roblox 的日活跃用户数量，已经超过了 PlayStation、Nintendo Switch 和 Xbox <strong>三大主机平台日活之和</strong>。用户群体以 13-24 岁为核心，且相当比例从未拥有过一台传统游戏主机。</p>
+        <div class="pull purple">Roblox 不是传统游戏行业的竞争者，它是<strong>新一代娱乐基础设施</strong>。其商业模型、内容生产方式和用户交互逻辑，都与传统 AAA 游戏体系根本性地不同。</div>
+        <div class="bar-list">
+          <div>
+            <div class="bar-row">
+              <span class="bar-lbl">王者荣耀 生命周期收入</span>
+              <span class="bar-val purple">$16.8B</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill purple" style="width:100%"></div></div>
+          </div>
+          <div>
+            <div class="bar-row">
+              <span class="bar-lbl">PUBG Mobile 生命周期收入</span>
+              <span class="bar-val purple">$11.2B</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill purple" style="width:67%"></div></div>
+          </div>
+        </div>
+        <div class="chart-block">
+          <div class="chart-title">各平台增长指数对比（2020=100）</div>
+          <div class="chart-sub">指数化处理，用于比较各平台相对增速</div>
+          <div style="height:140px;position:relative"><canvas id="chart-roblox-growth"></canvas></div>
+        </div>
+        <p class="para">对于游戏从业者而言，Roblox 现象意味着：<strong>UGC 创作经济</strong>正在成为游戏行业新的主流生产模式，年轻用户的娱乐注意力已系统性偏移。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第三章 -->
+  <div class="section-wrap" id="sec-3">
+    <span class="section-label">第三章 · 平台格局重塑</span>
+    <div class="wx-block">
+      <div class="wx-section">
+        <div class="sec-header">
+          <div class="sec-num" style="background:#0694A2">03</div>
+          <div class="sec-title">
+            <h2>主机传统销售跌 11%<br>订阅制接管 119% 净增长</h2>
+            <p>PLATFORM RESHAPING · 买断制与订阅制的生死博弈</p>
+          </div>
+        </div>
+        <p class="para">主机市场正经历深刻内部重组。<em>传统游戏销售同比下跌了 11%</em>。增长全部来自 PS Plus 和 Xbox Game Pass 等订阅服务——订阅制的净增量超过了主机平台总净增量的 119%。</p>
+        <div class="stat-row">
+          <div class="stat-card red" style="grid-column:span 2">
+            <div class="stat-num" style="color:#C53030;font-size:32px">−11%</div>
+            <div class="stat-desc">主机传统游戏销售 2025 年同比跌幅</div>
+          </div>
+          <div class="stat-card teal" style="grid-column:span 2">
+            <div class="stat-num" style="color:#0694A2;font-size:32px">119%</div>
+            <div class="stat-desc">订阅服务捕获的主机净增量比例</div>
+          </div>
+        </div>
+        <div class="vs-grid">
+          <div class="vs-card old">
+            <span class="vs-tag">传统模式 · 承压</span>
+            <div class="vs-li">买断游戏销售 −11%</div>
+            <div class="vs-li">美国支出 −$2.3B</div>
+            <div class="vs-li">五年累计收缩 8%</div>
+            <div class="vs-li">独立游戏曝光更难</div>
+          </div>
+          <div class="vs-card new">
+            <span class="vs-tag" style="color:#0694A2">订阅模式 · 崛起</span>
+            <div class="vs-li" style="color:#2C7A7B">PS Plus / Game Pass ↑</div>
+            <div class="vs-li" style="color:#2C7A7B">订阅捕获 119% 净增</div>
+            <div class="vs-li" style="color:#2C7A7B">大作受益于平台流量</div>
+            <div class="vs-li" style="color:#2C7A7B">长尾内容变现成型</div>
+          </div>
+        </div>
+        <div class="pull teal">订阅制平台不仅拿走了增量，还在<strong>主动蚕食存量</strong>。当玩家习惯了"月费几十块玩不完"，为单款游戏支付数百元的意愿必然下降。</div>
+        <div class="chart-block">
+          <div class="chart-title">主机营收结构：传统销售 vs 订阅服务（十亿美元）</div>
+          <div class="chart-sub">2020-2025 年趋势（示意）</div>
+          <div style="height:140px;position:relative"><canvas id="chart-console"></canvas></div>
+        </div>
+        <p class="para">PC 市场则完全不同。在《黑神话》等现象级作品带动下，PC 游戏 2025 年营收达 <em>407 亿美元</em>，相比 2020 年提升了 30%。PC 正在向更具活力的内容发行核心移动。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第四章 -->
+  <div class="section-wrap" id="sec-4">
+    <span class="section-label">第四章 · 裁员与外包浪潮</span>
+    <div class="wx-block">
+      <div class="wx-section">
+        <div class="sec-header">
+          <div class="sec-num" style="background:#C53030">04</div>
+          <div class="sec-title">
+            <h2>44,000 人的累计代价<br>外包占比创历史新高</h2>
+            <p>LAYOFFS & OUTSOURCING · 行业重构中的人才流动</p>
+          </div>
+        </div>
+        <p class="para">2022 年至今，游戏行业已累计裁员 <em>44,000 人</em>，近半数来自加州。2025 年裁员约 <strong>9,200 人</strong>，比 2024 年减少约 40%，但这是大规模精简后的"消化期"，而非回暖。</p>
+        <div class="stat-row">
+          <div class="stat-card red">
+            <div class="stat-num" style="color:#C53030">44K</div>
+            <div class="stat-desc">2022年至今<br>累计裁员</div>
+          </div>
+          <div class="stat-card red">
+            <div class="stat-num" style="color:#C53030">9,200</div>
+            <div class="stat-desc">2025 年<br>裁员人数</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num" style="color:#C53030">−40%</div>
+            <div class="stat-desc">vs 2024 年<br>裁员降幅</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-num">50%</div>
+            <div class="stat-desc">裁员来自<br>加利福尼亚</div>
+          </div>
+        </div>
+        <p class="para">与裁员并行的是外包比例持续攀升。2025 年开发商内容投资中有 <em>35.5%</em> 流向外包合作方，高于 2017 年的 30.6%。外包边界已突破传统美术，核心创意环节也在向外转移。</p>
+        <div class="bar-list">
+          <div>
+            <div class="bar-row">
+              <span class="bar-lbl">开发预算外包比例（2025）</span>
+              <span class="bar-val red">35.5%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill red" style="width:35.5%"></div></div>
+          </div>
+          <div>
+            <div class="bar-row">
+              <span class="bar-lbl">开发预算外包比例（2017）</span>
+              <span class="bar-val" style="color:#888">30.6%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill" style="width:30.6%;background:#CBD5E0"></div></div>
+          </div>
+          <div>
+            <div class="bar-row">
+              <span class="bar-lbl">私募融资同比跌幅（2025）</span>
+              <span class="bar-val red">−55%</span>
+            </div>
+            <div class="bar-track"><div class="bar-fill red" style="width:55%"></div></div>
+          </div>
+        </div>
+        <div class="pull red">
+          <strong>Hollow Knight: Silksong</strong> —— 内部 3 人 vs 外部 94 人<br>
+          <strong>Palworld</strong> —— 93 名外部制作成员<br>
+          这不是特例，而是行业模式转变的缩影。
+        </div>
+        <p class="para">融资环境同样严峻。2025 年私募游戏融资同比下跌 <em>55%</em>，种子轮跌破 1 亿美元关口。对于独立团队和中小工作室而言，活下去的策略比扩张计划更重要。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第五章 -->
+  <div class="section-wrap" id="sec-5">
+    <span class="section-label">第五章 · 注意力争夺战</span>
+    <div class="wx-block">
+      <div class="wx-section">
+        <div class="sec-header">
+          <div class="sec-num" style="background:#B7791F">05</div>
+          <div class="sec-title">
+            <h2>游戏失去了用户时间之战？<br>短视频、成人内容、加密货币蚕食</h2>
+            <p>ATTENTION ECONOMY · 游戏在注意力竞争中的处境</p>
+          </div>
+        </div>
+        <p class="para">游戏行业最隐蔽的挑战来自外部注意力竞争。报告指出：<em>短视频平台、成人内容平台、加密货币/Web3</em> 正在系统性蚕食原本属于游戏的用户时间。</p>
+        <div class="pull amber">用户时间总量是固定的。当短视频做到"无限下滑"、当 Web3 的金融刺激取代游戏成就感，游戏面对的不仅是<strong>同行竞争</strong>，而是整个注意力市场的重新分配。</div>
+        <p class="para">在美国市场，PC 与主机玩家游戏消费自 2020 年净减少约 <em>23 亿美元</em>（−8%）。与此同时，移动游戏在新兴市场的扩张和 Roblox 对年轻用户的虹吸效应，正在部分对冲这一流失。</p>
+        <div class="chart-block">
+          <div class="chart-title">注意力竞争格局（威胁指数）</div>
+          <div class="chart-sub">基于 Epyllion 报告定性描述的指数化评估</div>
+          <div style="height:160px;position:relative"><canvas id="chart-attention"></canvas></div>
+        </div>
+        <p class="para">对中国从业者而言：短视频对泛休闲游戏用户的替代效应已显现。快手小游戏、微信小游戏的崛起，本质上是游戏对短视频渠道的"依附式共存"策略——借助内容流量做触达，而非建立独立获客渠道。</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第六章 -->
+  <div class="section-wrap" id="sec-6">
+    <span class="section-label">第六章 · 五大增长引擎</span>
+    <div class="wx-block">
+      <div class="wx-section">
+        <div class="sec-header">
+          <div class="sec-num" style="background:#276749">06</div>
+          <div class="sec-title">
+            <h2>Epyllion 判断：五大未来增长驱动力<br>谁先布局谁先吃到红利</h2>
+            <p>GROWTH ENGINES · 2026 年及以后的战略方向</p>
+          </div>
+        </div>
+        <p class="para">报告提出 <em>五大未来增长驱动力</em>，是对游戏行业接下来增量机遇的最核心判断。</p>
+        <div class="concl-list">
+          <div class="concl-item">
+            <div class="concl-icon" style="background:#276749">🌏</div>
+            <div>
+              <div class="concl-title">① 新兴市场 / 非核心市场</div>
+              <div class="concl-desc">印度、东南亚、中东、拉美——正在经历中国 2012-2018 年的移动游戏爆发前夜。智能手机渗透率快速提升，本地化内容空白巨大。先进入者将收获结构性先发优势。</div>
+            </div>
+          </div>
+          <div class="concl-item">
+            <div class="concl-icon" style="background:#2B6CB0">💰</div>
+            <div>
+              <div class="concl-title">② 广告变现 + 直面用户模型</div>
+              <div class="concl-desc">应用内广告与订阅直购双轮驱动，绕开应用商店高比例抽佣。上下文广告与品牌联动广告正在成为替代买量的新路径。</div>
+            </div>
+          </div>
+          <div class="concl-item">
+            <div class="concl-icon" style="background:#6B46C1">🔧</div>
+            <div>
+              <div class="concl-title">③ 外包与外部开发生态</div>
+              <div class="concl-desc">开发预算的 35.5% 已流向外部合作方，且这一比例还在提升。从美术外包演变为完整联合开发，外部开发生态正成为产业链上独立且高价值的环节。</div>
+            </div>
+          </div>
+          <div class="concl-item">
+            <div class="concl-icon" style="background:#0694A2">💳</div>
+            <div>
+              <div class="concl-title">④ 替代支付渠道</div>
+              <div class="concl-desc">直充、礼品卡、第三方支付——绕过 App Store 与 Google Play 高达 30% 抽佣的路径正被越来越多开发者探索。Epic 与苹果的长期法律战已为部分市场打开了合规空间。</div>
+            </div>
+          </div>
+          <div class="concl-item">
+            <div class="concl-icon" style="background:#B7791F">🎮</div>
+            <div>
+              <div class="concl-title">⑤ Roblox 生态的持续扩张</div>
+              <div class="concl-desc">UGC 创作经济仍在放大。在 Roblox 平台上创作，意味着接触数亿年轻用户，同时获取 Robux 收入。越来越多传统游戏公司已开始尝试 Roblox 联动。</div>
+            </div>
+          </div>
+        </div>
+        <div class="pull green">这五个方向可以<strong>叠加布局</strong>。对中国游戏公司而言，新兴市场 + 替代支付渠道的组合，可能是 2026 年最具操作性的增量路径。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 结论 -->
+  <div class="section-wrap" id="sec-end">
+    <span class="section-label">结论与核心判断</span>
+    <div class="wx-block">
+      <div class="wx-ending">
+        <div class="grid"></div>
+        <div class="end-label">Strategic Takeaways · 解读 Epyllion 2026 游戏行业报告核心判断</div>
+        <div class="end-list">
+          <div class="end-row">
+            <div class="end-num">📈</div>
+            <div class="end-text"><strong>Roblox 不是竞争对手，是新基础设施</strong><br>它已超越"游戏平台"定义，成为下一代互联网娱乐基础设施。传统游戏公司需决策：是在其生态内创作，还是放弃这部分年轻用户？</div>
+          </div>
+          <div class="end-row">
+            <div class="end-num">📉</div>
+            <div class="end-text"><strong>买断制游戏市场在收缩，差异化是唯一出路</strong><br>主机传统销售 −11%，美国市场五年减少 $2.3B。没有独特性的买断制游戏，正被订阅平台流量稀释到无形。</div>
+          </div>
+          <div class="end-row">
+            <div class="end-num">🇨🇳</div>
+            <div class="end-text"><strong>中国游戏的全球机会是真实的，但门槛极高</strong><br>84% 国内消费留在本土。黑神话证明品质出海可行，但能走这条路的团队凤毛麟角。</div>
+          </div>
+          <div class="end-row">
+            <div class="end-num">💸</div>
+            <div class="end-text"><strong>融资寒冬 + 外包崛起 = 轻资产生存策略</strong><br>私募降 55%，外包升至 35.5%。2026 年最优解不是大团队大投入，而是核心小团队 + 外部协作网络的轻量化结构。</div>
+          </div>
+          <div class="end-row">
+            <div class="end-num">🌍</div>
+            <div class="end-text"><strong>新兴市场是最后一个尚未饱和的蓝海</strong><br>印度、东南亚正在重演中国 2015 年的移动游戏爆发轨迹。机会窗口大约还有 3-5 年。</div>
+          </div>
+          <div class="end-row">
+            <div class="end-num">⚡</div>
+            <div class="end-text"><strong>注意力争夺战没有终点，游戏需要重新定义"价值"</strong><br>游戏的反制不是增加广告，而是提供短视频无法给予的：<strong>沉浸感、成就感、社交认同</strong>。</div>
+          </div>
+        </div>
+        <div class="end-bottom">
+          <span class="end-brand">DATA RADAR · 数据雷达</span>
+          <span class="end-src">解读 Epyllion 2026 游戏行业报告</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /#preview-area -->
+</div><!-- /#main -->
+
+<div id="toast">正在生成图片…</div>
+
+<script>
+Chart.defaults.font.family = "'Inter','Noto Sans SC',sans-serif";
+
+// 三大平台营收
+new Chart(document.getElementById('chart-platform'), {
+  type: 'bar',
+  data: {
+    labels: ['移动（估算）', 'PC', '主机'],
+    datasets: [{ label: '2025 营收（十亿美元）', data: [113, 40.7, 41.6], backgroundColor: ['#9F7AEA','#2B6CB0','#0694A2'], borderRadius: 5, borderSkipped: false }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` $${ctx.raw}B` } } },
+    scales: {
+      x: { ticks: { callback: v => '$'+v+'B', font: { size: 10 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+// Roblox 增长指数
+new Chart(document.getElementById('chart-roblox-growth'), {
+  type: 'line',
+  data: {
+    labels: ['2020','2021','2022','2023','2024','2025'],
+    datasets: [
+      { label: 'Roblox', data: [100,145,180,220,290,380], borderColor: '#6B46C1', backgroundColor: 'rgba(107,70,193,0.08)', tension: 0.4, pointRadius: 3, fill: true },
+      { label: 'PC', data: [100,110,115,120,125,130], borderColor: '#2B6CB0', backgroundColor: 'transparent', tension: 0.4, pointRadius: 3 },
+      { label: '主机', data: [100,105,108,105,104,102], borderColor: '#0694A2', backgroundColor: 'transparent', tension: 0.4, pointRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { font: { size: 9 }, boxWidth: 8, padding: 6 } } },
+    scales: {
+      y: { ticks: { font: { size: 9 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+    }
+  }
+});
+
+// 主机结构
+new Chart(document.getElementById('chart-console'), {
+  type: 'bar',
+  data: {
+    labels: ['2020','2021','2022','2023','2024','2025'],
+    datasets: [
+      { label: '传统销售', data: [30,29,28,26,24,21.4], backgroundColor: '#C53030', borderRadius: 3 },
+      { label: '订阅服务', data: [5,7,10,13,17,20.2], backgroundColor: '#0694A2', borderRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { position: 'top', labels: { font: { size: 9 }, boxWidth: 8, padding: 6 } }, tooltip: { callbacks: { label: ctx => ` $${ctx.raw}B` } } },
+    scales: {
+      y: { ticks: { callback: v => '$'+v+'B', font: { size: 9 } }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+    }
+  }
+});
+
+// 注意力雷达
+new Chart(document.getElementById('chart-attention'), {
+  type: 'radar',
+  data: {
+    labels: ['短视频', '成人内容', '加密货币', '社交媒体', '流媒体', '游戏（基准）'],
+    datasets: [{
+      label: '注意力威胁指数',
+      data: [90, 72, 55, 68, 60, 100],
+      backgroundColor: 'rgba(43,108,176,0.1)', borderColor: '#2B6CB0', pointBackgroundColor: '#2B6CB0', pointRadius: 3
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: { r: { min: 0, max: 100, ticks: { display: false }, grid: { color: 'rgba(0,0,0,0.07)' }, pointLabels: { font: { size: 9 } } } }
+  }
+});
+
+// ── 导航跳转 ──
+function jumpTo(id) {
+  const el = document.getElementById(id);
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  event && event.currentTarget && event.currentTarget.classList.add('active');
+}
+
+// ── 下载单节 ──
+function downloadSection(id) {
+  const wrap = document.getElementById(id);
+  const block = wrap && wrap.querySelector('.wx-block');
+  if (!block) return;
+  showToast('正在渲染图片…');
+  htmlToImage.toPng(block, { pixelRatio: 3, cacheBust: true })
+    .then(dataUrl => { saveAs(dataUrl, `gaming-2026-wechat-${id}.png`); showToast('下载成功！'); })
+    .catch(e => { showToast('生成失败，请重试'); console.error(e); });
+}
+
+// ── 导出大长图（逐章截图 → Canvas 拼接，不移动 DOM）──
+async function exportLongImage() {
+  const ORDER = ['sec-cover','sec-1','sec-2','sec-3','sec-4','sec-5','sec-6','sec-end'];
+  const SCALE = 3;
+  const DIVIDER_H = 6; // 章节间分割线高度（px，原始尺寸）
+
+  // 1. 逐章截图，收集 Image 对象与尺寸
+  const images = [];
+  for (let i = 0; i < ORDER.length; i++) {
+    const wrap = document.getElementById(ORDER[i]);
+    const block = wrap && wrap.querySelector('.wx-block');
+    if (!block) continue;
+    showToast(`截图第 ${i+1} / ${ORDER.length} 章…`);
+    try {
+      const dataUrl = await htmlToImage.toPng(block, { pixelRatio: SCALE, cacheBust: true });
+      await new Promise(r => setTimeout(r, 80)); // 给浏览器喘息
+      const img = new Image();
+      await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = dataUrl; });
+      images.push(img);
+    } catch(e) {
+      console.error('截图失败:', ORDER[i], e);
+    }
+  }
+
+  if (images.length === 0) { showToast('没有可合并的内容'); return; }
+
+  showToast('正在合成长图…');
+
+  // 2. 计算总画布尺寸
+  const W = images[0].naturalWidth;
+  const divH = DIVIDER_H * SCALE;
+  const totalH = images.reduce((s, img) => s + img.naturalHeight, 0)
+                 + divH * (images.length - 1);
+
+  // 3. 在离屏 Canvas 上拼接
+  const canvas = document.createElement('canvas');
+  canvas.width = W;
+  canvas.height = totalH;
+  const ctx = canvas.getContext('2d');
+
+  let y = 0;
+  for (let i = 0; i < images.length; i++) {
+    if (i > 0) {
+      // 深色分割线
+      const grad = ctx.createLinearGradient(0, 0, W, 0);
+      grad.addColorStop(0,   '#0C1E38');
+      grad.addColorStop(0.5, '#1A3A60');
+      grad.addColorStop(1,   '#0C1E38');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, y, W, divH);
+      y += divH;
+    }
+    ctx.drawImage(images[i], 0, y);
+    y += images[i].naturalHeight;
+  }
+
+  // 4. 导出
+  canvas.toBlob(blob => {
+    saveAs(blob, 'gaming-2026-wechat-长图.png');
+    showToast('长图导出成功！');
+  }, 'image/png');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+</script>
+</body>
+</html>

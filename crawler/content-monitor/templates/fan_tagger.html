@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>小红书粉丝打标系统</title>
+  <style>
+    :root {
+      --primary: #ff2442;
+      --primary-light: #ff6b81;
+      --bg: #0d1117;
+      --bg-card: #161b22;
+      --bg-card2: #21262d;
+      --border: #30363d;
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --success: #3fb950;
+      --warning: #d29922;
+      --error: #f85149;
+      --blue: #58a6ff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+    }
+    .container { max-width: 900px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      display: flex; align-items: center; gap: 16px;
+      margin-bottom: 32px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .header-icon {
+      width: 48px; height: 48px; border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), #ff7098);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .header h1 { font-size: 24px; font-weight: 700; }
+    .header p { color: var(--text-dim); font-size: 14px; margin-top: 4px; }
+    .back-btn {
+      margin-left: auto;
+      background: var(--bg-card2); border: 1px solid var(--border);
+      color: var(--text); padding: 8px 16px; border-radius: 8px;
+      cursor: pointer; font-size: 14px; text-decoration: none;
+      transition: background 0.2s;
+    }
+    .back-btn:hover { background: var(--border); }
+
+    /* Card */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin-bottom: 20px;
+    }
+    .card-title {
+      font-size: 15px; font-weight: 600;
+      margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+      color: var(--text-dim);
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .card-title .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--primary);
+    }
+
+    /* Form */
+    label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 6px; }
+    textarea, input[type="text"] {
+      width: 100%; background: var(--bg-card2);
+      border: 1px solid var(--border); border-radius: 8px;
+      color: var(--text); font-size: 13px; padding: 10px 14px;
+      resize: vertical; font-family: "Courier New", monospace;
+      transition: border-color 0.2s;
+    }
+    textarea:focus, input[type="text"]:focus {
+      outline: none; border-color: var(--primary);
+    }
+    textarea { height: 100px; }
+    input[type="text"] { height: 40px; }
+    .form-row { margin-bottom: 16px; }
+    .form-hint { font-size: 12px; color: var(--text-dim); margin-top: 5px; }
+    .form-hint a { color: var(--blue); text-decoration: none; }
+    .form-hint a:hover { text-decoration: underline; }
+
+    /* Buttons */
+    .btn {
+      padding: 10px 24px; border-radius: 8px; border: none;
+      font-size: 14px; font-weight: 600; cursor: pointer;
+      transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary {
+      background: var(--primary); color: #fff;
+    }
+    .btn-primary:hover:not(:disabled) { background: #e01e3c; }
+    .btn-secondary {
+      background: var(--bg-card2); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover:not(:disabled) { background: var(--border); }
+    .btn-success {
+      background: var(--success); color: #fff;
+    }
+    .btn-success:hover:not(:disabled) { background: #2ea043; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+    /* Progress Section */
+    #progress-section { display: none; }
+    .progress-header {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 16px;
+    }
+    .progress-title { font-size: 16px; font-weight: 600; }
+    .progress-status {
+      font-size: 13px; padding: 4px 12px; border-radius: 20px;
+      font-weight: 600;
+    }
+    .status-running { background: rgba(88,166,255,0.15); color: var(--blue); }
+    .status-done { background: rgba(63,185,80,0.15); color: var(--success); }
+    .status-error { background: rgba(248,81,73,0.15); color: var(--error); }
+
+    .progress-bar-wrap {
+      background: var(--bg-card2); border-radius: 6px;
+      height: 10px; overflow: hidden; margin-bottom: 10px;
+    }
+    .progress-bar {
+      height: 100%; background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      border-radius: 6px; transition: width 0.4s ease;
+      width: 0%;
+    }
+    .progress-numbers {
+      display: flex; justify-content: space-between;
+      font-size: 13px; color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    .current-fan {
+      font-size: 13px; color: var(--text-dim);
+      background: var(--bg-card2); padding: 8px 12px;
+      border-radius: 6px; border-left: 3px solid var(--primary);
+      margin-bottom: 16px;
+    }
+    .current-fan span { color: var(--text); font-weight: 500; }
+
+    /* Stage steps */
+    .stages {
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+    }
+    .stage-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; padding: 5px 12px; border-radius: 20px;
+      background: var(--bg-card2); border: 1px solid var(--border);
+      color: var(--text-dim); transition: all 0.3s;
+    }
+    .stage-item.active {
+      background: rgba(255,36,66,0.12); border-color: var(--primary);
+      color: var(--primary);
+    }
+    .stage-item.done-stage {
+      background: rgba(63,185,80,0.12); border-color: var(--success);
+      color: var(--success);
+    }
+    .stage-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Log box */
+    .log-box {
+      background: var(--bg-card2); border: 1px solid var(--border);
+      border-radius: 8px; padding: 14px; font-family: "Courier New", monospace;
+      font-size: 12px; color: var(--text-dim); height: 200px;
+      overflow-y: auto; line-height: 1.7;
+    }
+    .log-line { margin-bottom: 2px; }
+    .log-line.success { color: var(--success); }
+    .log-line.info { color: var(--blue); }
+    .log-line.warn { color: var(--warning); }
+    .log-line.err { color: var(--error); }
+
+    /* Download section */
+    #download-section { display: none; }
+    .download-card {
+      border-color: var(--success);
+      background: rgba(63,185,80,0.05);
+    }
+    .download-icon { font-size: 36px; margin-bottom: 12px; }
+    .download-title { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .download-desc { color: var(--text-dim); font-size: 14px; margin-bottom: 20px; }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 1s linear infinite; display: inline-block; }
+
+    /* Tip box */
+    .tip-box {
+      background: rgba(88,166,255,0.08); border: 1px solid rgba(88,166,255,0.25);
+      border-radius: 8px; padding: 12px 16px;
+      font-size: 13px; color: var(--blue); line-height: 1.6;
+    }
+    .tip-box strong { color: #7ec8ff; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-icon">🏷️</div>
+    <div>
+      <h1>小红书粉丝打标系统</h1>
+      <p>爬取粉丝信息 → AI 自动打标 → 导出 Excel，助力精准运营</p>
+    </div>
+    <a href="/" class="back-btn">← 返回主页</a>
+  </div>
+
+  <!-- Config Card -->
+  <div class="card" id="config-section">
+    <div class="card-title"><span class="dot"></span>启动配置</div>
+
+    <div class="tip-box" style="margin-bottom: 20px;">
+      <strong>🖥️ 工作原理：</strong>点击启动后，系统会自动打开一个 <strong>Chrome 浏览器窗口</strong>。<br>
+      • 如果浏览器内已登录小红书，将自动开始爬取<br>
+      • 如果未登录，页面会显示<strong>二维码</strong>，用手机扫码登录后自动继续<br>
+      <strong>⏱️ 预计耗时：</strong>约 20-30 分钟（424 人）
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="start-btn" onclick="startTask()">
+        🚀 启动 Chrome 开始爬取
+      </button>
+      <button class="btn btn-secondary" onclick="clearCache()">
+        🗑️ 清除断点缓存
+      </button>
+    </div>
+  </div>
+
+  <!-- QR Login Section -->
+  <div class="card" id="qr-section" style="display:none;">
+    <div class="card-title"><span class="dot"></span>扫码登录小红书</div>
+    <div style="text-align:center; padding: 16px 0;">
+      <p style="color:var(--text-dim); margin-bottom:16px; font-size:14px;">
+        Chrome 窗口已打开，请用 <strong>小红书 App</strong> 扫描下方二维码登录
+      </p>
+      <img id="qr-img" src="" alt="二维码" style="max-width:400px; border-radius:12px; border:2px solid var(--border);">
+      <p style="color:var(--text-dim); margin-top:12px; font-size:13px;">登录成功后将自动开始爬取粉丝数据...</p>
+    </div>
+  </div>
+
+  <!-- Progress Card -->
+  <div class="card" id="progress-section">
+    <div class="progress-header">
+      <div class="progress-title">任务进度</div>
+      <div class="progress-status status-running" id="status-badge">⏳ 运行中</div>
+    </div>
+
+    <!-- Stage indicators -->
+    <div class="stages">
+      <div class="stage-item" id="stage-init" data-stage="init">
+        <span class="stage-dot"></span> 初始化
+      </div>
+      <div class="stage-item" id="stage-login" data-stage="login">
+        <span class="stage-dot"></span> 扫码登录
+      </div>
+      <div class="stage-item" id="stage-fetch_list" data-stage="fetch_list">
+        <span class="stage-dot"></span> 获取粉丝列表
+      </div>
+      <div class="stage-item" id="stage-fetch_detail" data-stage="fetch_detail">
+        <span class="stage-dot"></span> 抓取详情
+      </div>
+      <div class="stage-item" id="stage-ai_tag" data-stage="ai_tag">
+        <span class="stage-dot"></span> AI 打标
+      </div>
+      <div class="stage-item" id="stage-export" data-stage="export">
+        <span class="stage-dot"></span> 导出 Excel
+      </div>
+      <div class="stage-item" id="stage-done" data-stage="done">
+        <span class="stage-dot"></span> 完成
+      </div>
+    </div>
+
+    <!-- Progress bar -->
+    <div class="progress-bar-wrap">
+      <div class="progress-bar" id="progress-bar"></div>
+    </div>
+    <div class="progress-numbers">
+      <span id="progress-text">0 / 0</span>
+      <span id="progress-pct">0%</span>
+    </div>
+
+    <div class="current-fan" id="current-fan">
+      当前：<span id="current-name">等待中...</span>
+    </div>
+
+    <!-- Log -->
+    <div class="card-title"><span class="dot"></span>运行日志</div>
+    <div class="log-box" id="log-box">
+      <div class="log-line info">等待任务启动...</div>
+    </div>
+  </div>
+
+  <!-- Manual Operation Guide -->
+  <div class="card" id="manual-section" style="display:none;">
+    <div class="card-title"><span class="dot"></span>🖐️ 需要您手动操作</div>
+    <div class="tip-box" style="margin-bottom:20px; font-size:14px; line-height:2;">
+      脚本已打开小红书<strong>通知页</strong>，请在 Chrome 窗口中完成以下操作：<br>
+      1. 点击页面顶部「<strong>新增关注</strong>」选项卡<br>
+      2. <strong>慢慢向下滚动</strong>，直到加载完所有关注通知（即所有粉丝）<br>
+      3. 滚动完毕后，点击下方「<strong>完成，开始抓取</strong>」按钮
+    </div>
+    <div style="text-align:center;">
+      <div style="font-size:28px; margin-bottom:12px; color:var(--success);" id="manual-count">已监听到 0 位粉丝</div>
+      <button class="btn btn-success" onclick="confirmManualDone()">
+        ✅ 完成，开始抓取详情
+      </button>
+    </div>
+  </div>
+
+  <!-- Debug Screenshot (only shown when debug_screenshot available) -->
+  <div class="card" id="debug-section" style="display:none;">
+    <div class="card-title"><span class="dot"></span>浏览器截图（调试）</div>
+    <img id="debug-img" src="" alt="浏览器截图" style="max-width:100%; border-radius:8px; border:1px solid var(--border);">
+    <p style="font-size:12px; color:var(--text-dim); margin-top:8px;">如果截图中未显示粉丝列表，请在 Chrome 窗口中手动点击"粉丝"数字，脚本会自动继续。</p>
+  </div>
+
+  <!-- Download Section -->
+  <div class="card download-card" id="download-section">
+    <div style="text-align: center; padding: 16px 0;">
+      <div class="download-icon">🎉</div>
+      <div class="download-title">打标完成！</div>
+      <div class="download-desc" id="download-desc">已成功处理所有粉丝数据，Excel 文件已生成</div>
+      <button class="btn btn-success" id="download-btn" onclick="downloadExcel()">
+        ⬇️ 下载粉丝打标 Excel
+      </button>
+      <button class="btn btn-secondary" style="margin-left: 12px;" onclick="resetPage()">
+        🔄 重新开始
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let taskId = null;
+  let pollTimer = null;
+  let lastLogCount = 0;
+  const STAGE_ORDER = ['init', 'login', 'fetch_list', 'fetch_detail', 'ai_tag', 'export', 'done'];
+
+    // 手动操作完成
+    async function confirmManualDone() {
+      if (!taskId) return;
+      try {
+        await fetch('/api/fan_tag_manual_done', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({task_id: taskId})
+        });
+        document.getElementById('manual-section').style.display = 'none';
+        addLog('✅ 已确认完成手动操作，开始抓取详情...', 'success');
+      } catch(e) { alert('操作失败: ' + e.message); }
+    }
+
+    async function startTask() {
+    document.getElementById('start-btn').disabled = true;
+    document.getElementById('progress-section').style.display = 'block';
+    document.getElementById('download-section').style.display = 'none';
+
+    try {
+      const res = await fetch('/api/start_fan_tag', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ cookie: '', target_user_id: '59721a7182ec3947669d07be' }),
+      });
+      const data = await res.json();
+      if (!data.task_id) throw new Error(data.error || '启动失败');
+      taskId = data.task_id;
+      addLog('🚀 任务已启动，Chrome 窗口即将打开...', 'info');
+      startPolling();
+    } catch (e) {
+      addLog('❌ 启动失败: ' + e.message, 'err');
+      document.getElementById('start-btn').disabled = false;
+    }
+  }
+
+  function startPolling() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = setInterval(pollProgress, 2000);
+  }
+
+  async function pollProgress() {
+    if (!taskId) return;
+    try {
+      const res = await fetch('/api/fan_tag_progress?task_id=' + taskId);
+      const state = await res.json();
+      updateUI(state);
+    } catch (e) {
+      console.warn('轮询失败:', e);
+    }
+  }
+
+  function updateUI(state) {
+    if (!state || !state.stage) return;
+
+    // 二维码登录
+    if (state.need_login && state.qr_image) {
+      document.getElementById('qr-section').style.display = 'block';
+      document.getElementById('qr-img').src = 'data:image/png;base64,' + state.qr_image;
+    } else {
+      document.getElementById('qr-section').style.display = 'none';
+    }
+
+    // 手动操作引导
+    if (state.need_manual && !state.manual_done && state.stage === 'fetch_list') {
+      document.getElementById('manual-section').style.display = 'block';
+      document.getElementById('manual-count').textContent =
+        '已监听到 ' + (state.follower_count || 0) + ' 位粉丝';
+    } else if (!state.need_manual || state.stage !== 'fetch_list') {
+      document.getElementById('manual-section').style.display = 'none';
+    }
+
+    // 调试截图
+    if (state.debug_screenshot) {
+      document.getElementById('debug-section').style.display = 'block';
+      document.getElementById('debug-img').src = 'data:image/png;base64,' + state.debug_screenshot;
+    }
+
+    // Stage indicators
+    const stageIdx = STAGE_ORDER.indexOf(state.stage);
+    STAGE_ORDER.forEach((s, i) => {
+      const el = document.getElementById('stage-' + s);
+      if (!el) return;
+      el.classList.remove('active', 'done-stage');
+      if (i < stageIdx) el.classList.add('done-stage');
+      else if (i === stageIdx) el.classList.add('active');
+    });
+
+    // Progress bar
+    const total = state.total || 0;
+    const done = state.done || 0;
+    const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('progress-text').textContent = done + ' / ' + (total || '?');
+    document.getElementById('progress-pct').textContent = pct + '%';
+
+    if (state.message) {
+      document.getElementById('current-fan').innerHTML = '当前：<span>' + escHtml(state.message) + '</span>';
+    }
+
+    // Logs
+    const logs = state.logs || [];
+    if (logs.length > lastLogCount) {
+      logs.slice(lastLogCount).forEach(line => addLog(line));
+      lastLogCount = logs.length;
+    }
+
+    // Status badge
+    const badge = document.getElementById('status-badge');
+    if (state.status === 'done') {
+      badge.textContent = '✅ 完成';
+      badge.className = 'progress-status status-done';
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      document.getElementById('progress-bar').style.width = '100%';
+      showDownload(state.excel_path, total);
+    } else if (state.status === 'error') {
+      badge.textContent = '❌ 出错';
+      badge.className = 'progress-status status-error';
+      if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+      addLog('❌ 错误: ' + (state.error || '未知错误'), 'err');
+      document.getElementById('start-btn').disabled = false;
+    }
+  }
+
+  function showDownload(excelPath, total) {
+    document.getElementById('download-section').style.display = 'block';
+    document.getElementById('download-desc').textContent =
+      `已成功处理 ${total} 位粉丝数据，点击下载 Excel`;
+    document.getElementById('download-section').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  async function downloadExcel() {
+    const btn = document.getElementById('download-btn');
+    btn.disabled = true; btn.textContent = '⏳ 准备...';
+    try {
+      const res = await fetch('/api/download_fan_excel?task_id=' + taskId);
+      if (!res.ok) throw new Error(await res.text());
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = '粉丝打标_' + new Date().toLocaleDateString('zh-CN').replace(/\//g, '') + '.xlsx';
+      a.click();
+      URL.revokeObjectURL(url);
+      btn.textContent = '✅ 已下载';
+    } catch (e) {
+      alert('下载失败: ' + e.message);
+      btn.disabled = false; btn.textContent = '⬇️ 下载 Excel';
+    }
+  }
+
+  async function clearCache() {
+    if (!confirm('确认清除断点缓存？')) return;
+    try {
+      const res = await fetch('/api/fan_tag_clear_cache', { method: 'POST' });
+      const d = await res.json();
+      alert(d.message || '已清除');
+    } catch (e) { alert('失败: ' + e.message); }
+  }
+
+  function resetPage() {
+    taskId = null; lastLogCount = 0;
+    if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+    document.getElementById('progress-section').style.display = 'none';
+    document.getElementById('download-section').style.display = 'none';
+    document.getElementById('qr-section').style.display = 'none';
+    document.getElementById('start-btn').disabled = false;
+    document.getElementById('log-box').innerHTML = '<div class="log-line info">等待任务启动...</div>';
+  }
+
+  function addLog(msg, type) {
+    const box = document.getElementById('log-box');
+    const line = document.createElement('div');
+    line.className = 'log-line' + (type ? ' ' + type : '');
+    if (!type) {
+      if (msg.startsWith('✅') || msg.startsWith('🎉')) line.classList.add('success');
+      else if (msg.startsWith('❌')) line.classList.add('err');
+      else if (msg.startsWith('⚠️')) line.classList.add('warn');
+      else if (msg.startsWith('🤖') || msg.startsWith('🔍') || msg.startsWith('📊') || msg.startsWith('🌐') || msg.startsWith('🚀')) line.classList.add('info');
+    }
+    const ts = new Date().toLocaleTimeString('zh-CN');
+    line.textContent = '[' + ts + '] ' + msg;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function escHtml(s) {
+    return (s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+</script>
+</body>
+</html>

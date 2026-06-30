@@ -1,0 +1,2041 @@
+{% extends "base.html" %}
+
+{% block title %}游戏行业周报{% endblock %}
+
+{% block head_extra %}
+<style>
+  .news-card { border: 2px solid transparent; transition: border-color .15s, box-shadow .15s; cursor: pointer; }
+  .news-card.selected { border-color: #6C5CE7; box-shadow: 0 0 0 3px rgba(108,92,231,.12); }
+  .news-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
+  .source-badge-36kr { background: #FFF0F0; color: #e74c3c; }
+  .source-badge-gamelook { background: #F0FFF4; color: #27ae60; }
+  .source-badge-youxichaguan { background: #FFF8E1; color: #f39c12; }  .rank-up   { color: #e74c3c; font-weight: 700; }
+  .rank-down { color: #27ae60; }
+  .rank-same { color: #95a5a6; }
+  .rank-new  { color: #8e44ad; font-weight: 700; }
+  .tab-btn { border-bottom: 2px solid transparent; padding: 6px 12px; font-size: 13px; font-weight: 500; cursor: pointer; transition: all .15s; }
+  .tab-btn.active { border-color: #6C5CE7; color: #6C5CE7; }
+  .tab-btn:not(.active) { color: #64748b; }
+  .rank-table { border-collapse: separate; border-spacing: 0; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+  .rank-table th { background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 600; padding: 7px 10px; text-align: left; border-bottom: 1px solid #e2e8f0; letter-spacing: 0.03em; }
+  .rank-table td { font-size: 12px; padding: 6px 10px; border-bottom: 1px solid #f1f5f9; background: #fff; }
+  .rank-table tr:last-child td { border-bottom: none; }
+  .rank-num { display: inline-flex; align-items: center; justify-content: center; width: 22px; height: 22px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+  .rank-num.top1 { background: #FFD700; color: #78350f; }
+  .rank-num.top2 { background: #C0C0C0; color: #374151; }
+  .rank-num.top3 { background: #CD7F32; color: #fff; }
+  .rank-num.normal { background: #f1f5f9; color: #475569; }
+  .anomaly-item { border-left: 3px solid #6C5CE7; padding: 8px 12px; background: #f8f7ff; border-radius: 0 6px 6px 0; margin-bottom: 6px; }
+  .article-preview { white-space: pre-wrap; font-family: 'Noto Sans SC', sans-serif; line-height: 1.8; font-size: 14px; }
+  .step-num { width: 24px; height: 24px; border-radius: 50%; background: #6C5CE7; color: #fff; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+  .loading-spin { animation: spin 1s linear infinite; }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  #article-output h1 { font-size: 1.5rem; font-weight: 800; margin: 0 0 1rem; color: #1e293b; }
+  #article-output h2 { font-size: 1.15rem; font-weight: 700; margin: 1.5rem 0 .6rem; color: #1e40af; border-bottom: 2px solid #e2e8f0; padding-bottom: .3rem; }
+  #article-output h3 { font-size: 1rem; font-weight: 600; margin: 1rem 0 .4rem; color: #374151; }
+  #article-output p  { margin: .5rem 0; color: #374151; }
+  #article-output ul { padding-left: 1.2rem; margin: .4rem 0; }
+  #article-output li { margin: .25rem 0; color: #374151; }
+  #article-output strong { color: #1e293b; }
+  #article-output em { color: #6C5CE7; font-style: normal; font-weight: 500; }
+
+  /* ── 改写状态 ── */
+  .news-card.rewriting { opacity: .7; }
+  .news-card.rewriting .rewrite-status { animation: status-pulse 1.2s ease-in-out infinite; }
+  @keyframes status-pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+  .news-card .rewrite-badge { display: none; }
+  .news-card.rewritten .rewrite-badge { display: inline-flex; }
+
+  /* ── 公众号编辑器 — 游戏雷达局配色（琥珀橙 × 深海蓝） ── */
+  #wechat-modal .wx-modal-inner {
+    background: #141E2E;
+    color: #D0D8E4;
+    font-family: 'Noto Sans SC', 'PingFang SC', sans-serif;
+  }
+  #wechat-modal .wx-header-bar {
+    background: #0F1824;
+    border-bottom: 1px solid #1E2D40;
+  }
+  #wx-preview-area {
+    background: #141E2E;
+    color: #C8D4E0;
+    font-size: 16px;
+    line-height: 1.9;
+    padding: 32px 40px;
+    outline: none;
+    min-height: 400px;
+  }
+  /* 文章头部作者区 */
+  #wx-author-bar {
+    padding: 12px 40px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #141E2E;
+    border-bottom: 1px solid #1E2D40;
+    margin-bottom: 0;
+  }
+  #wx-author-bar img { width: 36px; height: 36px; border-radius: 50%; object-fit: cover; border: 2px solid #E8820C; }
+  #wx-author-bar .wx-meta { display: flex; flex-direction: column; gap: 2px; }
+  #wx-author-bar .wx-name { font-size: 13px; font-weight: 600; color: #C8D4E0; }
+  #wx-author-bar .wx-date { font-size: 11px; color: #4A6080; }
+  /* 文章大标题 */
+  #wx-article-title {
+    font-size: 26px;
+    font-weight: 800;
+    color: #EAF0F8;
+    padding: 28px 40px 16px;
+    background: #141E2E;
+    line-height: 1.35;
+    letter-spacing: 0.01em;
+    border: none;
+    outline: none;
+    width: 100%;
+    font-family: inherit;
+    resize: none;
+    overflow: hidden;
+  }
+  /* Markdown 渲染区 */
+  #wx-preview-area h1 { display: none; }
+  #wx-preview-area h2 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #E8820C;
+    margin: 28px 0 6px;
+    padding-left: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    counter-increment: wx-section;
+  }
+  /* 章节编号标签 */
+  #wx-preview-area h2::before {
+    content: counter(wx-section, decimal-leading-zero);
+    font-size: 12px;
+    font-weight: 900;
+    color: #141E2E;
+    background: #E8820C;
+    padding: 2px 7px;
+    border-radius: 3px;
+    line-height: 1.5;
+    flex-shrink: 0;
+    letter-spacing: 0.05em;
+  }
+  /* 虚线装饰 */
+  #wx-preview-area h2::after {
+    content: '';
+    display: block;
+    height: 1.5px;
+    flex: 1;
+    background: repeating-linear-gradient(90deg, #E8820C 0, #E8820C 4px, transparent 4px, transparent 8px);
+    opacity: 0.35;
+    margin-left: 8px;
+  }
+  #wx-preview-area h3 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #F5B820;
+    margin: 18px 0 6px;
+    padding-left: 10px;
+    border-left: 3px solid #F5B820;
+  }
+  #wx-preview-area p { color: #B8C8D8; margin: 10px 0; }
+  #wx-preview-area strong { color: #EAF0F8; font-weight: 700; }
+  #wx-preview-area em { color: #F5B820; font-style: normal; }
+  #wx-preview-area blockquote {
+    border-left: 3px solid #E8820C;
+    padding: 8px 16px;
+    margin: 12px 0;
+    background: rgba(232,130,12,0.07);
+    color: #9AAFC4;
+    font-style: italic;
+    border-radius: 0 4px 4px 0;
+  }
+  #wx-preview-area ul { padding-left: 1.4em; margin: 8px 0; }
+  #wx-preview-area li { color: #B0C0D0; margin: 4px 0; }
+  #wx-preview-area hr { border: none; border-top: 1px solid #1E2D40; margin: 20px 0; }
+  #wx-preview-area a { color: #E8820C; text-decoration: none; }
+  #wx-preview-area { counter-reset: wx-section; }
+
+  /* 公众号编辑器表格美化 — 游戏雷达局配色 */
+  #wx-preview-area table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.3);
+  }
+  #wx-preview-area thead tr {
+    background: linear-gradient(90deg, #0F1824 0%, #1A2D42 100%);
+    border-bottom: 2px solid #E8820C;
+  }
+  #wx-preview-area thead th {
+    padding: 10px 12px;
+    color: #F5B820;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 0.05em;
+    text-align: center;
+  }
+  #wx-preview-area thead th:nth-child(2) { text-align: left; }
+  #wx-preview-area tbody tr {
+    border-bottom: 1px solid #1E2D40;
+    transition: background .15s;
+  }
+  #wx-preview-area tbody tr:nth-child(odd)  { background: #141E2E; }
+  #wx-preview-area tbody tr:nth-child(even) { background: #0F1824; }
+  #wx-preview-area tbody td {
+    padding: 8px 12px;
+    color: #C8D4E0;
+    text-align: center;
+    font-size: 12px;
+  }
+  #wx-preview-area tbody td:nth-child(2) { text-align: left; font-weight: 500; color: #EAF0F8; }
+  /* 排名前三高亮 */
+  #wx-preview-area tbody tr:nth-child(1) td:first-child { color: #FFD700; font-weight: 800; font-size: 14px; }
+  #wx-preview-area tbody tr:nth-child(2) td:first-child { color: #C0C0C0; font-weight: 700; }
+  #wx-preview-area tbody tr:nth-child(3) td:first-child { color: #CD7F32; font-weight: 700; }
+  /* 涨跌颜色 */
+  #wx-preview-area tbody td:nth-child(3) { font-weight: 700; }
+
+  #wx-preview-area img {
+    max-width: 100%;
+    display: block;
+    margin: 12px auto;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: outline .1s;
+    position: relative;
+  }
+  #wx-preview-area img.wx-img-selected {
+    outline: 2px solid #E8820C;
+    outline-offset: 2px;
+  }
+  .wx-img-toolbar {
+    position: fixed;
+    background: #1E2D40;
+    border: 1px solid #2E4060;
+    border-radius: 8px;
+    padding: 4px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #C8D4E0;
+    z-index: 9999;
+    box-shadow: 0 4px 16px rgba(0,0,0,.4);
+  }
+  .wx-img-toolbar label { color: #94a3b8; }
+  .wx-img-toolbar input[type=range] { width: 80px; accent-color: #E8820C; }
+  .wx-img-toolbar select { background: #253545; color: #C8D4E0; border: 1px solid #2E4060; border-radius: 4px; padding: 2px 4px; font-size: 11px; }
+  .wx-img-toolbar button { background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 2px 6px; border-radius: 4px; font-size: 11px; }
+  .wx-img-toolbar button:hover { background: #253545; color: #E8820C; }
+  #wx-footer { padding: 20px 40px 28px; background: #141E2E; border-top: 1px solid #1E2D40; display: flex; align-items: center; gap: 10px; }
+  #wx-footer span { font-size: 12px; color: #3A5070; }
+</style>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+{% endblock %}
+
+{% block page_title %}游戏行业周报{% endblock %}
+{% block page_subtitle %}新闻聚合 · 榜单异动 · AI长文生成{% endblock %}
+
+{% block header_actions %}
+<input id="week-label-input" type="text" placeholder="周报标题，如：2026年第10周"
+  class="border border-gray-200 rounded-lg px-3 py-1.5 text-sm w-48 focus:outline-none focus:border-purple-400" />
+<button onclick="generateReport()" id="gen-btn"
+  class="btn-primary px-4 py-2 text-sm flex items-center gap-2">
+  <svg id="gen-spin" class="w-4 h-4 hidden loading-spin" viewBox="0 0 24 24" fill="none">
+    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="30 60" stroke-linecap="round"/>
+  </svg>
+  <span id="gen-btn-text">✦ AI 生成周报</span>
+</button>
+{% endblock %}
+
+{% block main_class %}overflow-hidden{% endblock %}
+
+{% block main %}
+<div class="flex h-full gap-4 p-4 overflow-hidden">
+
+  <!-- ====== 左栏：新闻抓取 + 榜单 ====== -->
+  <div class="w-[480px] shrink-0 flex flex-col gap-3 overflow-y-auto scroll-y pr-1">
+
+    <!-- Step 1：新闻来源 -->
+    <div class="card p-4">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="step-num">1</span>
+        <span class="font-semibold text-sm">抓取一周游戏新闻</span>
+      </div>
+      <div class="flex gap-2 mb-3 flex-wrap">
+        <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+          <input type="checkbox" class="src-check" value="36kr" checked /> <span class="source-badge-36kr badge">36氪游戏</span>
+        </label>
+        <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+          <input type="checkbox" class="src-check" value="gamelook" checked /> <span class="source-badge-gamelook badge">GameLook</span>
+        </label>
+        <label class="flex items-center gap-1.5 text-sm cursor-pointer">
+          <input type="checkbox" class="src-check" value="youxichaguan" checked /> <span class="source-badge-youxichaguan badge">游戏茶馆</span>
+        </label>
+        <select id="days-select" class="border border-gray-200 rounded-lg px-2 py-1 text-xs ml-auto">
+          <option value="3">最近3天</option>
+          <option value="7" selected>最近7天</option>
+          <option value="14">最近14天</option>
+        </select>
+      </div>
+      <button onclick="fetchNews()" id="fetch-news-btn"
+        class="w-full bg-slate-800 text-white rounded-lg py-2 text-sm font-medium hover:bg-slate-700 transition-colors flex items-center justify-center gap-2">
+        <svg id="news-spin" class="w-4 h-4 hidden loading-spin" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="30 60" stroke-linecap="round"/>
+        </svg>
+        <span id="fetch-news-text">抓取新闻</span>
+      </button>
+      <p id="news-status" class="text-xs text-gray-400 mt-2 text-center"></p>
+    </div>
+
+    <!-- 新闻列表 -->
+    <div id="news-list" class="flex flex-col gap-2">
+      <div class="card p-6 text-center text-gray-400 text-sm">
+        点击「抓取新闻」加载本周新闻，然后勾选要放入周报的条目
+      </div>
+    </div>
+
+    <!-- Step 2：榜单数据 -->
+    <div class="card p-4 mt-1">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="step-num">2</span>
+        <span class="font-semibold text-sm">抓取七麦榜单数据</span>
+      </div>
+      <div class="flex flex-wrap gap-1.5 mb-3" id="region-checkboxes">
+        <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" class="region-check" value="cn" checked /><span>中国大陆</span></label>
+        <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" class="region-check" value="hk" checked /><span>中国香港</span></label>
+        <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" class="region-check" value="tw" checked /><span>中国台湾</span></label>
+        <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" class="region-check" value="us" checked /><span>美国</span></label>
+        <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" class="region-check" value="jp" /><span>日本</span></label>
+        <label class="flex items-center gap-1 text-xs cursor-pointer"><input type="checkbox" class="region-check" value="kr" /><span>韩国</span></label>
+      </div>
+      <button onclick="downloadRankExcel()" id="excel-btn"
+        class="w-full bg-emerald-700 text-white rounded-lg py-2 text-sm font-medium hover:bg-emerald-600 transition-colors flex items-center justify-center gap-2">
+        <svg id="excel-spin" class="w-4 h-4 hidden loading-spin" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="30 60" stroke-linecap="round"/>
+        </svg>
+        <span id="excel-btn-text">📥 下载七天榜单 Excel</span>
+      </button>
+      <p id="rank-status" class="text-xs text-gray-400 mt-2 text-center"></p>
+    </div>
+
+    <!-- 榜单展示区 -->
+    <div id="rank-display" class="flex flex-col gap-3"></div>
+
+  </div>
+
+  <!-- ====== 右栏：周报预览 + 编辑 ====== -->
+  <div class="flex-1 flex flex-col gap-3 overflow-hidden">
+
+    <!-- 选中新闻摘要 + 生成按钮 -->
+    <div class="card p-3 flex items-center gap-3">
+      <div class="flex-1">
+        <p class="text-xs text-gray-500">已选新闻 <span id="selected-count" class="font-bold text-purple-600">0</span> 条
+          <span id="rank-ready-badge" class="hidden ml-2 badge" style="background:#E8F4FD;color:#0984E3">榜单已加载</span>
+        </p>
+        <p class="text-xs text-gray-400 mt-0.5">选择新闻条目后，点击右上角「AI 生成周报」</p>
+      </div>
+      <button onclick="rewriteSelectedNews()" id="rewrite-btn"
+        class="text-xs bg-amber-500 text-white rounded-lg px-3 py-1.5 hover:bg-amber-600 transition-colors flex items-center gap-1.5">
+        <svg id="rewrite-spin" class="w-3 h-3 hidden loading-spin" viewBox="0 0 24 24" fill="none">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="30 60" stroke-linecap="round"/>
+        </svg>
+        <span id="rewrite-btn-text">✦ AI 改写选中新闻</span>
+      </button>
+      <button onclick="clearSelection()" class="text-xs text-gray-400 hover:text-red-400 transition-colors">清空选择</button>
+    </div>
+
+    <!-- 周报输出区域 -->
+    <div class="card flex-1 flex flex-col overflow-hidden">
+      <div class="flex items-center border-b border-gray-100 px-4 pt-3 pb-0 gap-1">
+        <button class="tab-btn active" id="tab-preview" onclick="switchTab('preview')">预览</button>
+        <button class="tab-btn" id="tab-markdown" onclick="switchTab('markdown')">Markdown源码</button>
+        <div class="ml-auto flex gap-2">
+          <button onclick="copyArticle()" class="text-xs text-gray-500 hover:text-gray-800 border border-gray-200 rounded-lg px-3 py-1 transition-colors">复制</button>
+          <button onclick="openImportMdPanel()"
+            class="text-xs rounded-lg px-3 py-1 font-semibold transition-colors"
+            style="background:#e8f5e9;color:#2e7d32;border:1px solid #a5d6a7;"
+            title="粘贴外部 Markdown（如 Claude 生成的文章）导入并排版">
+            📥 导入 MD
+          </button>
+          <button onclick="openWechatEditor()" id="wechat-btn"
+            class="text-xs bg-green-600 text-white rounded-lg px-3 py-1 hover:bg-green-700 transition-colors hidden">
+            发布到公众号编辑器
+          </button>
+          <button onclick="generateOutputHtml()" id="gen-output-btn"
+            class="text-xs text-white rounded-lg px-3 py-1 font-semibold transition-colors hidden"
+            style="background:#E8820C;border:none;"
+            title="生成微信公众号 HTML 和小红书卡片 HTML，写入 static/ 目录并在新标签页打开">
+            <svg id="gen-output-spin" class="w-3 h-3 inline hidden loading-spin" viewBox="0 0 24 24" fill="none">
+              <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="30 60" stroke-linecap="round"/>
+            </svg>
+            <span id="gen-output-text">🖨 生成微信+小红书</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 预览 tab -->
+      <div id="pane-preview" class="flex-1 overflow-y-auto scroll-y p-6">
+        <div id="article-output" class="max-w-2xl mx-auto">
+          <div class="text-center text-gray-300 mt-16">
+            <svg class="w-12 h-12 mx-auto mb-3 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <p class="text-sm">选择新闻 → 点击「AI 生成周报」→ 长文将在此显示</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Markdown 源码 tab -->
+      <div id="pane-markdown" class="flex-1 overflow-hidden hidden">
+        <textarea id="article-markdown" readonly
+          class="w-full h-full resize-none p-4 text-xs font-mono text-gray-700 bg-gray-50 border-0 focus:outline-none"
+          placeholder="Markdown 源码将在此显示..."></textarea>
+      </div>
+    </div>
+
+    <!-- 榜单异动分析 -->
+    <div id="anomaly-panel" class="card p-4 hidden">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-semibold text-sm flex items-center gap-2">
+          <span>🔥</span> 本周榜单重点异动
+        </h3>
+        <button onclick="analyzeAnomalies()" id="analyze-btn"
+          class="text-xs bg-purple-600 text-white rounded-lg px-3 py-1.5 hover:bg-purple-700 transition-colors flex items-center gap-1.5">
+          <svg id="analyze-spin" class="w-3 h-3 hidden loading-spin" viewBox="0 0 24 24" fill="none">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-dasharray="30 60" stroke-linecap="round"/>
+          </svg>
+          AI 分析异动原因
+        </button>
+      </div>
+      <div id="anomaly-list" class="flex flex-col gap-2"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 来源配置弹窗 -->
+<div id="source-modal" class="fixed inset-0 bg-black/50 z-[60] hidden flex items-center justify-center p-4">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
+    <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+      <div>
+        <h3 class="font-bold text-sm text-gray-800">配置改写来源</h3>
+        <p id="src-modal-title" class="text-xs text-gray-400 mt-0.5 truncate max-w-xs"></p>
+      </div>
+      <button onclick="closeSourceModal()" class="text-gray-400 hover:text-gray-600">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-5 space-y-4">
+      <p class="text-xs text-gray-500 leading-relaxed">
+        最多添加 3 个参考来源。若不配置，AI 将自动搜索相关报道。<br>
+        来源类型可选「链接」（自动抓取正文）或「文本」（直接粘贴）。
+      </p>
+
+      <!-- 3 个来源行 -->
+      <div class="space-y-3" id="src-rows">
+        <template id="src-row-tpl"><!-- JS 渲染 --></template>
+      </div>
+      <!-- 动态生成 3 行 -->
+      <script>
+      (function(){
+        const wrap = document.getElementById('src-rows');
+        for(let i=0;i<3;i++){
+          wrap.insertAdjacentHTML('beforeend', `
+          <div class="flex gap-2 items-start">
+            <select id="src-type-${i}" onchange="updateSrcField(${i})"
+              class="border border-gray-200 rounded-lg px-2 py-1.5 text-xs shrink-0 focus:outline-none focus:border-orange-400 cursor-pointer">
+              <option value="url">链接</option>
+              <option value="text">文本</option>
+            </select>
+            <textarea id="src-val-${i}" rows="1" placeholder="粘贴文章 URL，如 https://..."
+              class="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs resize-none focus:outline-none focus:border-orange-400"
+              style="min-height:32px;"></textarea>
+          </div>`);
+        }
+      })();
+      </script>
+
+      <input type="hidden" id="src-modal-url">
+      <input type="hidden" id="src-modal-idx">
+
+      <div class="flex items-center gap-2 pt-2">
+        <p class="text-xs text-gray-400 flex-1">留空的行将跳过；未配置的条目由 AI 自动搜索补充</p>
+        <button onclick="closeSourceModal()" class="text-xs px-3 py-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50">取消</button>
+        <button onclick="saveSourceModal()" class="text-xs px-4 py-1.5 rounded-lg font-semibold text-white" style="background:#E8820C;">保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 公众号编辑器弹窗 -->
+<div id="wechat-modal" class="fixed inset-0 bg-black/70 z-50 hidden flex items-center justify-center p-4">
+  <div class="wx-modal-inner rounded-2xl shadow-2xl w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden" style="background:#161616;">
+
+    <!-- 顶部栏 -->
+    <div class="wx-header-bar flex items-center justify-between px-5 py-3 shrink-0">
+      <div class="flex items-center gap-3">
+        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold" style="background:#E8820C;color:#141E2E;">局</div>
+        <span class="font-bold text-sm" style="color:#D0D8E4;">公众号长文编辑器</span>
+        <span class="text-xs px-2 py-0.5 rounded" style="background:#1E2D40;color:#E8820C;">游戏雷达局</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button onclick="openImportMdPanel()" class="text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors" style="background:#1A3A2A;color:#4ADE80;border:1px solid #1E4A30;" onmouseover="this.style.background='#1E4A30'" onmouseout="this.style.background='#1A3A2A'" title="粘贴外部 Markdown（如 Claude 生成的文章）导入并渲染">📥 导入 MD</button>
+        <button onclick="copyWechatHtml()" class="text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors" style="background:#E8820C;color:#fff;border:none;" onmouseover="this.style.background='#c96c00'" onmouseout="this.style.background='#E8820C'" title="复制富文本 HTML，直接粘贴进微信公众号编辑器">📋 复制公众号 HTML</button>
+        <button onclick="selectAllWxContent()" class="text-xs px-3 py-1.5 rounded-lg border transition-colors" style="border-color:#1E2D40;color:#6A8090;background:transparent;" onmouseover="this.style.borderColor='#F5B820';this.style.color='#F5B820'" onmouseout="this.style.borderColor='#1E2D40';this.style.color='#6A8090'" title="全选预览区内容（然后 Ctrl+C 复制，再粘贴到公众号）">全选</button>
+        <button onclick="copyToMdnice()" class="text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors" style="background:#1E2D40;color:#F5B820;border:1px solid #2E4060;" onmouseover="this.style.background='#253545'" onmouseout="this.style.background='#1E2D40'" title="复制 Markdown 后跳转 mdnice，粘贴即可生成公众号排版">📋 复制→mdnice</button>
+        <button onclick="openXhsEditor()" class="text-xs px-3 py-1.5 rounded-lg font-semibold text-white flex items-center gap-1" style="background:linear-gradient(135deg,#FF2442,#FF6B81);">
+          <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+          小红书
+        </button>
+        <button onclick="closeWechatEditor()" class="ml-1 w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors" style="color:#4A6080;">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 文章预览区 -->
+    <div class="flex-1 overflow-y-auto" style="background:#161616;">
+
+      <!-- 大标题（可编辑） -->
+      <textarea id="wx-article-title" rows="2" placeholder="文章大标题..." oninput="autoResizeTitle(this)"></textarea>
+
+      <!-- 作者栏 -->
+      <div id="wx-author-bar">
+        <img src="/static/avatar.jpg" alt="游戏雷达局" onerror="this.style.display='none'">
+        <div class="wx-meta">
+          <span class="wx-name">游戏雷达局</span>
+          <span class="wx-date" id="wx-pub-date"></span>
+        </div>
+      </div>
+
+      <!-- 正文 Markdown 渲染 -->
+      <div id="wx-preview-area" contenteditable="true" spellcheck="false"></div>
+
+      <!-- 底部署名 -->
+      <div id="wx-footer">
+        <span>游戏雷达局 · GAME RADAR HQ · 情报已送达</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- 导入内容浮层（支持 Markdown / HTML 两种模式） -->
+<div id="import-md-panel" class="fixed inset-0 bg-black/60 z-[70] hidden flex items-center justify-center p-4">
+  <div class="rounded-2xl shadow-2xl w-full max-w-2xl flex flex-col overflow-hidden" style="background:#141E2E;border:1px solid #1E2D40;">
+    <div class="flex items-center justify-between px-5 py-3 border-b" style="border-color:#1E2D40;">
+      <span class="font-bold text-sm" style="color:#D0D8E4;">导入外部内容</span>
+      <button onclick="closeImportMdPanel()" class="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/10" style="color:#4A6080;">
+        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+    <div class="p-4 flex flex-col gap-3">
+      <!-- 模式切换 -->
+      <div class="flex gap-1 p-1 rounded-lg" style="background:#0F1824;">
+        <button id="import-tab-md" onclick="switchImportTab('md')"
+          class="flex-1 text-xs py-1.5 rounded-md font-semibold transition-colors"
+          style="background:#E8820C;color:#fff;">Markdown</button>
+        <button id="import-tab-html" onclick="switchImportTab('html')"
+          class="flex-1 text-xs py-1.5 rounded-md font-semibold transition-colors"
+          style="background:transparent;color:#4A6080;">HTML 源码（Claude Artifact）</button>
+      </div>
+      <!-- 说明文字 -->
+      <p id="import-hint-md" class="text-xs" style="color:#4A6080;">粘贴 Markdown 文本，首行 <code style="color:#E8820C;"># 标题</code> 将作为文章大标题。</p>
+      <p id="import-hint-html" class="text-xs hidden" style="color:#4A6080;">在 Claude Artifact 页面按 <b style="color:#C8D4E0;">F12 → 右键 &lt;body&gt; → Copy → Copy outerHTML</b>，粘贴到下方。工具将自动把 CSS 内联到每个元素，保留样式后直接复制到公众号。</p>
+      <textarea id="import-md-textarea" rows="14" placeholder="在此粘贴 Markdown 内容..."
+        class="w-full resize-none rounded-lg p-3 text-xs font-mono focus:outline-none"
+        style="background:#0F1824;color:#C8D4E0;border:1px solid #1E2D40;line-height:1.7;"></textarea>
+      <div class="flex justify-end gap-2">
+        <button onclick="closeImportMdPanel()" class="text-xs px-4 py-1.5 rounded-lg" style="background:#1E2D40;color:#6A8090;">取消</button>
+        <button onclick="importMarkdown()" class="text-xs px-4 py-1.5 rounded-lg font-semibold text-white" style="background:#E8820C;">导入并渲染 →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ─── 预填充数据（由服务端注入） ───
+const _PRELOAD = {{ (preload | tojson) if preload else 'null' }};
+</script>
+<script>
+// ─── 状态 ───
+let newsItems = [];       // 抓取到的所有新闻
+let selectedNews = new Set(); // 选中的新闻 URL
+let rankData = null;      // 榜单数据
+let articleMarkdown = ''; // 生成的周报 Markdown
+let _translationMap = {}; // 日韩游戏名翻译缓存 {原名: 中文名}
+let excelAnomalies = [];  // 七天榜单异动数据（从 Excel 接口返回）
+
+// ─── 新闻抓取 ───
+async function fetchNews() {
+  const sources = [...document.querySelectorAll('.src-check:checked')].map(c => c.value);
+  const days = document.getElementById('days-select').value;
+  if (!sources.length) { alert('请至少选择一个新闻来源'); return; }
+
+  setLoading('news', true);
+  document.getElementById('news-status').textContent = '正在抓取...（36kr 需用 Chrome，可能稍慢）';
+
+  try {
+    const res = await fetch('/api/weekly_news', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ sources, days: parseInt(days), per_source: 30 })
+    });
+    const data = await res.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+    newsItems = data.items || [];
+    renderNewsList(newsItems);
+    document.getElementById('news-status').textContent = `✓ 共抓取 ${newsItems.length} 条新闻，请勾选要放入周报的条目`;
+  } catch (e) {
+    document.getElementById('news-status').textContent = '抓取失败: ' + e.message;
+  } finally {
+    setLoading('news', false);
+  }
+}
+
+function renderNewsList(items) {
+  const container = document.getElementById('news-list');
+  if (!items.length) {
+    container.innerHTML = '<div class="card p-4 text-center text-gray-400 text-sm">未找到近期新闻</div>';
+    return;
+  }
+  const channelClass = { '36氪游戏': 'source-badge-36kr', 'GameLook': 'source-badge-gamelook', '游戏茶馆': 'source-badge-youxichaguan' };
+  container.innerHTML = items.map((item, i) => {
+    const badgeClass = channelClass[item.channel] || 'badge bg-gray-100 text-gray-600';
+    const timeStr = formatTime(item.time);
+    return `
+    <div class="card news-card p-3 ${selectedNews.has(item.url) ? 'selected' : ''}"
+         onclick="toggleNews('${item.url}', ${i})" id="news-${i}">
+      <div class="flex items-start gap-2">
+        <input type="checkbox" class="mt-0.5 shrink-0 accent-purple-600"
+               ${selectedNews.has(item.url) ? 'checked' : ''}
+               onclick="event.stopPropagation(); toggleNews('${item.url}', ${i})" />
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+            <span class="${badgeClass} badge">${item.channel}</span>
+            <span class="text-xs text-gray-400">${timeStr}</span>
+            <button onclick="event.stopPropagation(); openSourceModal('${item.url}', ${i})"
+              class="ml-auto text-xs px-1.5 py-0.5 rounded border border-dashed border-gray-300 text-gray-400 hover:border-orange-400 hover:text-orange-500 transition-colors shrink-0"
+              title="配置改写来源">＋ 来源</button>
+          </div>
+          <a href="${item.url}" target="_blank" onclick="event.stopPropagation()"
+             class="text-sm font-medium text-gray-800 hover:text-purple-600 leading-snug line-clamp-2 block transition-colors">${escHtml(item.title)}</a>
+          ${item.content ? `<p class="text-xs text-gray-500 mt-1 line-clamp-1">${escHtml(item.content)}</p>` : ''}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleNews(url, idx) {
+  if (selectedNews.has(url)) {
+    selectedNews.delete(url);
+  } else {
+    selectedNews.add(url);
+  }
+  // 更新卡片样式
+  const card = document.getElementById(`news-${idx}`);
+  const cb = card?.querySelector('input[type=checkbox]');
+  if (card) { card.classList.toggle('selected', selectedNews.has(url)); }
+  if (cb) { cb.checked = selectedNews.has(url); }
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  document.getElementById('selected-count').textContent = selectedNews.size;
+}
+
+function clearSelection() {
+  selectedNews.clear();
+  document.querySelectorAll('.news-card').forEach(c => c.classList.remove('selected'));
+  document.querySelectorAll('.news-card input[type=checkbox]').forEach(c => c.checked = false);
+  updateSelectedCount();
+}
+
+// ─── 榜单抓取 ───
+async function fetchRanks() {
+  const countries = [...document.querySelectorAll('.region-check:checked')].map(c => c.value);
+  if (!countries.length) { alert('请至少选择一个地区'); return; }
+
+  setLoading('rank', true);
+  document.getElementById('rank-status').textContent = '正在抓取七麦数据...';
+
+  try {
+    const res = await fetch('/api/qimai_rank', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ countries, chart_types: ['free', 'grossing'], top: 10 })
+    });
+    const data = await res.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+    rankData = data.data;
+    renderRankDisplay(rankData, countries);
+    document.getElementById('rank-status').textContent = `✓ 已加载 ${countries.length} 个地区榜单`;
+    document.getElementById('rank-ready-badge').classList.remove('hidden');
+
+    // 显示异动面板
+    const anomalies = rankData.anomalies || [];
+    if (anomalies.length) {
+      renderAnomalies(anomalies);
+      document.getElementById('anomaly-panel').classList.remove('hidden');
+      // 自动触发 AI 分析，无需手动点击
+      analyzeAnomalies();
+    }
+    // 翻译所有榜单中的日韩游戏名
+    translateJpKrNames(rankData, countries);
+  } catch (e) {
+    document.getElementById('rank-status').textContent = '抓取失败: ' + e.message;
+  } finally {
+    setLoading('rank', false);
+  }
+}
+
+function renderRankDisplay(data, countries) {
+  const regionNames = { cn: '中国大陆', hk: '中国香港', tw: '中国台湾', us: '美国', jp: '日本', kr: '韩国', gb: '英国', de: '德国' };
+  const container = document.getElementById('rank-display');
+
+  container.innerHTML = countries.map(c => {
+    const regionData = data[c];
+    if (!regionData) return '';
+    const cname = regionNames[c] || c;
+
+    const chartHtml = ['free', 'grossing'].map(ct => {
+      const chart = regionData[ct];
+      if (!chart || !chart.items?.length) return '';
+      const rows = chart.items.map(item => {
+        const change = item.change;
+        let changeClass = 'rank-same';
+        let changeIcon = '';
+        if (change.startsWith('↑')) { changeClass = 'rank-up'; changeIcon = change; }
+        else if (change.startsWith('↓')) { changeClass = 'rank-down'; changeIcon = change; }
+        else if (change === '新上榜') { changeClass = 'rank-new'; changeIcon = '★ 新'; }
+        else { changeIcon = '—'; }
+        let numClass = 'normal';
+        if (item.rank === 1) numClass = 'top1';
+        else if (item.rank === 2) numClass = 'top2';
+        else if (item.rank === 3) numClass = 'top3';
+        return `<tr>
+          <td class="text-center w-10"><span class="rank-num ${numClass}">${item.rank}</span></td>
+          <td><span class="truncate block max-w-[140px] font-medium text-gray-800" data-country="${c}" data-chart="${ct}" data-rank="${item.rank}" title="${escHtml(item.app_name)}">${escHtml(item.app_name)}</span></td>
+          <td class="${changeClass} text-center font-semibold w-14">${changeIcon}</td>
+          <td class="text-gray-400 text-center w-12">${item.last_rank}</td>
+        </tr>`;
+      }).join('');
+
+      return `
+      <div class="mb-4">
+        <p class="text-xs font-semibold text-gray-500 mb-2 flex items-center gap-1.5">
+          <span class="inline-block w-1.5 h-3 rounded-sm" style="background:#6C5CE7;"></span>${chart.chart_name}
+        </p>
+        <table class="rank-table w-full text-xs">
+          <thead><tr>
+            <th class="w-10 text-center">排名</th>
+            <th>游戏名称</th>
+            <th class="text-center w-14">涨跌</th>
+            <th class="text-center w-12">上周</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>`;
+    }).join('');
+
+    return `
+    <div class="card p-3">
+      <h4 class="font-bold text-sm mb-2 text-blue-800">${cname}</h4>
+      ${chartHtml}
+    </div>`;
+  }).join('');
+}
+
+function renderAnomalies(anomalies) {
+  const container = document.getElementById('anomaly-list');
+  container.innerHTML = anomalies.slice(0, 10).map(a => `
+    <div class="anomaly-item" id="anomaly-${escId(a.app)}">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="font-semibold text-sm">《${escHtml(a.app)}》</span>
+        <span class="rank-up text-xs">${a.change}</span>
+        <span class="text-xs text-gray-500">${a.region} ${a.chart} → 第${a.rank}名</span>
+        <span id="reason-${escId(a.app)}" class="text-xs text-gray-500 italic"></span>
+      </div>
+    </div>`).join('');
+}
+
+// ─── 日韩游戏名翻译 ───
+async function translateJpKrNames(data, countries) {
+  // 检测策略：
+  // 1. jp/kr 地区的游戏名全部翻译（包括纯汉字日文名）
+  // 2. 其他地区若含平假名/片假名/韩文字符也翻译
+  function hasKana(name) {
+    return /[\u3040-\u30FF\uAC00-\uD7AF\u3131-\u318E]/.test(name);
+  }
+
+  const nameToItems = {};
+  (countries || Object.keys(data)).forEach(c => {
+    if (!data[c]) return;
+    const isJpKr = (c === 'jp' || c === 'kr');
+    ['free', 'grossing'].forEach(ct => {
+      (data[c]?.[ct]?.items || []).forEach(item => {
+        const name = item.app_name;
+        if (!name) return;
+        // jp/kr 地区全翻译；其他地区只翻译含假名/韩文的
+        if (!isJpKr && !hasKana(name)) return;
+        if (!nameToItems[name]) nameToItems[name] = [];
+        nameToItems[name].push({ item, c, ct });
+      });
+    });
+  });
+  const names = Object.keys(nameToItems);
+  if (!names.length) return;
+
+  try {
+    const res = await fetch('/api/translate_names', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ names })
+    });
+    const result = await res.json();
+    if (result.status !== 'ok') return;
+    const map = result.translations || {};
+
+    Object.entries(map).forEach(([original, translated]) => {
+      if (!translated || translated === original) return;
+      const refs = nameToItems[original] || [];
+      refs.forEach(({ item, c, ct }) => {
+        item.app_name = translated;
+        const span = document.querySelector(
+          `span[data-country="${c}"][data-chart="${ct}"][data-rank="${item.rank}"]`
+        );
+        if (span) {
+          span.title = original;
+          span.textContent = translated;
+        }
+      });
+    });
+  } catch (e) {
+    console.warn('翻译失败:', e);
+  }
+}
+
+// ─── AI 分析异动原因 ───
+async function analyzeAnomalies() {
+  if (!rankData) return;
+  const anomalies = (rankData.anomalies || []).slice(0, 8);
+  if (!anomalies.length) return;
+
+  const btn = document.getElementById('analyze-btn');
+  const spin = document.getElementById('analyze-spin');
+  btn.disabled = true;
+  spin.classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/analyze_rank_anomalies', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        anomalies,
+        news_items: newsItems  // 传入已抓取的所有新闻供本地匹配
+      })
+    });
+    const data = await res.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+
+    // 把分析结果填入对应的异动卡片
+    (data.analyses || []).forEach(item => {
+      const el = document.getElementById(`reason-${escId(item.app)}`);
+      if (el) el.textContent = '→ ' + item.reason;
+    });
+  } catch (e) {
+    alert('分析失败: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    spin.classList.add('hidden');
+  }
+}
+
+// ─── AI 生成周报 ───
+async function generateReport() {
+  if (!selectedNews.size) { alert('请先勾选要放入周报的新闻条目'); return; }
+
+  const weekLabel = document.getElementById('week-label-input').value.trim()
+    || new Date().toLocaleDateString('zh-CN', { year: 'numeric', month: 'long' }) + '第' + getWeekNumber() + '周';
+
+  const selected = newsItems.filter(item => selectedNews.has(item.url));
+  // 如果有 AI 改写版本，则使用改写版本传给后端
+  const selectedForApi = selected.map(item => ({
+    ...item,
+    content: item.rewritten || item.content,
+    title: (item.rewritten ? item.rewritten.replace(/^##\s*/,'').split('\n')[0] : item.title) || item.title,
+  }));
+
+  setLoading('gen', true);
+  document.getElementById('gen-btn-text').textContent = 'AI 生成中...';
+
+  try {
+    const res = await fetch('/api/generate_weekly_report', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        news_items: selectedForApi,
+        rank_data: rankData || {},
+        week_label: weekLabel,
+        excel_anomalies: excelAnomalies,
+      })
+    });
+    const data = await res.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+
+    articleMarkdown = data.article;
+    renderArticlePreview(articleMarkdown);
+    document.getElementById('article-markdown').value = articleMarkdown;
+    document.getElementById('wechat-btn').classList.remove('hidden');
+    document.getElementById('gen-output-btn').classList.remove('hidden');
+    // 生成完成后自动打开公众号编辑器
+    openWechatEditor();
+  } catch (e) {
+    alert('生成失败: ' + e.message);
+  } finally {
+    setLoading('gen', false);
+    document.getElementById('gen-btn-text').textContent = '✦ AI 生成周报';
+  }
+}
+
+function renderArticlePreview(md) {
+  const output = document.getElementById('article-output');
+  if (window.marked) {
+    output.innerHTML = marked.parse(md);
+  } else {
+    output.innerHTML = `<pre class="article-preview">${escHtml(md)}</pre>`;
+  }
+}
+
+// ─── 生成微信+小红书 HTML（写入 static/） ───
+async function generateOutputHtml() {
+  if (!articleMarkdown) { alert('请先生成周报 Markdown'); return; }
+
+  // 读取周报标签
+  const weekLabelEl = document.getElementById('week-label-input');
+  const weekLabel   = (weekLabelEl ? weekLabelEl.value.trim() : '') || '本周';
+
+  // 询问 Excel 路径（用于小红书榜单卡片，可留空跳过）
+  const excelPath = prompt(
+    '请输入七麦榜单 Excel 文件的完整路径（用于小红书榜单卡片）\n留空则跳过榜单卡片',
+    ''
+  ) || '';
+
+  // 其他参数（可后续扩展为表单弹窗）
+  const weekShort  = weekLabel;
+  const dateRange  = '';
+  const issue      = '';
+  const weekTag    = weekLabel;
+
+  const btn  = document.getElementById('gen-output-btn');
+  const spin = document.getElementById('gen-output-spin');
+  const text = document.getElementById('gen-output-text');
+  btn.disabled = true;
+  spin.classList.remove('hidden');
+  text.textContent = '生成中...';
+
+  try {
+    const res = await fetch('/api/generate_output_html', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        markdown:   articleMarkdown,
+        excel_path: excelPath,
+        week_label: weekLabel,
+        week_short: weekShort,
+        date_range: dateRange,
+        issue:      issue,
+        week_tag:   weekTag,
+      })
+    });
+    const data = await res.json();
+    if (data.status !== 'ok') throw new Error(data.message || '生成失败');
+
+    const msg = [
+      `✅ 微信版已生成（${(data.wechat_chars/1024).toFixed(0)} KB）`,
+      `✅ 小红书版已生成（${(data.xhs_chars/1024).toFixed(0)} KB）`,
+      data.xhs_warning ? `⚠️ ${data.xhs_warning}` : null,
+      '',
+      '点击确定后将在新标签页打开两个预览页面。',
+    ].filter(x => x !== null).join('\n');
+    alert(msg);
+
+    window.open(data.wechat_url, '_blank');
+    setTimeout(() => window.open(data.xhs_url, '_blank'), 300);
+  } catch (e) {
+    alert('生成失败: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    spin.classList.add('hidden');
+    text.textContent = '🖨 生成微信+小红书';
+  }
+}
+
+// ─── Tab 切换 ───
+function switchTab(tab) {
+  document.getElementById('pane-preview').classList.toggle('hidden', tab !== 'preview');
+  document.getElementById('pane-markdown').classList.toggle('hidden', tab !== 'markdown');
+  document.getElementById('tab-preview').classList.toggle('active', tab === 'preview');
+  document.getElementById('tab-markdown').classList.toggle('active', tab === 'markdown');
+}
+
+// ─── AI 改写选中新闻（并发池 + 手动来源） ───
+
+// 每条新闻的手动来源配置  key=url → [{type,value}, ...]
+const manualSourcesMap = {};
+
+// 打开来源配置弹窗
+function openSourceModal(url, idx) {
+  const item = newsItems.find(n => n.url === url);
+  if (!item) return;
+  document.getElementById('src-modal-title').textContent = item.title;
+  document.getElementById('src-modal-url').value = url;
+  document.getElementById('src-modal-idx').value = idx;
+
+  // 恢复已有配置
+  const existing = manualSourcesMap[url] || [{type:'url',value:''},{type:'url',value:''},{type:'url',value:''}];
+  for (let i = 0; i < 3; i++) {
+    const src = existing[i] || {type:'url',value:''};
+    document.getElementById(`src-type-${i}`).value = src.type;
+    document.getElementById(`src-val-${i}`).value = src.value;
+    updateSrcField(i);
+  }
+  document.getElementById('source-modal').classList.remove('hidden');
+}
+
+function closeSourceModal() {
+  document.getElementById('source-modal').classList.add('hidden');
+}
+
+function saveSourceModal() {
+  const url = document.getElementById('src-modal-url').value;
+  const sources = [];
+  for (let i = 0; i < 3; i++) {
+    const type = document.getElementById(`src-type-${i}`).value;
+    const value = document.getElementById(`src-val-${i}`).value.trim();
+    if (value) sources.push({type, value});
+  }
+  manualSourcesMap[url] = sources;
+  closeSourceModal();
+  // 给对应卡片打标记
+  const idx = parseInt(document.getElementById('src-modal-idx').value);
+  const card = document.getElementById(`news-${idx}`);
+  if (card) {
+    let badge = card.querySelector('.src-badge');
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'src-badge text-xs px-1.5 py-0.5 rounded font-medium ml-1';
+      badge.style.cssText = 'background:#FFF3E0;color:#E8820C;';
+      card.querySelector('.flex items-center.gap-1\\.5')?.appendChild(badge);
+    }
+    badge.textContent = `已配置 ${sources.length} 个来源`;
+  }
+}
+
+function updateSrcField(i) {
+  const type = document.getElementById(`src-type-${i}`).value;
+  const valEl = document.getElementById(`src-val-${i}`);
+  if (type === 'url') {
+    valEl.placeholder = '粘贴文章 URL，如 https://...';
+    valEl.rows = 1;
+    valEl.style.height = '';
+  } else {
+    valEl.placeholder = '直接粘贴原文文本（200字以上效果更好）';
+    valEl.rows = 3;
+  }
+}
+
+// 并发池改写
+async function rewriteSelectedNews() {
+  if (!selectedNews.size) { alert('请先勾选要改写的新闻条目'); return; }
+  const items = newsItems.filter(item => selectedNews.has(item.url));
+
+  const btn = document.getElementById('rewrite-btn');
+  const spin = document.getElementById('rewrite-spin');
+  const txt = document.getElementById('rewrite-btn-text');
+  btn.disabled = true;
+  spin.classList.remove('hidden');
+
+  let done = 0;
+  const total = items.length;
+  const CONCURRENCY = 4;
+
+  // 标记所有卡片为"排队"状态
+  items.forEach(item => {
+    const idx = newsItems.indexOf(item);
+    const card = document.getElementById(`news-${idx}`);
+    if (card) {
+      card.classList.add('rewriting');
+      _setCardStatus(card, 'queue', '⏳ 排队中');
+    }
+  });
+
+  txt.textContent = `改写中 0/${total}...`;
+
+  // 并发池：每次最多 CONCURRENCY 个并行
+  async function processOne(item) {
+    const idx = newsItems.indexOf(item);
+    const card = document.getElementById(`news-${idx}`);
+    _setCardStatus(card, 'running', '⚡ 改写中...');
+
+    const manualSources = manualSourcesMap[item.url] || [];
+    try {
+      const res = await fetch('/api/rewrite_single_news', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({
+          title: item.title,
+          content: item.content || item.title,
+          url: item.url,
+          fetch_sources: true,
+          manual_sources: manualSources,
+        })
+      });
+      const data = await res.json();
+      if (data.status !== 'ok') throw new Error(data.message);
+
+      item.rewritten = data.rewritten;
+      item.rewrittenTitle = data.title;
+      done++;
+      txt.textContent = `改写中 ${done}/${total}...`;
+
+      if (card) {
+        card.classList.remove('rewriting');
+        card.classList.add('rewritten');
+        const sourcesInfo = data.sources_found?.length
+          ? ` · 融合${data.sources_found.length}个来源` : '';
+        _setCardStatus(card, 'done', `✓ 已改写${sourcesInfo}`);
+
+        // 在卡片内显示改写预览首行
+        let preview = card.querySelector('.rewrite-preview');
+        if (!preview) {
+          preview = document.createElement('p');
+          preview.className = 'rewrite-preview text-xs mt-1.5 line-clamp-2';
+          preview.style.cssText = 'color:#E8820C;font-style:italic;';
+          card.querySelector('.flex-1')?.appendChild(preview);
+        }
+        preview.textContent = '↳ ' + (data.rewritten || '').replace(/^##\s*/,'').split('\n').find(l=>l.trim()) || '';
+      }
+    } catch (e) {
+      if (card) _setCardStatus(card, 'error', `✗ 失败: ${e.message}`);
+      card?.classList.remove('rewriting');
+    }
+  }
+
+  // 用 Promise 池限制并发
+  let i = 0;
+  async function runNext() {
+    if (i >= items.length) return;
+    const item = items[i++];
+    await processOne(item);
+    await runNext();
+  }
+  const workers = Array.from({length: Math.min(CONCURRENCY, items.length)}, () => runNext());
+  await Promise.all(workers);
+
+  btn.disabled = false;
+  spin.classList.add('hidden');
+  txt.textContent = `✓ 已改写 ${done}/${total} 条`;
+}
+
+function _setCardStatus(card, state, text) {
+  if (!card) return;
+  let el = card.querySelector('.rewrite-status');
+  if (!el) {
+    el = document.createElement('span');
+    el.className = 'rewrite-status text-xs px-1.5 py-0.5 rounded ml-1';
+    const metaRow = card.querySelector('.flex.items-center.gap-1\\.5');
+    if (metaRow) metaRow.appendChild(el);
+  }
+  const colors = {
+    queue:   'background:#F1F5F9;color:#94A3B8;',
+    running: 'background:#FFF3E0;color:#E8820C;',
+    done:    'background:#F0FDF4;color:#16A34A;',
+    error:   'background:#FFF0F0;color:#DC2626;',
+  };
+  el.style.cssText = colors[state] || '';
+  el.textContent = text;
+}
+
+// ─── 复制 ───
+async function copyArticle() {
+  if (!articleMarkdown) { alert('请先生成周报'); return; }
+  await navigator.clipboard.writeText(articleMarkdown);
+  alert('Markdown 已复制到剪贴板');
+}
+
+// ─── 公众号编辑器 ───
+function openWechatEditor() {
+  if (!articleMarkdown) return;
+  const modal = document.getElementById('wechat-modal');
+  modal.classList.remove('hidden');
+
+  // 渲染正文 Markdown（去掉首行 h1 标题，已单独显示）
+  let md = articleMarkdown;
+  const lines = md.split('\n');
+  let titleText = '';
+  if (lines[0] && /^#\s/.test(lines[0])) {
+    titleText = lines[0].replace(/^#+\s*/, '').trim();
+    md = lines.slice(1).join('\n').trim();
+  }
+  const preview = document.getElementById('wx-preview-area');
+  if (window.marked) {
+    preview.innerHTML = marked.parse(md);
+  } else {
+    preview.innerText = md;
+  }
+
+  // 大标题
+  const titleEl = document.getElementById('wx-article-title');
+  if (titleEl) {
+    titleEl.value = titleText;
+    autoResizeTitle(titleEl);
+  }
+
+  // 日期
+  const dateEl = document.getElementById('wx-pub-date');
+  if (dateEl) {
+    const now = new Date();
+    dateEl.textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
+  }
+}
+
+function autoResizeTitle(el) {
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
+function closeWechatEditor() {
+  document.getElementById('wechat-modal').classList.add('hidden');
+}
+
+function copyWechatHtml() {
+  const titleEl = document.getElementById('wx-article-title');
+  const titleVal = titleEl ? titleEl.value.trim() : '';
+  const preview = document.getElementById('wx-preview-area');
+
+  // ── HTML 导入模式：用富文本方式复制预览区内容 ──
+  if (articleMarkdown === '__html__') {
+    copyRichText(preview);
+    return;
+  }
+
+  // 顶部 Banner（与 output_wechat.html 一致）
+  const bannerHtml = titleVal
+    ? `<table cellpadding="0" cellspacing="0" width="100%" style="margin:0;width:100%;table-layout:fixed;">
+        <tr>
+          <td bgcolor="#E8820C" style="background-color:#E8820C;padding:22px 28px;">
+            <div style="font-size:10px;color:#7A3800;letter-spacing:3px;font-weight:700;margin-bottom:6px;">GAME RADAR HQ</div>
+            <div style="font-size:22px;font-weight:900;color:#FFFFFF;letter-spacing:1px;word-break:break-word;">${escHtml(titleVal)}</div>
+          </td>
+        </tr>
+      </table>`
+    : '';
+
+  // 把预览区 DOM 转换为微信兼容 HTML
+  const wechatHtml = convertToWechatHtml(preview);
+
+  // 页脚
+  const footerHtml = `<table cellpadding="0" cellspacing="0" width="100%" style="margin-top:28px;width:100%;table-layout:fixed;">
+    <tr>
+      <td bgcolor="#E8820C" style="background-color:#E8820C;padding:14px 20px;text-align:center;">
+        <span style="font-size:12px;color:#FFFFFF;font-weight:800;letter-spacing:2px;">游戏雷达局 &nbsp;·&nbsp; GAME RADAR HQ</span>
+      </td>
+    </tr>
+  </table>`;
+
+  const full = `<div style="background-color:#0F1824;color:#C8D8E8;font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;line-height:1.9;word-break:break-word;">${bannerHtml}<div style="padding:0 20px 20px;">${wechatHtml}</div>${footerHtml}</div>`;
+
+  // 用 ClipboardItem + text/html 写入剪贴板，粘贴到公众号编辑器时直接呈现排版效果
+  // 不支持时回退到 writeText（会粘贴成原始代码）
+  const htmlDoc = `<!DOCTYPE html><html><body>${full}</body></html>`;
+  if (window.ClipboardItem) {
+    const blob = new Blob([htmlDoc], { type: 'text/html' });
+    navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })])
+      .then(() => alert('已复制！请直接粘贴至公众号编辑器（Ctrl+V），排版样式会自动保留'))
+      .catch(() => {
+        // 降级：writeText
+        navigator.clipboard.writeText(full).then(() => alert('已复制（纯文本模式）'));
+      });
+  } else {
+    navigator.clipboard.writeText(full).then(() => alert('已复制（纯文本模式）'));
+  }
+}
+
+// ── 富文本复制：把 DOM 节点内容以 text/html 写入剪贴板 ──
+// 公众号能识别富文本（带样式的 HTML），不能识别 writeText 写的纯字符串。
+// 两步策略：
+//   1. ClipboardItem API（Chrome 86+）→ 最可靠
+//   2. 降级：把内容写入隐藏可编辑 div，全选后 execCommand('copy')
+async function copyRichText(container) {
+  const htmlStr = `<!DOCTYPE html><html><body>${container.innerHTML}</body></html>`;
+
+  // 方法1：ClipboardItem（现代浏览器）
+  if (window.ClipboardItem && navigator.clipboard && navigator.clipboard.write) {
+    try {
+      const blob = new Blob([htmlStr], { type: 'text/html' });
+      await navigator.clipboard.write([new ClipboardItem({ 'text/html': blob })]);
+      alert('已复制！请直接粘贴至公众号编辑器（Ctrl+V），样式会自动保留');
+      return;
+    } catch(e) {
+      console.warn('ClipboardItem 失败，降级到 execCommand:', e);
+    }
+  }
+
+  // 方法2：execCommand（降级）
+  const div = document.createElement('div');
+  div.contentEditable = 'true';
+  div.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+  div.innerHTML = container.innerHTML;
+  document.body.appendChild(div);
+  try {
+    const range = document.createRange();
+    range.selectNodeContents(div);
+    const sel = window.getSelection();
+    sel.removeAllRanges();
+    sel.addRange(range);
+    const ok = document.execCommand('copy');
+    sel.removeAllRanges();
+    if (ok) {
+      alert('已复制！请直接粘贴至公众号编辑器（Ctrl+V），样式会自动保留');
+    } else {
+      alert('自动复制失败，请手动在预览区 Ctrl+A 全选后 Ctrl+C 复制');
+    }
+  } finally {
+    document.body.removeChild(div);
+  }
+}
+
+// 将预览区 DOM 转为微信兼容 HTML
+// 规则：微信会剥除 border/box-shadow/display:table/::before/::after，
+//       但保留 background-color、color、font-size、padding 等属性，
+//       以及 <table> 的 bgcolor / cellspacing 属性。
+//       因此所有布局（左色条、徽标）均改用真实 <table> 标签实现。
+function convertToWechatHtml(container) {
+  let out = '';
+  let sectionCounter = 0;
+
+  function processNode(node) {
+    if (node.nodeType === Node.TEXT_NODE) {
+      return escHtml(node.textContent);
+    }
+    if (node.nodeType !== Node.ELEMENT_NODE) return '';
+
+    const tag = node.tagName.toLowerCase();
+    const inner = Array.from(node.childNodes).map(processNode).join('');
+
+    // H1 隐藏（封面已有标题）
+    if (tag === 'h1') return '';
+
+    // H2：橙色数字徽标 + 标题文字
+    // 使用真实 <table> 保证微信不剥除布局
+    if (tag === 'h2') {
+      sectionCounter++;
+      const num = String(sectionCounter).padStart(2, '0');
+      return `<table cellpadding="0" cellspacing="0" width="100%" style="margin:28px 0 10px;width:100%;">` +
+        `<tr>` +
+        `<td width="32" bgcolor="#E8820C" style="background:#E8820C;color:#141E2E;font-size:12px;font-weight:900;padding:3px 8px;white-space:nowrap;vertical-align:middle;text-align:center;">${num}</td>` +
+        `<td style="padding-left:10px;font-size:18px;font-weight:800;color:#E8820C;vertical-align:middle;">${inner}</td>` +
+        `</tr></table>`;
+    }
+
+    // H3：4px 黄色左竖条 + 标题文字
+    if (tag === 'h3') {
+      return `<table cellpadding="0" cellspacing="0" width="100%" style="margin:18px 0 6px;width:100%;">` +
+        `<tr>` +
+        `<td width="4" bgcolor="#F5B820" style="background:#F5B820;width:4px;"> </td>` +
+        `<td style="padding-left:10px;font-size:15px;font-weight:700;color:#F5B820;vertical-align:middle;">${inner}</td>` +
+        `</tr></table>`;
+    }
+
+    // P
+    if (tag === 'p') {
+      return `<p style="color:#B8C8D8;margin:10px 0;font-size:14px;line-height:1.9;">${inner}</p>`;
+    }
+
+    // STRONG
+    if (tag === 'strong') {
+      return `<strong style="color:#EAF0F8;font-weight:700;">${inner}</strong>`;
+    }
+
+    // EM
+    if (tag === 'em') {
+      return `<span style="color:#F5B820;">${inner}</span>`;
+    }
+
+    // BLOCKQUOTE：橙色 4px 左竖条 + 引用文字
+    if (tag === 'blockquote') {
+      return `<table cellpadding="0" cellspacing="0" width="100%" style="margin:12px 0;width:100%;">` +
+        `<tr>` +
+        `<td width="4" bgcolor="#E8820C" style="background:#E8820C;width:4px;"> </td>` +
+        `<td bgcolor="#161F2C" style="background:#161F2C;padding:10px 16px;color:#9AAFC4;font-style:italic;font-size:14px;">${inner}</td>` +
+        `</tr></table>`;
+    }
+
+    // UL / OL
+    if (tag === 'ul') {
+      return `<ul style="padding-left:1.4em;margin:8px 0;">${inner}</ul>`;
+    }
+    if (tag === 'ol') {
+      return `<ol style="padding-left:1.4em;margin:8px 0;">${inner}</ol>`;
+    }
+    if (tag === 'li') {
+      return `<li style="color:#B0C0D0;margin:4px 0;font-size:14px;">${inner}</li>`;
+    }
+
+    // HR
+    if (tag === 'hr') {
+      return `<table cellpadding="0" cellspacing="0" width="100%" style="margin:20px 0;width:100%;"><tr><td height="1" bgcolor="#1E2D40" style="background:#1E2D40;font-size:1px;line-height:1px;"> </td></tr></table>`;
+    }
+
+    // A
+    if (tag === 'a') {
+      return `<span style="color:#E8820C;">${inner}</span>`;
+    }
+
+    // TABLE → 用 cellspacing+bgcolor 模拟边框（微信兼容）
+    if (tag === 'table') {
+      return convertTable(node);
+    }
+
+    // THEAD / TBODY / TR / TH / TD → 由 convertTable 处理
+    if (['thead', 'tbody', 'tr', 'th', 'td'].includes(tag)) {
+      return inner;
+    }
+
+    // 其他元素原样透传
+    return inner;
+  }
+
+  function convertTable(tbl) {
+    const rows = Array.from(tbl.querySelectorAll('tr'));
+    // 检测列数，宽表格（>4列，如7天榜单）用更小字体
+    const colCount = rows.length > 0 ? Array.from(rows[0].querySelectorAll('th,td')).length : 1;
+    const isWideTable = colCount > 4;
+    const fontSize = isWideTable ? '11px' : '13px';
+    // cellspacing="1" + 外层 bgcolor="#1E2D40" → 产生 1px 分割线效果
+    let tableHtml = `<table cellpadding="0" cellspacing="1" bgcolor="#1E2D40" style="width:100%;background:#1E2D40;margin:16px 0;font-size:${fontSize};word-break:break-all;table-layout:fixed;" width="100%">`;
+    rows.forEach((tr, ri) => {
+      const isHead = tr.closest('thead') !== null;
+      // 奇偶行交替
+      const rowBgHex = isHead ? '#0F1824' : (ri % 2 === 0 ? '#141E2E' : '#0F1824');
+      tableHtml += `<tr>`;
+      const cells = Array.from(tr.querySelectorAll('th, td'));
+      cells.forEach((td, ci) => {
+        const cellInner = Array.from(td.childNodes).map(processNode).join('');
+        if (isHead) {
+          tableHtml += `<td bgcolor="#0F1824" style="background:#0F1824;padding:6px 4px;font-size:${isWideTable?'10px':'11px'};color:#F5B820;font-weight:700;text-align:center;">${cellInner}</td>`;
+        } else {
+          if (ci === 0) {
+            // 排名列高亮
+            const rankNum = parseInt(cellInner.replace(/<[^>]*>/g, '').trim()) || (ri);
+            const rc = rankNum===1?'#FFD700':rankNum===2?'#C0C0C0':rankNum===3?'#CD7F32':'#7A9BB0';
+            const fw = rankNum <= 3 ? '800' : '400';
+            tableHtml += `<td bgcolor="${rowBgHex}" style="background:${rowBgHex};padding:6px 4px;font-size:${fontSize};text-align:center;color:${rc};font-weight:${fw};white-space:nowrap;">${cellInner}</td>`;
+          } else {
+            // 高亮 🆕
+            const display = cellInner.includes('🆕')
+              ? cellInner.replace(/🆕/g, '<span style="color:#E8820C;font-weight:700;">🆕</span>')
+              : cellInner;
+            tableHtml += `<td bgcolor="${rowBgHex}" style="background:${rowBgHex};padding:6px 4px;font-size:${fontSize};text-align:center;color:#C8D4E0;">${display}</td>`;
+          }
+        }
+      });
+      tableHtml += `</tr>`;
+    });
+    tableHtml += `</table>`;
+    return tableHtml;
+  }
+
+  Array.from(container.childNodes).forEach(node => {
+    out += processNode(node);
+  });
+  return out;
+}
+
+function copyWechatText() {
+  const titleEl = document.getElementById('wx-article-title');
+  const title = titleEl ? titleEl.value + '\n\n' : '';
+  const body = document.getElementById('wx-preview-area').innerText;
+  navigator.clipboard.writeText(title + body).then(() => alert('纯文本已复制，请打开公众号编辑器后粘贴'));
+}
+
+// 全选 WeChat 预览区内容（供用户手动 Ctrl+C），与 xhs_full 的全选方式相同
+function selectAllWxContent() {
+  const preview = document.getElementById('wx-preview-area');
+  if (!preview) return;
+  const range = document.createRange();
+  range.selectNodeContents(preview);
+  const sel = window.getSelection();
+  sel.removeAllRanges();
+  sel.addRange(range);
+  // 提示
+  const btn = event.currentTarget;
+  const orig = btn.textContent;
+  btn.textContent = '已全选，按 Ctrl+C 复制';
+  btn.style.color = '#4ADE80';
+  setTimeout(() => { btn.textContent = orig; btn.style.color = ''; btn.style.borderColor = ''; }, 2500);
+}
+
+async function copyToMdnice() {
+  // 复制原始 Markdown 并跳转到 mdnice
+  const titleEl = document.getElementById('wx-article-title');
+  const title = titleEl?.value.trim() ? '# ' + titleEl.value.trim() + '\n\n' : '';
+  const md = title + articleMarkdown;
+  try {
+    await navigator.clipboard.writeText(md);
+    window.open('https://mdnice.com', '_blank');
+    setTimeout(() => alert('Markdown 已复制！\n\n在 mdnice 页面：\n1. 全选左侧编辑区（Ctrl+A）\n2. 粘贴（Ctrl+V）\n3. 右侧预览区全选复制 → 粘贴到公众号'), 500);
+  } catch(e) {
+    alert('复制失败，请手动操作');
+  }
+}
+
+// ─── 导入外部内容（Markdown / HTML 双模式） ───
+let _importMode = 'md'; // 'md' | 'html'
+
+function switchImportTab(mode) {
+  _importMode = mode;
+  const isMd = mode === 'md';
+  document.getElementById('import-tab-md').style.cssText   = isMd ? 'background:#E8820C;color:#fff;'          : 'background:transparent;color:#4A6080;';
+  document.getElementById('import-tab-html').style.cssText = isMd ? 'background:transparent;color:#4A6080;' : 'background:#E8820C;color:#fff;';
+  document.getElementById('import-hint-md').classList.toggle('hidden', !isMd);
+  document.getElementById('import-hint-html').classList.toggle('hidden', isMd);
+  const ta = document.getElementById('import-md-textarea');
+  ta.placeholder = isMd
+    ? '在此粘贴 Markdown 内容（# 开头的第一行将作为文章大标题）...'
+    : '在此粘贴 Claude Artifact 的 HTML 源码（F12 → 右键 <body> → Copy outerHTML）...';
+}
+
+function openImportMdPanel() {
+  document.getElementById('wechat-modal').classList.remove('hidden');
+  document.getElementById('import-md-panel').classList.remove('hidden');
+  document.getElementById('import-md-textarea').focus();
+}
+
+function closeImportMdPanel() {
+  document.getElementById('import-md-panel').classList.add('hidden');
+}
+
+// ── HTML 模式：把 <style> 规则内联到每个元素的 style 属性 ──
+// 用 DOMParser 解析，完全不发网络请求，再用 Shadow DOM 获取 computedStyle
+function inlineHtmlStyles(rawHtml) {
+  // 第一步：彻底剥除所有外部资源引用（防止后续任何网络请求）
+  let cleaned = rawHtml
+    .replace(/<scr\x69pt[\s\S]*?<\/scr\x69pt>/gi, '')  // 移除 script 块
+    .replace(/<link[^>]*>/gi, '')                         // 移除 link 标签
+    .replace(/(@import\s+["'][^"']*["'])/gi, '/* $1 */')  // 注释掉 @import
+    .replace(/(url\(["']?)https?:\/\/[^)"'\s]*(["']?\))/gi, 'url("")') // 移除外链 url()
+    .replace(/src=(["'])https?:\/\/[^"'\s>]*(["'])/gi, 'src=""');      // 移除外链 src
+
+  // 第二步：用 DOMParser 解析（纯内存操作，不渲染不发请求）
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(cleaned, 'text/html');
+
+  // 提取 <style> 块的 CSS 文本
+  const styleTexts = Array.from(doc.querySelectorAll('style'))
+    .map(s => s.textContent).join('\n');
+
+  // 第三步：把解析好的 body 内容挂到 Shadow DOM 里，
+  // 让浏览器应用 CSS 规则，然后读取 computedStyle
+  const host = document.createElement('div');
+  host.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:800px;pointer-events:none;';
+  document.body.appendChild(host);
+  const shadow = host.attachShadow({ mode: 'open' });
+
+  // 把 style + body 内容注入 shadow root
+  const styleEl = document.createElement('style');
+  styleEl.textContent = styleTexts;
+  shadow.appendChild(styleEl);
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = doc.body.innerHTML;
+  shadow.appendChild(wrapper);
+
+  // 第四步：遍历所有元素，读取 computedStyle 并内联
+  const INLINE_PROPS = [
+    'color','background-color','font-size','font-weight','font-style',
+    'font-family','line-height','letter-spacing','text-align',
+    'padding-top','padding-right','padding-bottom','padding-left',
+    'margin-top','margin-right','margin-bottom','margin-left',
+    'border-left','border-top','border-bottom','border-right',
+    'border-radius','border-left-color','border-left-width','border-left-style',
+    'width','max-width','display','vertical-align',
+    'text-decoration','word-break','white-space','opacity',
+  ];
+
+  wrapper.querySelectorAll('*').forEach(el => {
+    if (['STYLE','SCRIPT','NOSCRIPT'].includes(el.tagName)) return;
+    const cs = window.getComputedStyle(el);
+    const inlineMap = {};
+    INLINE_PROPS.forEach(p => {
+      const v = cs.getPropertyValue(p);
+      // 跳过默认值
+      if (!v) return;
+      if (v === 'none' || v === 'normal' || v === 'auto') return;
+      if (v === '0px' || v === 'rgba(0, 0, 0, 0)' || v === 'transparent') return;
+      inlineMap[p] = v;
+    });
+    // 已有 style 属性优先（保留原有内联样式）
+    const existing = el.getAttribute('style') || '';
+    const existingMap = {};
+    existing.split(';').forEach(seg => {
+      const [k, ...rest] = seg.split(':');
+      if (k && rest.length) existingMap[k.trim()] = rest.join(':').trim();
+    });
+    const merged = { ...inlineMap, ...existingMap };
+    el.setAttribute('style', Object.entries(merged).map(([k, v]) => `${k}:${v}`).join(';'));
+  });
+
+  // 移除残留的 style/script 标签
+  wrapper.querySelectorAll('style,script,noscript,link').forEach(el => el.remove());
+
+  const result = wrapper.innerHTML;
+  document.body.removeChild(host);
+  return result;
+}
+
+function importMarkdown() {
+  const raw = document.getElementById('import-md-textarea').value.trim();
+  if (!raw) { alert('请先粘贴内容'); return; }
+
+  const preview = document.getElementById('wx-preview-area');
+  const titleEl = document.getElementById('wx-article-title');
+  const dateEl  = document.getElementById('wx-pub-date');
+
+  if (_importMode === 'html') {
+    // ── HTML 模式：内联样式后直接放进预览区 ──
+    const inlined = inlineHtmlStyles(raw);
+    preview.innerHTML = inlined;
+    // 尝试从 h1/title 提取大标题
+    const h1 = preview.querySelector('h1');
+    if (titleEl && h1) {
+      titleEl.value = h1.innerText.trim();
+      h1.remove();
+      autoResizeTitle(titleEl);
+    }
+    // 把内联后的 HTML 存为 articleMarkdown（供「复制 HTML」直接输出）
+    articleMarkdown = '__html__'; // 标记为 HTML 模式
+  } else {
+    // ── Markdown 模式 ──
+    const lines = raw.split('\n');
+    let titleText = '';
+    let bodyMd = raw;
+    if (lines[0] && /^#\s/.test(lines[0])) {
+      titleText = lines[0].replace(/^#+\s*/, '').trim();
+      bodyMd = lines.slice(1).join('\n').trim();
+    }
+    articleMarkdown = raw;
+    if (window.marked) {
+      preview.innerHTML = marked.parse(bodyMd);
+    } else {
+      preview.innerText = bodyMd;
+    }
+    if (titleEl && titleText) {
+      titleEl.value = titleText;
+      autoResizeTitle(titleEl);
+    }
+  }
+
+  if (dateEl) {
+    const now = new Date();
+    dateEl.textContent = now.getFullYear() + '年' + (now.getMonth()+1) + '月' + now.getDate() + '日';
+  }
+
+  document.getElementById('import-md-textarea').value = '';
+  closeImportMdPanel();
+  const wechatBtn = document.getElementById('wechat-btn');
+  if (wechatBtn) wechatBtn.classList.remove('hidden');
+  const genOutputBtn = document.getElementById('gen-output-btn');
+  if (genOutputBtn) genOutputBtn.classList.remove('hidden');
+}
+
+async function openXhsEditor() {
+  if (!articleMarkdown) { alert('请先生成周报'); return; }
+  const titleEl = document.getElementById('wx-article-title');
+  const title = titleEl ? titleEl.value.trim() : '';
+  try {
+    const res = await fetch('/api/weekly_report_to_xhs', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ markdown: articleMarkdown, title })
+    });
+    const data = await res.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+    window.open('/xhs_full?token=' + data.token, '_blank');
+  } catch (e) {
+    alert('跳转失败: ' + e.message);
+  }
+}
+
+// ─── 工具函数 ───
+function setLoading(type, loading) {
+  if (type === 'news') {
+    document.getElementById('news-spin').classList.toggle('hidden', !loading);
+    document.getElementById('fetch-news-btn').disabled = loading;
+    document.getElementById('fetch-news-text').textContent = loading ? '抓取中...' : '抓取新闻';
+  } else if (type === 'gen') {
+    document.getElementById('gen-spin').classList.toggle('hidden', !loading);
+    document.getElementById('gen-btn').disabled = loading;
+  }
+}
+
+// ─── 下载七天榜单 Excel ───
+async function downloadRankExcel() {
+  const countries = [...document.querySelectorAll('.region-check:checked')].map(c => c.value);
+  if (!countries.length) { alert('请至少选择一个地区'); return; }
+
+  const btn = document.getElementById('excel-btn');
+  const spin = document.getElementById('excel-spin');
+  const text = document.getElementById('excel-btn-text');
+  btn.disabled = true;
+  spin.classList.remove('hidden');
+  text.textContent = '抓取中，约需1-2分钟...';
+
+  try {
+    const res = await fetch('/api/qimai_rank_excel', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ countries, chart_types: ['free', 'grossing'], top: 10 })
+    });
+    const data = await res.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+
+    // 存储异动数据供周报生成使用
+    excelAnomalies = data.anomalies || [];
+    document.getElementById('rank-status').textContent =
+      `✓ Excel 已生成，发现 ${excelAnomalies.length} 个涨幅异动`;
+    document.getElementById('rank-ready-badge').classList.remove('hidden');
+
+    // 解码 base64 并触发下载
+    const binStr = atob(data.excel_b64);
+    const bytes = new Uint8Array(binStr.length);
+    for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+    const blob = new Blob([bytes], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = data.filename || `游戏榜单周报_${new Date().toISOString().slice(0,10)}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    // 将榜单表格写入编辑器（先占位，异动分析完后插入到表格前）
+    const rankMd = buildExcelRankMarkdown(data.rank_tables || []);
+    if (rankMd) {
+      if (!articleMarkdown) {
+        articleMarkdown = rankMd;
+      } else if (!articleMarkdown.includes('## 三、本周榜单数据')) {
+        articleMarkdown += '\n\n' + rankMd;
+      }
+      document.getElementById('article-markdown').value = articleMarkdown;
+      renderArticlePreview(articleMarkdown);
+      document.getElementById('wechat-btn').classList.remove('hidden');
+      document.getElementById('gen-output-btn').classList.remove('hidden');
+      openWechatEditor();
+    }
+    if (excelAnomalies.length) {
+      analyzeExcelAnomalies(excelAnomalies);
+    }
+
+  } catch(e) {
+    alert('下载失败: ' + e.message);
+    document.getElementById('rank-status').textContent = '下载失败: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    spin.classList.add('hidden');
+    text.textContent = '📥 下载七天榜单 Excel';
+  }
+}
+
+// 将后端返回的 rank_tables 数据构建为 Markdown（仅榜单表格，无异动章节）
+function buildExcelRankMarkdown(rankTables) {
+  if (!rankTables || !rankTables.length) return '';
+  const lines = ['## 三、本周榜单数据\n'];
+  rankTables.forEach(t => {
+    lines.push(`### ${t.title}\n`);
+    lines.push('| 排名 | ' + t.dates.join(' | ') + ' |');
+    lines.push('|:---:| ' + t.dates.map(() => ':---:').join(' | ') + ' |');
+    t.rows.forEach((row, i) => {
+      lines.push('| ' + (i + 1) + ' | ' + row.join(' | ') + ' |');
+    });
+    lines.push('');
+  });
+  return lines.join('\n');
+}
+
+// Excel 异动 AI 分析：去重后分析，结果插入到"三、本周榜单数据"之前
+async function analyzeExcelAnomalies(anomalies) {
+  if (!anomalies.length) return;
+  try {
+    // 按游戏名去重：同一游戏多个榜单出现只保留一条（优先取涨幅最大或★新上榜）
+    const seen = {};
+    anomalies.forEach(a => {
+      const key = a.app;
+      if (!seen[key]) {
+        seen[key] = a;
+      } else {
+        // 新上榜优先；否则取涨幅更大的
+        const prev = seen[key];
+        const prevVal = prev.change === '★新上榜' ? 9999 : parseInt(prev.change.replace('↑','')) || 0;
+        const curVal  = a.change    === '★新上榜' ? 9999 : parseInt(a.change.replace('↑',''))    || 0;
+        if (curVal > prevVal) seen[key] = a;
+      }
+    });
+    const deduped = Object.values(seen);
+
+    const res = await fetch('/api/analyze_rank_anomalies', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ anomalies: deduped.slice(0, 8), news_items: newsItems })
+    });
+    const result = await res.json();
+    if (result.status !== 'ok') return;
+    const analyses = result.analyses || [];
+    if (!analyses.length) return;
+
+    // 构建异动章节
+    let anomalySection = '## 二、榜单异动重点\n\n';
+    analyses.forEach(item => {
+      const matchedAnomaly = deduped.find(a => a.app === item.app) || {};
+      const change = matchedAnomaly.change || '';
+      const regions = anomalies.filter(a => a.app === item.app)
+        .map(a => `${a.region}${a.chart}`)
+        .join('、');
+      anomalySection += `**《${item.app}》** ${change}（${regions}）\n\n${item.reason}\n\n`;
+    });
+
+    // 把异动章节插入到"三、本周榜单数据"之前
+    const rankHeader = '## 三、本周榜单数据';
+    if (articleMarkdown.includes(rankHeader)) {
+      articleMarkdown = articleMarkdown.replace(rankHeader, anomalySection + rankHeader);
+    } else {
+      articleMarkdown += '\n\n' + anomalySection;
+    }
+
+    document.getElementById('article-markdown').value = articleMarkdown;
+    renderArticlePreview(articleMarkdown);
+    if (!document.getElementById('wechat-modal').classList.contains('hidden')) {
+      openWechatEditor();
+    }
+  } catch(e) {
+    console.warn('异动分析失败:', e);
+  }
+}
+
+function formatTime(isoStr) {
+  if (!isoStr) return '';
+  try {
+    const d = new Date(isoStr);
+    const now = new Date();
+    const diff = now - d;
+    if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + '小时前';
+    if (diff < 604800000) return Math.floor(diff / 86400000) + '天前';
+    return d.toLocaleDateString('zh-CN');
+  } catch { return isoStr; }
+}
+
+function getWeekNumber() {
+  const now = new Date();
+  const start = new Date(now.getFullYear(), 0, 1);
+  return Math.ceil(((now - start) / 86400000 + start.getDay() + 1) / 7);
+}
+
+function escHtml(s) {
+  return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function escId(s) {
+  return String(s || '').replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+}
+
+// ─── 公众号编辑器：图片粘贴 & 调整 ───
+(function initWxImageEditor() {
+  let selectedImg = null;
+  let toolbar = null;
+
+  // 创建浮动工具栏
+  function createToolbar() {
+    const t = document.createElement('div');
+    t.className = 'wx-img-toolbar';
+    t.innerHTML = `
+      <label>宽度</label>
+      <input type="range" id="wx-img-w" min="80" max="100" value="100" step="1">
+      <span id="wx-img-w-val">100%</span>
+      <label>对齐</label>
+      <select id="wx-img-align">
+        <option value="block;margin:12px auto">居中</option>
+        <option value="block;margin:12px 0 12px auto">右对齐</option>
+        <option value="block;margin:12px auto 12px 0">左对齐</option>
+      </select>
+      <button id="wx-img-del" title="删除图片">🗑 删除</button>
+    `;
+    document.body.appendChild(t);
+    t.style.display = 'none';
+
+    t.querySelector('#wx-img-w').addEventListener('input', function() {
+      if (!selectedImg) return;
+      t.querySelector('#wx-img-w-val').textContent = this.value + '%';
+      selectedImg.style.width = this.value + '%';
+      selectedImg.style.maxWidth = '100%';
+    });
+    t.querySelector('#wx-img-align').addEventListener('change', function() {
+      if (!selectedImg) return;
+      const [disp, margin] = this.value.split(';');
+      selectedImg.style.display = disp;
+      selectedImg.style.margin = margin.replace('margin:', '');
+    });
+    t.querySelector('#wx-img-del').addEventListener('click', function() {
+      if (selectedImg) { selectedImg.remove(); deselectImg(); }
+    });
+    return t;
+  }
+
+  function deselectImg() {
+    if (selectedImg) { selectedImg.classList.remove('wx-img-selected'); selectedImg = null; }
+    if (toolbar) toolbar.style.display = 'none';
+  }
+
+  function selectImg(img) {
+    deselectImg();
+    selectedImg = img;
+    img.classList.add('wx-img-selected');
+    if (!toolbar) toolbar = createToolbar();
+    // 同步当前宽度到滑块
+    const curW = parseInt(img.style.width) || 100;
+    toolbar.querySelector('#wx-img-w').value = curW;
+    toolbar.querySelector('#wx-img-w-val').textContent = curW + '%';
+    positionToolbar(img);
+    toolbar.style.display = 'flex';
+  }
+
+  function positionToolbar(img) {
+    if (!toolbar) return;
+    const rect = img.getBoundingClientRect();
+    let top = rect.top - 50;
+    if (top < 8) top = rect.bottom + 8;
+    toolbar.style.top = top + 'px';
+    toolbar.style.left = Math.max(8, rect.left) + 'px';
+  }
+
+  // 点击图片选中
+  document.addEventListener('click', function(e) {
+    const preview = document.getElementById('wx-preview-area');
+    if (!preview) return;
+    if (e.target.tagName === 'IMG' && preview.contains(e.target)) {
+      e.preventDefault();
+      selectImg(e.target);
+    } else if (toolbar && !toolbar.contains(e.target)) {
+      deselectImg();
+    }
+  });
+
+  // 粘贴图片
+  document.addEventListener('paste', function(e) {
+    const preview = document.getElementById('wx-preview-area');
+    if (!preview || document.activeElement !== preview) return;
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        e.preventDefault();
+        const blob = item.getAsFile();
+        const reader = new FileReader();
+        reader.onload = function(ev) {
+          const img = document.createElement('img');
+          img.src = ev.target.result;
+          img.style.width = '100%';
+          img.style.maxWidth = '100%';
+          img.style.display = 'block';
+          img.style.margin = '12px auto';
+          img.style.borderRadius = '4px';
+          img.style.cursor = 'pointer';
+          // 插入到光标位置
+          const sel = window.getSelection();
+          if (sel && sel.rangeCount && preview.contains(sel.anchorNode)) {
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(img);
+            range.collapse(false);
+          } else {
+            preview.appendChild(img);
+          }
+        };
+        reader.readAsDataURL(blob);
+        break;
+      }
+    }
+  });
+
+  // 滚动时重定位工具栏
+  document.addEventListener('scroll', function() {
+    if (selectedImg && toolbar && toolbar.style.display !== 'none') positionToolbar(selectedImg);
+  }, true);
+})();
+
+// ─── 预填充数据自动初始化 ───
+(function autoInitPreload() {
+  if (!_PRELOAD) return;
+
+  // 1. 注入新闻列表（全量，全部标记为选中）
+  if (_PRELOAD.news_items && _PRELOAD.news_items.length) {
+    // Normalize field names to match renderNewsList expectations
+    newsItems = _PRELOAD.news_items.map((item, i) => ({
+      url:     item.url || item.title || ('__preloaded_' + i),
+      title:   item.title   || '',
+      content: item.content || '',
+      channel: item.channel || item.source || '\u9884\u8f7d\u65b0\u95fb',
+      time:    item.time    || item.pub_time || '',
+    }));
+    // Select all
+    newsItems.forEach(item => selectedNews.add(item.url));
+    renderNewsList(newsItems);
+    document.getElementById('news-status').textContent =
+      '\u2713 \u5df2\u9884\u8f7d ' + newsItems.length + ' \u6761\u65b0\u95fb\uff0c\u5168\u90e8\u5df2\u52fe\u9009';
+    updateSelectedCount();
+  }
+
+  // 2. 注入异动数据
+  if (_PRELOAD.excel_anomalies && _PRELOAD.excel_anomalies.length) {
+    excelAnomalies = _PRELOAD.excel_anomalies;
+    document.getElementById('rank-status').textContent =
+      '\u2713 \u5df2\u9884\u8f7d\u699c\u5355\u6570\u636e\uff0c\u53d1\u73b0 ' + excelAnomalies.length + ' \u4e2a\u5f02\u52a8';
+    const badge = document.getElementById('rank-ready-badge');
+    if (badge) badge.classList.remove('hidden');
+  }
+
+  // 3. 设置周报标题
+  if (_PRELOAD.week_label) {
+    const el = document.getElementById('week-label-input');
+    if (el) el.value = _PRELOAD.week_label;
+  }
+
+  // 4. 如果有已生成的 markdown，直接渲染并打开编辑器
+  if (_PRELOAD.article_markdown) {
+    articleMarkdown = _PRELOAD.article_markdown;
+    renderArticlePreview(articleMarkdown);
+    const mdEl = document.getElementById('article-markdown');
+    if (mdEl) mdEl.value = articleMarkdown;
+    const wechatBtn = document.getElementById('wechat-btn');
+    if (wechatBtn) wechatBtn.classList.remove('hidden');
+    const genOutputBtn2 = document.getElementById('gen-output-btn');
+    if (genOutputBtn2) genOutputBtn2.classList.remove('hidden');
+    // 稍作延迟确保 DOM 稳定后打开编辑器
+    setTimeout(() => openWechatEditor(), 400);
+  } else if (newsItems.length) {
+    // 5. 有新闻但无 markdown：延迟后自动触发 AI 生成
+    setTimeout(() => generateReport(), 600);
+  }
+})();
+</script>
+{% endblock %}

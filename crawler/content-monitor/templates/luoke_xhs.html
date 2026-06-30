@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>草地上种什么花 · 小红书图文</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0A1018; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; }
+
+  /* 顶部操作栏 */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(7, 12, 22, 0.97); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,107,43,0.2);
+    height: 52px; display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  #top-bar .logo { font-size: 11px; font-weight: 800; color: #FF6B2B; letter-spacing: 0.15em; font-family: 'Inter', sans-serif; }
+  #top-bar .hint { font-size: 11px; color: #2A3A4A; flex: 1; }
+  .btn-dl {
+    background: #FF6B2B; color: #fff; border: none; border-radius: 7px;
+    padding: 7px 16px; font-size: 12px; font-weight: 700; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif; transition: background 0.2s;
+  }
+  .btn-dl:hover { background: #D9521A; }
+  .btn-dl-all {
+    background: transparent; color: #4A6070; border: 1px solid #1A2A3A;
+    border-radius: 7px; padding: 7px 16px; font-size: 12px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif; transition: all 0.2s;
+  }
+  .btn-dl-all:hover { background: #1A2A3A; color: #fff; }
+
+  /* 主体 */
+  #stage { padding: 72px 24px 48px; display: flex; flex-wrap: wrap; gap: 28px; justify-content: center; }
+
+  /* 卡片外框 */
+  .card-unit { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .card-label { font-size: 11px; color: #243040; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; }
+  .card-actions button {
+    background: transparent; border: 1px solid #1A2A3A; color: #3A5060;
+    border-radius: 6px; padding: 5px 14px; font-size: 11px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif; transition: all 0.2s;
+  }
+  .card-actions button:hover { background: #1A2A3A; color: #FF6B2B; border-color: rgba(255,107,43,0.5); }
+
+  /* 卡片本体（与 xhs_full intel 完全一致） */
+  .xhs-card { width: 375px; flex-shrink: 0; box-shadow: 0 16px 48px rgba(0,0,0,0.8); }
+
+  .card-bg {
+    background: #0D1B2A;
+    height: 100%; min-height: 500px;
+    padding: 24px;
+    display: flex; flex-direction: column;
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    color: #E8EDF2;
+    position: relative; overflow: hidden;
+  }
+
+  /* 顶部 badge 栏（负 margin 撑满） */
+  .header-bar {
+    margin: -24px -24px 16px;
+    flex-shrink: 0;
+  }
+  .header-bar .top-line { height: 2px; background: #FF6B2B; }
+  .header-bar .badge-row {
+    background: #070F1A;
+    border-bottom: 1px solid rgba(255,107,43,0.25);
+    padding: 6px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .badge-brand { font-size: 9px; color: #FF6B2B; font-weight: 800; letter-spacing: 0.18em; font-family: 'Inter', sans-serif; }
+  .badge-tag   { font-size: 9px; color: rgba(255,107,43,0.35); font-family: 'Inter', sans-serif; letter-spacing: 0.06em; }
+
+  /* 正文 markdown 样式（与 xhs_full theme-intel 完全一致） */
+  .markdown-body { flex: 1; line-height: 1.75; color: #C8D8E8; font-size: 14px; overflow: hidden; }
+  .markdown-body p { margin-bottom: 0.85em; color: #C8D8E8; }
+  .markdown-body > *:first-child { margin-top: 0 !important; }
+  .markdown-body h1 { font-size: 1.5em; font-weight: 800; color: #fff; border-left: 3px solid #FF6B2B; padding-left: 10px; margin-bottom: 12px; }
+  .markdown-body h2 { font-size: 1.15em; font-weight: 700; color: #FF6B2B; margin-top: 1.1em; margin-bottom: 0.4em; }
+  .markdown-body h2::before { content: '▍'; margin-right: 4px; opacity: 0.8; }
+  .markdown-body h3 { font-size: 1.05em; font-weight: 600; color: #FFA57A; margin-top: 0.9em; margin-bottom: 0.3em; }
+  .markdown-body strong { color: #fff; font-weight: 700; }
+  .markdown-body em { color: #FFA57A; font-style: normal; }
+  .markdown-body blockquote {
+    border-left: 3px solid #FF6B2B; background: rgba(255,107,43,0.10);
+    color: #FFD0B0; padding: 10px 14px; margin: 10px 0; border-radius: 0 6px 6px 0;
+  }
+  .markdown-body blockquote p { color: #FFD0B0; margin-bottom: 0; }
+  .markdown-body ul { padding-left: 1.2em; margin-bottom: 0.8em; list-style-type: disc; }
+  .markdown-body li { color: #C8D8E8; margin-bottom: 0.3em; }
+
+  /* 页尾实心橙色 bar */
+  .footer-bar {
+    margin: auto -24px -24px;
+    background: #FF6B2B;
+    padding: 8px 18px;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .footer-bar .fl { font-size: 11px; color: #fff; font-weight: 800; letter-spacing: 0.08em; }
+  .footer-bar .fr { font-size: 10px; color: rgba(255,255,255,0.6); font-family: 'Inter', sans-serif; letter-spacing: 0.1em; }
+
+  /* toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #070F1A; color: #FF6B2B; border: 1px solid rgba(255,107,43,0.5);
+    padding: 10px 20px; border-radius: 8px; font-size: 12px;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+    font-family: 'Inter', sans-serif; letter-spacing: 0.06em;
+  }
+  #toast.show { opacity: 1; }
+
+  [contenteditable]:focus {
+    outline: 1px solid rgba(255,107,43,0.45);
+    border-radius: 2px;
+    background: rgba(255,107,43,0.04);
+  }
+</style>
+</head>
+<body>
+
+<div id="top-bar">
+  <div class="logo">&#9679; GAME RADAR HQ</div>
+  <div class="hint">375px · 共 6 张 · 草地上种什么花</div>
+  <button class="btn-dl-all" onclick="downloadAll()">全部导出</button>
+  <button class="btn-dl" onclick="downloadCard('card-0')">下载当前</button>
+</div>
+
+<div id="stage">
+
+  <!-- 01 -->
+  <div class="card-unit">
+    <div class="card-label">01</div>
+    <div class="xhs-card" id="card-0">
+      <div class="card-bg">
+        <div class="header-bar">
+          <div class="top-line"></div>
+          <div class="badge-row">
+            <span class="badge-brand">&#9679; GAME RADAR HQ</span>
+            <span class="badge-tag">游戏亚文化观察</span>
+          </div>
+        </div>
+        <div class="markdown-body" contenteditable="true">
+          <h1>草地上种什么花</h1>
+          <p>三月底，《洛克王国：世界》正式上线。在游戏媒体的报道里，这是一款经典IP的3D重启，主打童年情怀。</p>
+          <p>但从几次限量测试开始，B站、小红书等各种内容平台上就出现了一批完全不同语境的内容——有人在分享特定风格的捏脸攻略，有人在讨论这里"主宠的形象解读"，到公测上线几天后某男性社交平台出现了洛克王国的推荐广告。</p>
+          <p>这不是偶发的玩梗，也不是一两个人的个人行为。这是一个<strong>完整的圈层迁入事件</strong>。</p>
+          <p>以下内容均为玩家自发行为，与游戏官方无关。本文是游戏亚文化的现象观察，不讨论对错，不代表任何立场。</p>
+        </div>
+        <div class="footer-bar">
+          <span class="fl">游戏亚文化观察</span>
+          <span class="fr">&#9672; 01 / 06</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-0')">下载此张</button></div>
+  </div>
+
+  <!-- 02 -->
+  <div class="card-unit">
+    <div class="card-label">02</div>
+    <div class="xhs-card" id="card-1">
+      <div class="card-bg">
+        <div class="header-bar">
+          <div class="top-line"></div>
+          <div class="badge-row">
+            <span class="badge-brand">&#9679; GAME RADAR HQ</span>
+            <span class="badge-tag">游戏亚文化观察</span>
+          </div>
+        </div>
+        <div class="markdown-body" contenteditable="true">
+          <h2>15年的时间差</h2>
+          <p>洛克王国的第一批玩家，大约生于2000年前后。那一年他们7到10岁，在游戏里养精灵、刷副本、跟同学比较谁的号更厉害。洛克王国对他们而言，不是一款游戏，是某种<strong>童年共有的时间节点</strong>。</p>
+          <p>15年后，这批玩家大约25岁。他们有了完整的成人身份，包括性别认知和性向认同。其中有一部分人，以特定亚文化圈层的身份，在这15年里积累了一套相当成熟的亚文化语言和圈层符号体系。</p>
+          <p>当《洛克王国：世界》公测的消息出来，他们既是以"玩家"的身份被召回，也是以这一圈层的身份重新打量这款游戏。</p>
+          <blockquote>这两个身份在同一个人身上叠加——这件事本身，就已经制造了一种<strong>不寻常的阅读视角</strong>。</blockquote>
+        </div>
+        <div class="footer-bar">
+          <span class="fl">游戏亚文化观察</span>
+          <span class="fr">&#9672; 02 / 06</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-1')">下载此张</button></div>
+  </div>
+
+  <!-- 03 -->
+  <div class="card-unit">
+    <div class="card-label">03</div>
+    <div class="xhs-card" id="card-2">
+      <div class="card-bg">
+        <div class="header-bar">
+          <div class="top-line"></div>
+          <div class="badge-row">
+            <span class="badge-brand">&#9679; GAME RADAR HQ</span>
+            <span class="badge-tag">游戏亚文化观察</span>
+          </div>
+        </div>
+        <div class="markdown-body" contenteditable="true">
+          <h2>被搬进游戏的圈层语言</h2>
+          <p>在《洛克王国：世界》的捏人和服装系统里，有玩家形成了一套相对固定的穿搭偏好：白色中筒袜、短裤或短裙、偏软偏圆的发型，配色倾向于浅蓝、白、奶黄这类低饱和度的温柔色系。整体呈现出一种<strong>"去攻击性"的男性形象</strong>——不强壮、不硬朗，反而圆润、轻盈。</p>
+          <p>"白袜男孩"这个词在这一亚文化圈子里并不陌生。它代表的是一种对男性气质的特定想象：柔软的、干净的、有点害羞的。</p>
+          <p>《洛克王国》的Q版画风在这里提供了天然的土壤。游戏里的角色头大身小、线条圆滑，性别特征被高度简化，"白袜男孩"的造型在这个美术框架里<strong>没有任何突兀感</strong>。</p>
+        </div>
+        <div class="footer-bar">
+          <span class="fl">游戏亚文化观察</span>
+          <span class="fr">&#9672; 03 / 06</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-2')">下载此张</button></div>
+  </div>
+
+  <!-- 04 -->
+  <div class="card-unit">
+    <div class="card-label">04</div>
+    <div class="xhs-card" id="card-3">
+      <div class="card-bg">
+        <div class="header-bar">
+          <div class="top-line"></div>
+          <div class="badge-row">
+            <span class="badge-brand">&#9679; GAME RADAR HQ</span>
+            <span class="badge-tag">游戏亚文化观察</span>
+          </div>
+        </div>
+        <div class="markdown-body" contenteditable="true">
+          <h2>为什么偏偏是游戏空间</h2>
+          <p>哲学家福柯有一个概念叫"异托邦"——一种真实存在、但又遵循不同规则的空间，像镜子，像船，像图书馆。游戏世界某种程度上就是一种异托邦：你在里面可以有另一个名字，另一张脸，而这一切在现实里不需要留下痕迹。</p>
+          <p>这种匿名性提供的不只是隐私，更是一种<strong>低风险的尝试空间</strong>。在游戏里穿一身白袜搭配，比在现实里穿出门的成本要低得多。游戏降低了"成为自己"的门槛。</p>
+          <p>另一方面，萌系游戏的美术风格本身就有一种对性别规范的松动——谁见过一只精灵在乎自己是不是"够爷们"？加上游戏鼓励玩家社交，同好玩家自然向彼此靠近。于是游戏不止是一个入口，后面接着的是<strong>真实的人和真实的联结</strong>。</p>
+        </div>
+        <div class="footer-bar">
+          <span class="fl">游戏亚文化观察</span>
+          <span class="fr">&#9672; 04 / 06</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-3')">下载此张</button></div>
+  </div>
+
+  <!-- 05 -->
+  <div class="card-unit">
+    <div class="card-label">05</div>
+    <div class="xhs-card" id="card-4">
+      <div class="card-bg">
+        <div class="header-bar">
+          <div class="top-line"></div>
+          <div class="badge-row">
+            <span class="badge-brand">&#9679; GAME RADAR HQ</span>
+            <span class="badge-tag">游戏亚文化观察</span>
+          </div>
+        </div>
+        <div class="markdown-body" contenteditable="true">
+          <h2>这不是洛克王国独有的事</h2>
+          <p>《动物森友会》里，玩家用岛屿设计和家具摆放表达性别认同，某些岛成了小有名气的"安全空间"。《最终幻想XIV》的角色扮演社群里，有玩家在游戏内举办骄傲游行。《星露谷物语》允许与任意性别NPC结婚，被许多玩家描述为"第一次在游戏里感觉自己存在"。</p>
+          <p>这些例子里，游戏都没有特意针对这一圈层做内容，但都给玩家留足了自我表达的缝隙。这种"缝隙表达"是一种长期存在的策略：在并非为你设计的空间里，找到或创造属于自己的表达方式。</p>
+          <blockquote>它的存在，本身就说明了一些事——当正面的表达空间有限时，人不会停止表达，<strong>只会换一种方式</strong>。</blockquote>
+        </div>
+        <div class="footer-bar">
+          <span class="fl">游戏亚文化观察</span>
+          <span class="fr">&#9672; 05 / 06</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-4')">下载此张</button></div>
+  </div>
+
+  <!-- 06 -->
+  <div class="card-unit">
+    <div class="card-label">06</div>
+    <div class="xhs-card" id="card-5">
+      <div class="card-bg">
+        <div class="header-bar">
+          <div class="top-line"></div>
+          <div class="badge-row">
+            <span class="badge-brand">&#9679; GAME RADAR HQ</span>
+            <span class="badge-tag">游戏亚文化观察</span>
+          </div>
+        </div>
+        <div class="markdown-body" contenteditable="true">
+          <h2>草地上种什么花</h2>
+          <p>回到《洛克王国：世界》的那片绿草地。阳光很好，精灵在跑，角色的眼睛又大又亮。游戏设计者大概没有预料到，有玩家会在这里搭建一套白袜美学，或者用精灵的颜色传递一个只有部分人能读懂的信号。</p>
+          <p>这些内容存在于游戏系统的间隙里，不影响主线，不打扰不相关的人，安安静静地存在。</p>
+          <blockquote>建造一片草地，规定了土壤和天气，让玩家自由生长——<strong>这也许就是游戏的意义。</strong></blockquote>
+        </div>
+        <div class="footer-bar">
+          <span class="fl">游戏亚文化观察 · 2026</span>
+          <span class="fr">&#9672; 06 / 06</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions"><button onclick="downloadCard('card-5')">下载此张</button></div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+function downloadCard(id) {
+  const el = document.getElementById(id);
+  document.activeElement.blur();
+  showToast('正在渲染图片…');
+  htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true })
+    .then(() => htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true }))
+    .then(dataUrl => { saveAs(dataUrl, `luoke-xhs-${id}.png`); showToast('下载成功！'); })
+    .catch(e => { showToast('生成失败，请重试'); console.error(e); });
+}
+
+async function downloadAll() {
+  const ids = ['card-0','card-1','card-2','card-3','card-4','card-5'];
+  document.activeElement.blur();
+  for (let i = 0; i < ids.length; i++) {
+    showToast(`导出第 ${i+1} / ${ids.length} 张…`);
+    const el = document.getElementById(ids[i]);
+    try {
+      await htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true });
+      const dataUrl = await htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true });
+      saveAs(dataUrl, `luoke-xhs-${String(i+1).padStart(2,'0')}.png`);
+      await new Promise(r => setTimeout(r, 500));
+    } catch(e) { console.error(ids[i], e); }
+  }
+  showToast('全部导出完成！');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unity 2026 游戏开发报告 · 小红书图文</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #111827;
+    font-family: 'Noto Sans SC', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* ── 顶部操作栏 ── */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,16,28,0.97);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(232,130,12,0.18);
+    height: 52px;
+    display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  #top-bar .logo {
+    font-size: 12px; font-weight: 700; color: #E8820C;
+    letter-spacing: 0.1em; font-family: 'Inter', sans-serif;
+    margin-right: 8px;
+  }
+  #top-bar .hint {
+    font-size: 11px; color: #3A5070; flex: 1;
+  }
+  .btn-dl {
+    background: #E8820C; color: #fff; border: none;
+    border-radius: 8px; padding: 7px 16px;
+    font-size: 12px; font-weight: 600; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: background 0.2s;
+  }
+  .btn-dl:hover { background: #d4720a; }
+  .btn-dl-all {
+    background: #1E3050; color: #C8D8E8; border: 1px solid #2A4060;
+    border-radius: 8px; padding: 7px 16px;
+    font-size: 12px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.2s;
+  }
+  .btn-dl-all:hover { background: #253858; color: #fff; }
+
+  /* ── 主体布局 ── */
+  #stage {
+    padding: 72px 24px 48px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+  }
+
+  /* ── 单张卡片容器 ── */
+  .card-unit {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+  }
+  .card-label {
+    font-size: 11px; color: #3A5070; letter-spacing: 0.06em;
+    font-family: 'Inter', sans-serif;
+  }
+  .card-actions {
+    display: flex; gap: 8px;
+  }
+  .card-actions button {
+    background: #1E2D40; border: 1px solid #2A3E56;
+    color: #6A8AAA; border-radius: 6px;
+    padding: 5px 12px; font-size: 11px; cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    transition: all 0.2s;
+  }
+  .card-actions button:hover { background: #253858; color: #E8820C; border-color: #E8820C; }
+
+  /* ── 小红书卡片本体：375px 宽，高度自适应 ── */
+  .xhs-card {
+    width: 375px;
+    position: relative;
+    overflow: visible;
+    flex-shrink: 0;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+    border-radius: 2px;
+  }
+
+  /* ══════════════════════════════════
+     卡片 1：封面
+  ══════════════════════════════════ */
+  .card-1 {
+    background: linear-gradient(155deg, #0D1B2E 0%, #162840 60%, #0B1522 100%);
+  }
+  .card-1 .grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(232,130,12,0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,130,12,0.07) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events: none;
+  }
+  .card-1 .glow {
+    position: absolute; top: -80px; right: -80px;
+    width: 320px; height: 320px;
+    background: radial-gradient(circle, rgba(232,130,12,0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .card-1 .inner {
+    position: relative;
+    padding: 40px 32px 32px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-height: 500px;
+  }
+  .card-1 .tag {
+    display: inline-flex; align-items: center;
+    background: rgba(232,130,12,0.15);
+    border: 1px solid rgba(232,130,12,0.3);
+    color: #E8A050; font-size: 10px; font-weight: 700;
+    letter-spacing: 0.12em; padding: 4px 10px; border-radius: 2px;
+    font-family: 'Inter', sans-serif; text-transform: uppercase;
+    width: fit-content;
+  }
+  .card-1 .title-block { margin-top: 24px; }
+  .card-1 .eyebrow {
+    font-size: 11px; color: #5A7A9A; letter-spacing: 0.06em;
+    margin-bottom: 12px; font-family: 'Inter', sans-serif;
+  }
+  .card-1 h1 {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 26px; font-weight: 700; color: #EAF0F8;
+    line-height: 1.4; letter-spacing: 0.02em;
+  }
+  .card-1 h1 em { color: #E8820C; font-style: normal; }
+  .card-1 .subtitle {
+    margin-top: 14px;
+    font-size: 12px; color: #5A7A9A; line-height: 1.7;
+    border-left: 2px solid rgba(232,130,12,0.4);
+    padding-left: 10px;
+  }
+  .card-1 .pills {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 20px;
+  }
+  .card-1 .pill {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: #7A9AB8; font-size: 11px; padding: 4px 10px;
+    border-radius: 20px;
+  }
+  .card-1 .footer-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 16px;
+  }
+  .card-1 .footer-bar .brand {
+    font-size: 11px; color: #3A5A7A; letter-spacing: 0.08em;
+    font-family: 'Inter', sans-serif;
+  }
+  .card-1 .footer-bar .page-num {
+    font-size: 10px; color: #2A4060; font-family: 'Inter', sans-serif;
+  }
+
+  /* ══════════════════════════════════
+     通用页面结构（卡片 2-5）
+  ══════════════════════════════════ */
+  .xhs-page {
+    background: #fff;
+    position: relative;
+  }
+  .page-header {
+    padding: 18px 24px 14px;
+    border-bottom: 1px solid #F0F2F5;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .page-header-left { display: flex; align-items: center; gap: 8px; }
+  .page-num-badge {
+    width: 22px; height: 22px; border-radius: 4px;
+    background: #E8820C; color: #fff;
+    font-size: 11px; font-weight: 800; font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .page-topic {
+    font-size: 10px; font-weight: 700; color: #999;
+    letter-spacing: 0.08em; text-transform: uppercase;
+  }
+  .page-brand { font-size: 10px; color: #CCC; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; }
+  .page-body { padding: 18px 24px 4px; }
+  .page-footer {
+    padding: 10px 24px 14px;
+    border-top: 1px solid #F0F2F5;
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 14px;
+  }
+  .page-footer-text { font-size: 10px; color: #CCC; }
+  .page-footer-dot { width: 6px; height: 6px; border-radius: 50%; background: #E8820C; flex-shrink: 0; }
+
+  /* 页内大标题 */
+  .body-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 17px; font-weight: 700; color: #111;
+    line-height: 1.4; margin-bottom: 6px;
+  }
+  .body-title em { color: #E8820C; font-style: normal; }
+  .body-lead {
+    font-size: 12px; color: #888; line-height: 1.6; margin-bottom: 14px;
+  }
+
+  /* 数据条 */
+  .mini-bar-list { display: flex; flex-direction: column; gap: 9px; margin: 10px 0; }
+  .mini-bar-item {}
+  .mini-bar-row {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 11px; margin-bottom: 4px;
+  }
+  .mini-bar-label { color: #555; }
+  .mini-bar-val { font-weight: 800; font-family: 'Inter', sans-serif; color: #E8820C; }
+  .mini-bar-val.blue { color: #3B82F6; }
+  .mini-bar-val.green { color: #10B981; }
+  .mini-track { height: 6px; background: #F0F2F5; border-radius: 3px; overflow: hidden; }
+  .mini-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #E8820C, #F5A840); }
+  .mini-fill.blue { background: linear-gradient(90deg, #3B82F6, #60A5FA); }
+  .mini-fill.green { background: linear-gradient(90deg, #10B981, #34D399); }
+
+  /* 小号引用块 */
+  .mini-quote {
+    border-left: 2px solid #E8820C;
+    background: #FFF8F2;
+    padding: 10px 12px; border-radius: 0 4px 4px 0;
+    font-size: 12px; color: #5A3A10; line-height: 1.65;
+    margin: 10px 0;
+  }
+  .mini-quote strong { color: #E8820C; }
+
+  /* 大数字展示 */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+  .stat-item {
+    background: #FAFAFA; border: 1px solid #EAECEF;
+    border-radius: 6px; padding: 12px 10px; text-align: center;
+    position: relative; overflow: hidden;
+  }
+  .stat-item::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: #E8820C;
+  }
+  .stat-item.blue::before { background: #3B82F6; }
+  .stat-item.green::before { background: #10B981; }
+  .stat-item.purple::before { background: #8B5CF6; }
+  .stat-big {
+    font-family: 'Inter', sans-serif; font-size: 28px; font-weight: 900;
+    color: #111; line-height: 1;
+  }
+  .stat-big span { font-size: 16px; font-weight: 700; }
+  .stat-small { font-size: 10px; color: #999; margin-top: 4px; line-height: 1.4; }
+
+  /* 对比两列 */
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+  .vs-card { border-radius: 6px; padding: 12px; }
+  .vs-card.old { background: #F8F9FA; border: 1px solid #EAECEF; }
+  .vs-card.new { background: #FFF5EC; border: 1px solid #FDDBB4; }
+  .vs-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 8px; display: block; }
+  .vs-card.old .vs-tag { color: #AAA; }
+  .vs-card.new .vs-tag { color: #E8820C; }
+  .vs-item { font-size: 11px; color: #555; padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: flex-start; gap: 4px; }
+  .vs-item::before { content: '·'; color: #CCC; }
+  .vs-card.new .vs-item::before { content: '▸'; color: #E8820C; font-size: 9px; margin-top: 2px; }
+
+  /* 结论卡片 */
+  .concl-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+  .concl-item {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #FAFAFA; border: 1px solid #EAECEF;
+    border-radius: 6px; padding: 12px;
+  }
+  .concl-icon {
+    width: 28px; height: 28px; border-radius: 6px; background: #E8820C;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .concl-body {}
+  .concl-title { font-size: 12px; font-weight: 700; color: #111; margin-bottom: 2px; }
+  .concl-desc { font-size: 11px; color: #777; line-height: 1.5; }
+
+  /* 深色尾页 */
+  .card-last {
+    background: linear-gradient(155deg, #0D1B2E 0%, #162840 60%, #0B1522 100%);
+  }
+  .card-last .grid-bg {
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(232,130,12,0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,130,12,0.06) 1px, transparent 1px);
+    background-size: 24px 24px;
+    pointer-events: none;
+  }
+  .card-last .inner {
+    position: relative;
+    padding: 40px 32px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    min-height: 500px;
+  }
+  .card-last .label {
+    font-size: 10px; font-weight: 700; color: #E8820C;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+  }
+  .card-last .center-block { flex: 1; display: flex; flex-direction: column; justify-content: center; }
+  .card-last .hl-list { display: flex; flex-direction: column; gap: 16px; }
+  .card-last .hl-row { display: flex; gap: 12px; align-items: flex-start; }
+  .card-last .hl-num {
+    width: 20px; height: 20px; border-radius: 3px;
+    background: rgba(232,130,12,0.2); border: 1px solid rgba(232,130,12,0.4);
+    color: #E8820C; font-size: 10px; font-weight: 800;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; margin-top: 2px;
+  }
+  .card-last .hl-text { font-size: 13px; color: #B8C8D8; line-height: 1.65; }
+  .card-last .hl-text strong { color: #EAF0F8; }
+  .card-last .bottom-bar {
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding-top: 16px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-last .bottom-brand {
+    font-size: 11px; color: #3A5A7A; font-family: 'Inter', sans-serif; letter-spacing: 0.08em;
+  }
+  .card-last .bottom-src { font-size: 10px; color: #2A4060; }
+
+  /* 图表内嵌 */
+  .chart-wrap { flex: 1; position: relative; }
+
+  /* toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: #111; color: #fff; padding: 10px 20px;
+    border-radius: 8px; font-size: 12px;
+    opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+  }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- 操作栏 -->
+<div id="top-bar">
+  <div class="logo">DATA RADAR</div>
+  <div class="hint">375 × 500 · 共 6 张 · 点击单张「下载」或一键全部导出</div>
+  <button class="btn-dl-all" onclick="downloadAll()">全部导出</button>
+  <button class="btn-dl" onclick="downloadCard('card-0')">下载当前</button>
+</div>
+
+<div id="stage">
+
+  <!-- ══════ 卡片 1：封面 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">01 · 封面</div>
+    <div class="xhs-card card-1" id="card-0">
+      <div class="grid-bg"></div>
+      <div class="glow"></div>
+      <div class="inner">
+        <div>
+          <div class="tag">Unity Developer Report 2026</div>
+          <div class="title-block">
+            <div class="eyebrow">GAME DEVELOPMENT INSIGHTS</div>
+            <h1>Unity 2026<br>游戏开发报告<br><em>三大转折信号</em></h1>
+            <p class="subtitle">
+              小而快 · AI 基础设施化<br>合作优先于买量
+            </p>
+          </div>
+          <div class="pills">
+            <span class="pill">全球开发者调研</span>
+            <span class="pill">行业趋势</span>
+            <span class="pill">数据解读</span>
+          </div>
+        </div>
+        <div class="footer-bar">
+          <span class="brand">DATA RADAR · 数据雷达</span>
+          <span class="page-num">1 / 6</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button onclick="downloadCard('card-0')">下载此张</button>
+    </div>
+  </div>
+
+  <!-- ══════ 卡片 2：效率革命 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">02 · 效率革命</div>
+    <div class="xhs-card" id="card-1">
+      <div class="xhs-page">
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="page-num-badge">01</div>
+            <span class="page-topic">Efficiency · 效率革命</span>
+          </div>
+          <span class="page-brand">DATA RADAR</span>
+        </div>
+        <div class="page-body">
+          <div class="body-title">"小而快"<br>已成开发主流范式</div>
+          <div class="body-lead">4年内开发时间中位数下降77%，规模优势正在被重构</div>
+
+          <div class="stat-grid">
+            <div class="stat-item">
+              <div class="stat-big">72<span>%</span></div>
+              <div class="stat-small">开发者<br>表示效率提升</div>
+            </div>
+            <div class="stat-item blue">
+              <div class="stat-big" style="color:#3B82F6">77<span>%</span></div>
+              <div class="stat-small">开发时长<br>中位数降幅</div>
+            </div>
+            <div class="stat-item green">
+              <div class="stat-big" style="color:#10B981">52<span>%</span></div>
+              <div class="stat-small">工作室<br>主动缩减规模</div>
+            </div>
+            <div class="stat-item purple">
+              <div class="stat-big" style="color:#8B5CF6">64<span>%</span></div>
+              <div class="stat-small">中型团队<br>转向小项目</div>
+            </div>
+          </div>
+
+          <div class="mini-quote">
+            <strong>46%</strong> 的工作室能在 <strong>1-3 个月</strong>内完成可验证原型，21% 甚至不到一个月。
+          </div>
+
+          <div class="mini-bar-list">
+            <div class="mini-bar-item">
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">对原型开发更挑剔筛选</span>
+                <span class="mini-bar-val">48%</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill" style="width:48%"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-footer-text">Unity 2026 Gaming Report · 数据雷达解读</span>
+          <div class="page-footer-dot"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button onclick="downloadCard('card-1')">下载此张</button>
+    </div>
+  </div>
+
+  <!-- ══════ 卡片 3：AI 基础设施化 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">03 · AI 基础设施化</div>
+    <div class="xhs-card" id="card-2">
+      <div class="xhs-page">
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="page-num-badge" style="background:#3B82F6">02</div>
+            <span class="page-topic">AI · 已越过临界点</span>
+          </div>
+          <span class="page-brand">DATA RADAR</span>
+        </div>
+        <div class="page-body">
+          <div class="body-title">AI 不再是工具<br>而是<em>工作流基础设施</em></div>
+          <div class="body-lead">从"可调用"到"嵌入日常"，差距在深度而非起点</div>
+
+          <div class="mini-bar-list">
+            <div class="mini-bar-item">
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">认为AI最大价值是提升效率</span>
+                <span class="mini-bar-val blue">73%</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill blue" style="width:73%"></div></div>
+            </div>
+            <div class="mini-bar-item">
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">将AI用于编码辅助</span>
+                <span class="mini-bar-val blue">62%</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill blue" style="width:62%"></div></div>
+            </div>
+            <div class="mini-bar-item">
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">AI改善了决策质量</span>
+                <span class="mini-bar-val blue">62%</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill blue" style="width:62%"></div></div>
+            </div>
+            <div class="mini-bar-item">
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">已部署 MCP 服务器</span>
+                <span class="mini-bar-val blue">50%</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill blue" style="width:50%"></div></div>
+            </div>
+          </div>
+
+          <div class="mini-quote" style="margin-top:10px">
+            MCP 部署工作室中，<strong>90%</strong> 用于连接引擎与编辑器，<strong>76%</strong> 用于编码调试场景
+          </div>
+
+          <div style="font-size:11px; color:#888; margin-top:10px; line-height:1.6">
+            竞争差距不在于"是否用 AI"，<br>而在于 AI 嵌入工作流的<strong style="color:#3B82F6">深度</strong>。
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-footer-text">Unity 2026 Gaming Report · 数据雷达解读</span>
+          <div class="page-footer-dot" style="background:#3B82F6"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button onclick="downloadCard('card-2')">下载此张</button>
+    </div>
+  </div>
+
+  <!-- ══════ 卡片 4：变现路径 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">04 · 变现路径</div>
+    <div class="xhs-card" id="card-3">
+      <div class="xhs-page">
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="page-num-badge" style="background:#10B981">03</div>
+            <span class="page-topic">Monetization · 买量失效</span>
+          </div>
+          <span class="page-brand">DATA RADAR</span>
+        </div>
+        <div class="page-body">
+          <div class="body-title">买量逻辑<em>正在失效</em><br>合作联名成为第一策略</div>
+          <div class="body-lead">竞争33%、获客成本30%、曝光困难17%——三障叠加</div>
+
+          <div class="vs-grid">
+            <div class="vs-card old">
+              <span class="vs-tag">旧路径</span>
+              <div class="vs-item">应用内购为主</div>
+              <div class="vs-item">买量广告投放</div>
+              <div class="vs-item">渠道流量分发</div>
+              <div class="vs-item">一次性消费</div>
+            </div>
+            <div class="vs-card new">
+              <span class="vs-tag">新主流</span>
+              <div class="vs-item">IP联名·跨界</div>
+              <div class="vs-item">社区运营</div>
+              <div class="vs-item">线上活动</div>
+              <div class="vs-item">持续性服务</div>
+            </div>
+          </div>
+
+          <div class="mini-bar-list" style="margin-top:8px">
+            <div class="mini-bar-item">
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">合作/联名推动收入增长</span>
+                <span class="mini-bar-val green">82%</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill green" style="width:82%"></div></div>
+            </div>
+            <div class="mini-bar-item">
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">视印度为最具潜力新兴市场</span>
+                <span class="mini-bar-val green">73%</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill green" style="width:73%"></div></div>
+            </div>
+            <div class="mini-bar-item">
+              <div class="mini-bar-row">
+                <span class="mini-bar-label">优先通过线上活动扩大曝光</span>
+                <span class="mini-bar-val green">62%</span>
+              </div>
+              <div class="mini-track"><div class="mini-fill green" style="width:62%"></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-footer-text">Unity 2026 Gaming Report · 数据雷达解读</span>
+          <div class="page-footer-dot" style="background:#10B981"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button onclick="downloadCard('card-3')">下载此张</button>
+    </div>
+  </div>
+
+  <!-- ══════ 卡片 5：留存设计 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">05 · 留存设计</div>
+    <div class="xhs-card" id="card-4">
+      <div class="xhs-page">
+        <div class="page-header">
+          <div class="page-header-left">
+            <div class="page-num-badge" style="background:#8B5CF6">04</div>
+            <span class="page-topic">Retention · 留存共识</span>
+          </div>
+          <span class="page-brand">DATA RADAR</span>
+        </div>
+        <div class="page-body">
+          <div class="body-title">在线多人 + 每日任务<br>已成<em>行业标准配置</em></div>
+          <div class="body-lead">83% 工作室选择在线多人，留存机制形成设计共识</div>
+
+          <div class="stat-grid" style="margin-bottom:12px">
+            <div class="stat-item" style="border-color:#FDDBB4">
+              <div class="stat-big">83<span>%</span></div>
+              <div class="stat-small">构建在线<br>多人游戏</div>
+            </div>
+            <div class="stat-item" style="border-color:#FDDBB4">
+              <div class="stat-big">78<span>%</span></div>
+              <div class="stat-small">部署排行榜<br>+每日奖励</div>
+            </div>
+          </div>
+
+          <!-- 内嵌图表 -->
+          <div style="background:#F8F9FA; border:1px solid #EAECEF; border-radius:6px; padding:12px">
+            <div style="font-size:11px; font-weight:700; color:#333; margin-bottom:2px">留存机制：全体 vs 小型工作室</div>
+            <div style="font-size:10px; color:#AAA; margin-bottom:10px">小型(<10人) · 全体</div>
+            <div class="chart-wrap" style="height:100px">
+              <canvas id="chart-card5"></canvas>
+            </div>
+          </div>
+
+          <div class="mini-quote" style="margin-top:10px; font-size:11px">
+            竞争发生在范式之上的<strong>差异化设计</strong>，而非是否使用这些机制本身
+          </div>
+        </div>
+        <div class="page-footer">
+          <span class="page-footer-text">Unity 2026 Gaming Report · 数据雷达解读</span>
+          <div class="page-footer-dot" style="background:#8B5CF6"></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button onclick="downloadCard('card-4')">下载此张</button>
+    </div>
+  </div>
+
+  <!-- ══════ 卡片 6：结论尾页 ══════ -->
+  <div class="card-unit">
+    <div class="card-label">06 · 结论</div>
+    <div class="xhs-card card-last" id="card-5">
+      <div class="grid-bg"></div>
+      <div class="inner">
+        <div class="label">Strategic Implications · 核心判断</div>
+        <div class="center-block">
+          <div class="hl-list">
+            <div class="hl-row">
+              <div class="hl-num">⚡</div>
+              <div class="hl-text"><strong>小工作室的天花板在抬高</strong><br>AI + 引擎让3月出原型成为可能，规模壁垒正在被压缩</div>
+            </div>
+            <div class="hl-row">
+              <div class="hl-num">🧠</div>
+              <div class="hl-text"><strong>AI 竞争差距2026年集中显现</strong><br>分水岭在于AI能否进入决策层，而非停留在代码生成</div>
+            </div>
+            <div class="hl-row">
+              <div class="hl-num">🌏</div>
+              <div class="hl-text"><strong>印度市场窗口期正在打开</strong><br>73%开发者已锁定，先进入者将建立结构性优势</div>
+            </div>
+            <div class="hl-row">
+              <div class="hl-num">🔗</div>
+              <div class="hl-text"><strong>关系资产 > 流量采购</strong><br>IP、社区、合作网络是买量买不来的护城河</div>
+            </div>
+          </div>
+        </div>
+        <div class="bottom-bar">
+          <span class="bottom-brand">DATA RADAR · 数据雷达</span>
+          <span class="bottom-src">Unity 2026 Gaming Report</span>
+        </div>
+      </div>
+    </div>
+    <div class="card-actions">
+      <button onclick="downloadCard('card-5')">下载此张</button>
+    </div>
+  </div>
+
+</div><!-- /#stage -->
+
+<div id="toast">正在生成图片…</div>
+
+<script>
+Chart.defaults.font.family = "'Inter','Noto Sans SC',sans-serif";
+
+// 卡片5内嵌图表
+new Chart(document.getElementById('chart-card5'), {
+  type: 'bar',
+  data: {
+    labels: ['排行榜+每日奖励', '在线多人', '跨平台'],
+    datasets: [
+      {
+        label: '全体',
+        data: [78, 83, 72],
+        backgroundColor: '#E8820C',
+        borderRadius: 3,
+        borderSkipped: false,
+      },
+      {
+        label: '<10人',
+        data: [92, 83, 65],
+        backgroundColor: '#8B5CF6',
+        borderRadius: 3,
+        borderSkipped: false,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: { font: { size: 9 }, boxWidth: 8, padding: 8 }
+      },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw}%` } }
+    },
+    scales: {
+      y: {
+        min: 0, max: 100,
+        ticks: { callback: v => v+'%', font: { size: 9 } },
+        grid: { color: 'rgba(0,0,0,0.05)' }
+      },
+      x: { grid: { display: false }, ticks: { font: { size: 9 } } }
+    }
+  }
+});
+
+// ── 下载单张 ──
+function downloadCard(id) {
+  const el = document.getElementById(id);
+  showToast('正在渲染图片…');
+  htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true })
+    .then(dataUrl => {
+      saveAs(dataUrl, `unity-report-2026-${id}.png`);
+      showToast('下载成功！');
+    })
+    .catch(e => { showToast('生成失败，请重试'); console.error(e); });
+}
+
+// ── 全部下载 ──
+async function downloadAll() {
+  const ids = ['card-0','card-1','card-2','card-3','card-4','card-5'];
+  for (let i = 0; i < ids.length; i++) {
+    showToast(`导出第 ${i+1} / ${ids.length} 张…`);
+    const el = document.getElementById(ids[i]);
+    try {
+      const dataUrl = await htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true });
+      saveAs(dataUrl, `unity-report-2026-${String(i+1).padStart(2,'0')}.png`);
+      await new Promise(r => setTimeout(r, 400));
+    } catch(e) { console.error(ids[i], e); }
+  }
+  showToast('全部导出完成！');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

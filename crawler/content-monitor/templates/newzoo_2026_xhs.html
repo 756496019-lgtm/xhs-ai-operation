@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>解读 Newzoo 2026 PC & Console 报告 · 小红书图文</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0F1419; font-family: 'Noto Sans SC', sans-serif; min-height: 100vh; }
+
+  /* ── 顶部操作栏 ── */
+  #top-bar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(8,12,22,0.97); backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(99,179,237,0.18);
+    height: 52px; display: flex; align-items: center;
+    padding: 0 24px; gap: 12px;
+  }
+  #top-bar .logo { font-size: 12px; font-weight: 700; color: #63B3ED; letter-spacing: 0.1em; font-family: 'Inter', sans-serif; margin-right: 8px; }
+  #top-bar .hint { font-size: 11px; color: #3A5070; flex: 1; }
+  .btn-dl { background: #2B6CB0; color: #fff; border: none; border-radius: 8px; padding: 7px 16px; font-size: 12px; font-weight: 600; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; transition: background 0.2s; }
+  .btn-dl:hover { background: #2C5282; }
+  .btn-dl-all { background: #1A2D45; color: #C8D8E8; border: 1px solid #2A4060; border-radius: 8px; padding: 7px 16px; font-size: 12px; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; transition: all 0.2s; }
+  .btn-dl-all:hover { background: #1E3A5A; color: #fff; }
+
+  /* ── 主体布局 ── */
+  #stage { padding: 72px 24px 48px; display: flex; flex-wrap: wrap; gap: 32px; justify-content: center; }
+
+  /* ── 卡片容器 ── */
+  .card-unit { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .card-label { font-size: 11px; color: #3A5070; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; }
+  .card-actions { display: flex; gap: 8px; }
+  .card-actions button { background: #1E2D40; border: 1px solid #2A3E56; color: #6A8AAA; border-radius: 6px; padding: 5px 12px; font-size: 11px; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; transition: all 0.2s; }
+  .card-actions button:hover { background: #253858; color: #63B3ED; border-color: #63B3ED; }
+
+  /* ── 小红书卡片本体：375px ── */
+  .xhs-card { width: 375px; position: relative; overflow: visible; flex-shrink: 0; box-shadow: 0 16px 48px rgba(0,0,0,0.6); border-radius: 2px; }
+
+  /* ══ 封面（深色） ══ */
+  .card-cover { background: linear-gradient(155deg, #081628 0%, #0D2244 50%, #060F1A 100%); min-height: 520px; }
+  .card-cover .noise-bg { position: absolute; inset: 0; pointer-events: none; opacity: 0.04;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); background-size: 128px; }
+  .card-cover .grid-bg { position: absolute; inset: 0; pointer-events: none;
+    background-image: linear-gradient(rgba(99,179,237,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(99,179,237,0.06) 1px, transparent 1px);
+    background-size: 28px 28px; }
+  .card-cover .glow-top { position: absolute; top: -100px; right: -80px; width: 350px; height: 350px; background: radial-gradient(circle, rgba(99,179,237,0.12) 0%, transparent 70%); pointer-events: none; }
+  .card-cover .glow-bot { position: absolute; bottom: -60px; left: -60px; width: 280px; height: 280px; background: radial-gradient(circle, rgba(128,90,213,0.1) 0%, transparent 70%); pointer-events: none; }
+  .card-cover .inner { position: relative; padding: 44px 32px 36px; display: flex; flex-direction: column; justify-content: space-between; min-height: 520px; }
+  .cover-badge { display: inline-flex; align-items: center; background: rgba(99,179,237,0.12); border: 1px solid rgba(99,179,237,0.28); color: #90CDF4; font-size: 9px; font-weight: 700; letter-spacing: 0.14em; padding: 4px 10px; border-radius: 2px; font-family: 'Inter', sans-serif; text-transform: uppercase; width: fit-content; }
+  .cover-eyebrow { font-size: 10px; color: #4A6A8A; letter-spacing: 0.08em; margin: 20px 0 10px; font-family: 'Inter', sans-serif; }
+  .cover-h1 { font-family: 'Noto Serif SC', serif; font-size: 26px; font-weight: 700; color: #EAF4FF; line-height: 1.45; letter-spacing: 0.02em; }
+  .cover-h1 .hl { color: #63B3ED; }
+  .cover-h1 .hl2 { color: #B794F4; }
+  .cover-sub { margin-top: 14px; font-size: 11px; color: #4A6A8A; line-height: 1.75; border-left: 2px solid rgba(99,179,237,0.35); padding-left: 10px; }
+  .cover-nums { display: flex; gap: 0; margin-top: 24px; justify-content: space-between; }
+  .cover-num-item { display: flex; flex-direction: column; gap: 4px; }
+  .c-num { font-family: 'Inter', sans-serif; font-size: 32px; font-weight: 900; color: #EAF4FF; line-height: 1; }
+  .c-num .unit { font-size: 16px; font-weight: 700; color: #63B3ED; }
+  .c-nlabel { font-size: 9px; color: #3A5A7A; line-height: 1.5; max-width: 80px; }
+  .cover-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 24px; }
+  .cover-pill { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.09); color: #6A8AAA; font-size: 10px; padding: 4px 10px; border-radius: 20px; }
+  .cover-footer { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; margin-top: 20px; }
+  .cover-footer .brand { font-size: 10px; color: #2A4060; letter-spacing: 0.1em; font-family: 'Inter', sans-serif; }
+  .cover-footer .pnum { font-size: 10px; color: #1E3050; font-family: 'Inter', sans-serif; }
+
+  /* ══ 白色内容页 ══ */
+  .xhs-page { background: #fff; position: relative; }
+  .page-header { padding: 16px 22px 12px; border-bottom: 1px solid #F0F2F5; display: flex; align-items: center; justify-content: space-between; }
+  .page-header-left { display: flex; align-items: center; gap: 8px; }
+  .page-num-badge { width: 22px; height: 22px; border-radius: 4px; background: #2B6CB0; color: #fff; font-size: 11px; font-weight: 800; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .page-topic { font-size: 10px; font-weight: 700; color: #999; letter-spacing: 0.08em; text-transform: uppercase; }
+  .page-brand { font-size: 10px; color: #CCC; letter-spacing: 0.06em; font-family: 'Inter', sans-serif; }
+  .page-body { padding: 16px 22px 4px; }
+  .page-footer { padding: 10px 22px 14px; border-top: 1px solid #F0F2F5; display: flex; align-items: center; justify-content: space-between; margin-top: 12px; }
+  .page-footer-text { font-size: 10px; color: #CCC; }
+  .page-footer-dot { width: 6px; height: 6px; border-radius: 50%; background: #2B6CB0; flex-shrink: 0; }
+
+  /* 正文 */
+  .body-title { font-family: 'Noto Serif SC', serif; font-size: 16px; font-weight: 700; color: #111; line-height: 1.45; margin-bottom: 5px; }
+  .body-title .hl { color: #2B6CB0; }
+  .body-title .hl2 { color: #6B46C1; }
+  .body-title .hlr { color: #C53030; }
+  .body-title .hlg { color: #276749; }
+  .body-title .hlt { color: #0694A2; }
+  .body-title .hla { color: #B7791F; }
+  .body-lead { font-size: 11px; color: #888; line-height: 1.65; margin-bottom: 12px; }
+
+  /* 大数字格 */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin: 10px 0; }
+  .stat-item { background: #FAFBFC; border: 1px solid #E8ECEF; border-radius: 6px; padding: 12px 10px; text-align: center; position: relative; overflow: hidden; }
+  .stat-item::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; background: #2B6CB0; }
+  .stat-item.c-blue::before  { background: #2B6CB0; }
+  .stat-item.c-teal::before  { background: #0694A2; }
+  .stat-item.c-purple::before{ background: #6B46C1; }
+  .stat-item.c-red::before   { background: #C53030; }
+  .stat-item.c-green::before { background: #276749; }
+  .stat-item.c-amber::before { background: #B7791F; }
+  .stat-big { font-family: 'Inter', sans-serif; font-size: 26px; font-weight: 900; color: #111; line-height: 1; }
+  .stat-big span { font-size: 14px; font-weight: 700; }
+  .stat-small { font-size: 10px; color: #999; margin-top: 4px; line-height: 1.4; }
+
+  /* 数据条 */
+  .bar-list { display: flex; flex-direction: column; gap: 9px; margin: 10px 0; }
+  .bar-row { display: flex; justify-content: space-between; align-items: center; font-size: 11px; margin-bottom: 3px; }
+  .bar-label { color: #555; }
+  .bar-val { font-weight: 800; font-family: 'Inter', sans-serif; color: #2B6CB0; }
+  .bar-val.tv { color: #0694A2; }
+  .bar-val.pv { color: #6B46C1; }
+  .bar-val.rv { color: #C53030; }
+  .bar-val.gv { color: #276749; }
+  .bar-val.av { color: #B7791F; }
+  .bar-track { height: 5px; background: #F0F2F5; border-radius: 3px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, #2B6CB0, #4299E1); }
+  .bar-fill.t { background: linear-gradient(90deg, #0694A2, #38B2AC); }
+  .bar-fill.p { background: linear-gradient(90deg, #6B46C1, #9F7AEA); }
+  .bar-fill.r { background: linear-gradient(90deg, #C53030, #F56565); }
+  .bar-fill.g { background: linear-gradient(90deg, #276749, #38A169); }
+  .bar-fill.a { background: linear-gradient(90deg, #B7791F, #ECC94B); }
+
+  /* 引用块 */
+  .mini-quote { border-left: 2px solid #2B6CB0; background: #EBF8FF; padding: 10px 12px; border-radius: 0 4px 4px 0; font-size: 11px; color: #1A365D; line-height: 1.7; margin: 10px 0; }
+  .mini-quote strong { color: #2B6CB0; }
+  .mini-quote.q-purple { border-color: #6B46C1; background: #FAF5FF; color: #322659; }
+  .mini-quote.q-purple strong { color: #6B46C1; }
+  .mini-quote.q-red { border-color: #C53030; background: #FFF5F5; color: #63171B; }
+  .mini-quote.q-red strong { color: #C53030; }
+  .mini-quote.q-teal { border-color: #0694A2; background: #E6FFFA; color: #1D4044; }
+  .mini-quote.q-teal strong { color: #0694A2; }
+  .mini-quote.q-green { border-color: #276749; background: #F0FFF4; color: #1C4532; }
+  .mini-quote.q-green strong { color: #276749; }
+  .mini-quote.q-amber { border-color: #B7791F; background: #FFFBF0; color: #744210; }
+  .mini-quote.q-amber strong { color: #B7791F; }
+
+  /* VS 对比 */
+  .vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+  .vs-card { border-radius: 6px; padding: 11px; }
+  .vs-card.old { background: #F8F9FA; border: 1px solid #E2E8F0; }
+  .vs-card.new { background: #EBF8FF; border: 1px solid #BEE3F8; }
+  .vs-tag { font-size: 9px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 7px; display: block; }
+  .vs-card.old .vs-tag { color: #AAA; }
+  .vs-card.new .vs-tag { color: #2B6CB0; }
+  .vs-item { font-size: 11px; color: #555; padding: 3px 0; border-bottom: 1px solid rgba(0,0,0,0.05); display: flex; align-items: flex-start; gap: 4px; }
+  .vs-item::before { content: '·'; color: #CCC; }
+  .vs-card.new .vs-item::before { content: '▸'; color: #2B6CB0; font-size: 9px; margin-top: 2px; }
+
+  /* 图表 */
+  .chart-wrap { position: relative; }
+
+  /* 标签列表 */
+  .tag-list { display: flex; flex-direction: column; gap: 8px; margin: 10px 0; }
+  .tag-row { display: flex; gap: 10px; align-items: flex-start; background: #FAFBFC; border: 1px solid #E8ECEF; border-radius: 6px; padding: 10px; }
+  .tag-icon { width: 24px; height: 24px; border-radius: 4px; color: #fff; font-size: 12px; font-weight: 900; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .tag-title { font-size: 11px; font-weight: 700; color: #222; margin-bottom: 2px; }
+  .tag-desc { font-size: 10px; color: #777; line-height: 1.5; }
+
+  /* 深色尾页 */
+  .card-end { background: linear-gradient(155deg, #070F1E 0%, #0C1A30 55%, #060E1C 100%); min-height: 520px; }
+  .card-end .grid-bg { position: absolute; inset: 0; pointer-events: none;
+    background-image: linear-gradient(rgba(99,179,237,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(99,179,237,0.05) 1px, transparent 1px);
+    background-size: 26px 26px; }
+  .card-end .inner { position: relative; padding: 40px 30px; display: flex; flex-direction: column; justify-content: space-between; min-height: 520px; }
+  .card-end .end-label { font-size: 10px; font-weight: 700; color: #63B3ED; letter-spacing: 0.14em; text-transform: uppercase; font-family: 'Inter', sans-serif; }
+  .end-list { display: flex; flex-direction: column; gap: 16px; margin-top: 20px; }
+  .end-row { display: flex; gap: 12px; align-items: flex-start; }
+  .end-num { width: 22px; height: 22px; border-radius: 3px; background: rgba(99,179,237,0.15); border: 1px solid rgba(99,179,237,0.3); color: #63B3ED; font-size: 11px; font-weight: 800; font-family: 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .end-text { font-size: 12px; color: #A0B8D0; line-height: 1.7; }
+  .end-text strong { color: #D4E8F8; }
+  .end-bottom { border-top: 1px solid rgba(255,255,255,0.06); padding-top: 16px; display: flex; align-items: center; justify-content: space-between; }
+  .end-brand { font-size: 10px; color: #2A4060; font-family: 'Inter', sans-serif; letter-spacing: 0.08em; }
+  .end-src { font-size: 10px; color: #1E3050; }
+
+  /* toast */
+  #toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 10px 20px; border-radius: 8px; font-size: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; }
+  #toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="top-bar">
+  <div class="logo">NEWZOO DECODE</div>
+  <div class="hint">375 × auto · 共 8 张 · 解读 Newzoo 2026 PC & Console 报告</div>
+  <button class="btn-dl-all" onclick="downloadAll()">全部导出</button>
+  <button class="btn-dl" onclick="downloadCard('card-0')">下载封面</button>
+</div>
+
+<div id="stage">
+
+<!-- ══ 卡片 1：封面 ══ -->
+<div class="card-unit">
+  <div class="card-label">01 · 封面</div>
+  <div class="xhs-card card-cover" id="card-0">
+    <div class="noise-bg"></div>
+    <div class="grid-bg"></div>
+    <div class="glow-top"></div>
+    <div class="glow-bot"></div>
+    <div class="inner">
+      <div>
+        <div class="cover-badge">Newzoo · 2026 PC & Console Gaming Report · GDC</div>
+        <div class="cover-eyebrow">GLOBAL PC & CONSOLE MARKET · 深度解读</div>
+        <h1 class="cover-h1">
+          游戏市场<span class="hl">名义新高</span><br>
+          暗流涌动的<span class="hl2">五重变局</span>
+        </h1>
+        <p class="cover-sub">
+          PC 增速超主机 · Roblox 世代断层警报<br>
+          低价游戏崛起 · F2P 封顶 · 蓝海在哪里
+        </p>
+        <div class="cover-nums">
+          <div class="cover-num-item">
+            <div class="c-num">1960<span class="unit">亿$</span></div>
+            <div class="c-nlabel">2025全球游戏收入（名义新高）</div>
+          </div>
+          <div class="cover-num-item">
+            <div class="c-num" style="color:#63B3ED">6.6<span class="unit">%</span></div>
+            <div class="c-nlabel">PC未来3年预测增速（三端最高）</div>
+          </div>
+        </div>
+        <div class="cover-pills">
+          <span class="cover-pill">PC · 主机 · 移动</span>
+          <span class="cover-pill">GDC 2026 数据</span>
+          <span class="cover-pill">专业解读</span>
+          <span class="cover-pill">自媒体人必看</span>
+        </div>
+      </div>
+      <div class="cover-footer">
+        <span class="brand">游戏数据雷达 · 自媒体研究室</span>
+        <span class="pnum">1 / 8</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-0')">下载此张</button></div>
+</div>
+
+<!-- ══ 卡片 2：市场总览 ══ -->
+<div class="card-unit">
+  <div class="card-label">02 · 市场总览</div>
+  <div class="xhs-card" id="card-1">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#2B6CB0">01</div>
+          <span class="page-topic">Market · 全球市场总览</span>
+        </div>
+        <span class="page-brand">NEWZOO DECODE</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">
+          <span class="hl">1960亿美元</span>的繁荣<br>
+          通胀调整后<span class="hlr">仍未回到巅峰</span>
+        </div>
+        <div class="body-lead">2025年名义收入创历史新高，但实际购买力低于2021年。移动端占半壁江山，PC加速追赶。</div>
+
+        <div class="stat-grid">
+          <div class="stat-item c-blue">
+            <div class="stat-big">1960<span>亿$</span></div>
+            <div class="stat-small">2025年全球游戏收入<br>名义历史新高</div>
+          </div>
+          <div class="stat-item c-teal">
+            <div class="stat-big">1084<span>亿$</span></div>
+            <div class="stat-small">移动游戏<br>占全球约55%</div>
+          </div>
+          <div class="stat-item c-purple">
+            <div class="stat-big">453<span>亿$</span></div>
+            <div class="stat-small">主机游戏<br>未超2020高点</div>
+          </div>
+          <div class="stat-item c-green">
+            <div class="stat-big">9.36<span>亿</span></div>
+            <div class="stat-small">全球PC玩家数<br>逼近10亿大关</div>
+          </div>
+        </div>
+
+        <div class="chart-wrap" style="height:130px; margin:10px 0">
+          <canvas id="chart-market-overview"></canvas>
+        </div>
+
+        <div class="mini-quote">
+          若按<strong>通货膨胀调整</strong>，2025年的实际购买力仍低于2021年疫情高点——行业表面繁荣，实则仍在修复。
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Newzoo 2026 PC & Console 报告</span>
+        <div class="page-footer-dot" style="background:#2B6CB0"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-1')">下载此张</button></div>
+</div>
+
+<!-- ══ 卡片 3：PC vs 主机 ══ -->
+<div class="card-unit">
+  <div class="card-label">03 · PC的崛起</div>
+  <div class="xhs-card" id="card-2">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#0694A2">02</div>
+          <span class="page-topic">PC Power · PC正在胜出</span>
+        </div>
+        <span class="page-brand">NEWZOO DECODE</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">
+          PC是<span class="hlt">三端增速最高</span>的平台<br>
+          主机2026年才能重回峰值
+        </div>
+        <div class="body-lead">PC未来3年预测CAGR达6.6%，远超主机。中国、日本、韩国是三大驱动引擎。</div>
+
+        <div class="vs-grid">
+          <div class="vs-card old" style="border-color:#BEE3F8; background:#E6FFFA">
+            <span class="vs-tag" style="color:#0694A2">PC · 强势</span>
+            <div class="vs-item" style="color:#2C7A7B">预测CAGR +6.6%</div>
+            <div class="vs-item" style="color:#2C7A7B">2020-2024已+3.9%</div>
+            <div class="vs-item" style="color:#2C7A7B">玩家数9.36亿</div>
+            <div class="vs-item" style="color:#2C7A7B">中国WoW回归拉动</div>
+          </div>
+          <div class="vs-card old">
+            <span class="vs-tag">主机 · 滞后</span>
+            <div class="vs-item">2025年仍低于峰值</div>
+            <div class="vs-item">2020年474亿$高点</div>
+            <div class="vs-item">2025年约453亿$</div>
+            <div class="vs-item">依赖头部3A节奏</div>
+          </div>
+        </div>
+
+        <div class="bar-list">
+          <div class="bar-item">
+            <div class="bar-row"><span class="bar-label">PC 预测CAGR（2025-2028）</span><span class="bar-val tv">+6.6%</span></div>
+            <div class="bar-track"><div class="bar-fill t" style="width:66%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-row"><span class="bar-label">PC 历史CAGR（2020-2024）</span><span class="bar-val">+3.9%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:39%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-row"><span class="bar-label">主机收入 vs 2020峰值</span><span class="bar-val rv">-4.4%</span></div>
+            <div class="bar-track"><div class="bar-fill r" style="width:44%"></div></div>
+          </div>
+        </div>
+
+        <div class="mini-quote q-teal">
+          主机复苏的两个关键变量：<strong>GTA6发售</strong> + <strong>Nintendo Switch 2独占阵容</strong>，否则2026年超越峰值有难度。
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Newzoo 2026 PC & Console 报告</span>
+        <div class="page-footer-dot" style="background:#0694A2"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-2')">下载此张</button></div>
+</div>
+
+<!-- ══ 卡片 4：F2P封顶与商业模式 ══ -->
+<div class="card-unit">
+  <div class="card-label">04 · F2P封顶</div>
+  <div class="xhs-card" id="card-3">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#6B46C1">03</div>
+          <span class="page-topic">Business Model · 商业模式重构</span>
+        </div>
+        <span class="page-brand">NEWZOO DECODE</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">
+          F2P增长<span class="hl2">见顶封盘</span><br>
+          买断制悄然<span class="hlg">收复失地</span>
+        </div>
+        <div class="body-lead">PC主机37个市场数据显示：F2P游戏时长稳定在42-43%，不再增长；买断制游戏时长份额开始回升。</div>
+
+        <div class="stat-grid">
+          <div class="stat-item c-purple">
+            <div class="stat-big" style="color:#6B46C1">42<span>-43%</span></div>
+            <div class="stat-small">F2P游戏时长占比<br>2023Q4后趋于稳定</div>
+          </div>
+          <div class="stat-item c-green">
+            <div class="stat-big" style="color:#276749">50<span>%</span></div>
+            <div class="stat-small">主机收入来自<br>买断制付费游戏</div>
+          </div>
+          <div class="stat-item c-blue">
+            <div class="stat-big">48<span>%</span></div>
+            <div class="stat-small">PC收入来自<br>微交易（F2P主导）</div>
+          </div>
+          <div class="stat-item c-teal">
+            <div class="stat-big" style="color:#0694A2">27<span>%</span></div>
+            <div class="stat-small">主机微交易占比<br>（含付费游戏内购）</div>
+          </div>
+        </div>
+
+        <div class="chart-wrap" style="height:120px; margin:10px 0">
+          <canvas id="chart-biz-model"></canvas>
+        </div>
+
+        <div class="mini-quote q-purple">
+          《绝地潜兵2》的成功验证了<strong>买断制+长线运营</strong>的混合模式可行。F2P不是死了，而是<strong>纯靠免费入场驱动的时代结束了</strong>。
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Newzoo 2026 PC & Console 报告</span>
+        <div class="page-footer-dot" style="background:#6B46C1"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-3')">下载此张</button></div>
+</div>
+
+<!-- ══ 卡片 5：Roblox世代断层 ══ -->
+<div class="card-unit">
+  <div class="card-label">05 · 代际断层</div>
+  <div class="xhs-card" id="card-4">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#C53030">04</div>
+          <span class="page-topic">Generation Gap · 代际断层危机</span>
+        </div>
+        <span class="page-brand">NEWZOO DECODE</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">
+          Roblox世代<span class="hlr">不玩3A</span><br>
+          行业面临最大<span class="hlr">代际断层</span>
+        </div>
+        <div class="body-lead">Roblox游戏时长暴增+52%，Minecraft+19%，沙盒/UGC类型+36%。但这代玩家对传统3A兴趣极低。</div>
+
+        <div class="stat-grid">
+          <div class="stat-item c-red">
+            <div class="stat-big" style="color:#C53030">0.41×</div>
+            <div class="stat-small">Roblox玩家对<br>《怪物猎人：荒野》兴趣</div>
+          </div>
+          <div class="stat-item c-red">
+            <div class="stat-big" style="color:#C53030">0.57×</div>
+            <div class="stat-small">Roblox玩家对<br>《33号远征队》兴趣</div>
+          </div>
+          <div class="stat-item c-green">
+            <div class="stat-big" style="color:#276749">+52<span>%</span></div>
+            <div class="stat-small">Roblox游戏<br>时长增幅</div>
+          </div>
+          <div class="stat-item c-teal">
+            <div class="stat-big" style="color:#0694A2">+36<span>%</span></div>
+            <div class="stat-small">沙盒/UGC类型<br>时长增幅</div>
+          </div>
+        </div>
+
+        <div class="chart-wrap" style="height:130px; margin:10px 0">
+          <canvas id="chart-genre-shift"></canvas>
+        </div>
+
+        <div class="mini-quote q-red">
+          Newzoo灵魂拷问：<strong>「Roblox/Minecraft里长大的一代，成年后真的会转向传统3A吗？」</strong><br>
+          这个问题的答案，将决定3A行业未来10年的命运。
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Newzoo 2026 PC & Console 报告</span>
+        <div class="page-footer-dot" style="background:#C53030"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-4')">下载此张</button></div>
+</div>
+
+<!-- ══ 卡片 6：低价游戏革命 ══ -->
+<div class="card-unit">
+  <div class="card-label">06 · 定价革命</div>
+  <div class="xhs-card" id="card-5">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#B7791F">05</div>
+          <span class="page-topic">Pricing Revolution · 定价革命</span>
+        </div>
+        <span class="page-brand">NEWZOO DECODE</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">
+          低价游戏<span class="hla">收入暴增156%</span><br>
+          玩家用脚投票否定3A溢价
+        </div>
+        <div class="body-lead">30美元以下游戏3年内收入增长156%，市场份额从3%扩大到9%。中低价格带正在重写行业定价逻辑。</div>
+
+        <div class="stat-grid">
+          <div class="stat-item c-amber">
+            <div class="stat-big" style="color:#B7791F">+156<span>%</span></div>
+            <div class="stat-small">30$以下游戏<br>3年收入增幅</div>
+          </div>
+          <div class="stat-item c-amber">
+            <div class="stat-big" style="color:#B7791F">3%→9<span>%</span></div>
+            <div class="stat-small">低价游戏<br>PC市场份额变化</div>
+          </div>
+          <div class="stat-item c-blue">
+            <div class="stat-big">+195<span>%</span></div>
+            <div class="stat-small">30-50$价格带<br>三端合计增幅</div>
+          </div>
+          <div class="stat-item c-green">
+            <div class="stat-big" style="color:#276749">25<span>款</span></div>
+            <div class="stat-small">低价游戏销售额<br>超500万$（vs原12款）</div>
+          </div>
+        </div>
+
+        <div class="bar-list">
+          <div class="bar-item">
+            <div class="bar-row"><span class="bar-label">30美元以下 收入增幅</span><span class="bar-val av">+156%</span></div>
+            <div class="bar-track"><div class="bar-fill a" style="width:78%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-row"><span class="bar-label">30-50美元区间 增幅</span><span class="bar-val av">+195%</span></div>
+            <div class="bar-track"><div class="bar-fill a" style="width:98%"></div></div>
+          </div>
+          <div class="bar-item">
+            <div class="bar-row"><span class="bar-label">主机50美元以上游戏占比</span><span class="bar-val">80%</span></div>
+            <div class="bar-track"><div class="bar-fill" style="width:80%"></div></div>
+          </div>
+        </div>
+
+        <div class="mini-quote q-amber">
+          爆款代表：《R.E.P.O.》《PEAK》《Schedule 1》《光与影：33号远征队》<br>
+          <strong>低决策门槛 + 社交传播 = 更大受众</strong>
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Newzoo 2026 PC & Console 报告</span>
+        <div class="page-footer-dot" style="background:#B7791F"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-5')">下载此张</button></div>
+</div>
+
+<!-- ══ 卡片 7：蓝海与设计趋势 ══ -->
+<div class="card-unit">
+  <div class="card-label">07 · 机会在哪里</div>
+  <div class="xhs-card" id="card-6">
+    <div class="xhs-page">
+      <div class="page-header">
+        <div class="page-header-left">
+          <div class="page-num-badge" style="background:#276749">06</div>
+          <span class="page-topic">Opportunity · 机会在哪里</span>
+        </div>
+        <span class="page-brand">NEWZOO DECODE</span>
+      </div>
+      <div class="page-body">
+        <div class="body-title">
+          <span class="hlg">蓝海市场</span>与三大<br>
+          游戏设计新信号
+        </div>
+        <div class="body-lead">中东非洲+拉美增速全平台最高。设计层面：混乱感合作、治愈系IP扩圈、PvP与合作边界模糊化。</div>
+
+        <div class="tag-list">
+          <div class="tag-row">
+            <div class="tag-icon" style="background:#276749">🌍</div>
+            <div>
+              <div class="tag-title">蓝海一：中东非洲 & 拉丁美洲</div>
+              <div class="tag-desc">两个区域在PC与主机均录得全平台最高同比增长率，基础设施投入加速，出海先手机会3-5年窗口期</div>
+            </div>
+          </div>
+          <div class="tag-row">
+            <div class="tag-icon" style="background:#2B6CB0">🎲</div>
+            <div>
+              <div class="tag-title">设计趋势①：混乱感合作游戏</div>
+              <div class="tag-desc">《绝地潜兵2》《致命公司》——随机事件+近距离语音，天然制造短视频内容，社交传播放大器</div>
+            </div>
+          </div>
+          <div class="tag-row">
+            <div class="tag-icon" style="background:#6B46C1">🌸</div>
+            <div>
+              <div class="tag-title">设计趋势②：治愈系IP扩圈</div>
+              <div class="tag-desc">《迪士尼梦幻星谷》《Hello Kitty Island》——非游戏IP吸引女性/非核心玩家，低门槛扩大受众</div>
+            </div>
+          </div>
+          <div class="tag-row">
+            <div class="tag-icon" style="background:#0694A2">⚔️</div>
+            <div>
+              <div class="tag-title">设计趋势③：PvP与合作融合</div>
+              <div class="tag-desc">《ARC Raiders》算法区分好战型与和平型玩家，动态匹配。「同一游戏，两种体验」成设计共识</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mini-quote q-green">
+          Newzoo的核心观点：<strong>「行业大到没有单一趋势」</strong>。在一处成功的，在另一处可能完全失效。理解自己的目标玩家比追风口更重要。
+        </div>
+      </div>
+      <div class="page-footer">
+        <span class="page-footer-text">解读 Newzoo 2026 PC & Console 报告</span>
+        <div class="page-footer-dot" style="background:#276749"></div>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-6')">下载此张</button></div>
+</div>
+
+<!-- ══ 卡片 8：结论尾页 ══ -->
+<div class="card-unit">
+  <div class="card-label">08 · 核心判断</div>
+  <div class="xhs-card card-end" id="card-7">
+    <div class="grid-bg"></div>
+    <div class="inner">
+      <div class="end-label">Strategic Takeaways · 给游戏自媒体人的6条判断</div>
+      <div class="end-list">
+        <div class="end-row">
+          <div class="end-num">📈</div>
+          <div class="end-text"><strong>PC是当前最值得押注的平台</strong><br>6.6%增速领跑三端，中国/日本/韩国同步发力，Steam生态持续扩张</div>
+        </div>
+        <div class="end-row">
+          <div class="end-num">⚠️</div>
+          <div class="end-text"><strong>Roblox世代是3A行业最大的定时炸弹</strong><br>他们今天是0.41倍的兴趣，明天可能是零</div>
+        </div>
+        <div class="end-row">
+          <div class="end-num">💰</div>
+          <div class="end-text"><strong>低价策略正在反杀高定价逻辑</strong><br>30美元以下增长156%，玩家不是穷，是不愿为不确定性买单</div>
+        </div>
+        <div class="end-row">
+          <div class="end-num">🔄</div>
+          <div class="end-text"><strong>混合商业模式是新常态</strong><br>买断+长线运营、F2P+订阅，单一模式越来越难覆盖全盘</div>
+        </div>
+        <div class="end-row">
+          <div class="end-num">🌍</div>
+          <div class="end-text"><strong>出海的最后蓝海在中东非洲和拉美</strong><br>增速全平台最高，3-5年窗口期，先进入者享受结构性红利</div>
+        </div>
+        <div class="end-row">
+          <div class="end-num">✍️</div>
+          <div class="end-text"><strong>自媒体人的核心机会：垂直圈层内容</strong><br>市场没有单一趋势，泛娱乐内容红利消退，深耕垂直才有长期价值</div>
+        </div>
+      </div>
+      <div class="end-bottom">
+        <span class="end-brand">游戏数据雷达 · 自媒体研究室</span>
+        <span class="end-src">解读 Newzoo 2026 PC & Console 报告</span>
+      </div>
+    </div>
+  </div>
+  <div class="card-actions"><button onclick="downloadCard('card-7')">下载此张</button></div>
+</div>
+
+</div><!-- /#stage -->
+
+<div id="toast">正在生成图片…</div>
+
+<script>
+Chart.defaults.font.family = "'Inter','Noto Sans SC',sans-serif";
+
+/* ── 图表1：市场总览柱状图 ── */
+new Chart(document.getElementById('chart-market-overview'), {
+  type: 'bar',
+  data: {
+    labels: ['移动', 'PC', '主机'],
+    datasets: [
+      {
+        label: '2025年营收（亿美元）',
+        data: [1084, 430, 453],
+        backgroundColor: ['#9F7AEA', '#2B6CB0', '#0694A2'],
+        borderRadius: 5, borderSkipped: false
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw}亿美元` } }
+    },
+    scales: {
+      x: { ticks: { font: { size: 9 }, callback: v => v+'亿' }, grid: { color: 'rgba(0,0,0,0.05)' } },
+      y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+    }
+  }
+});
+
+/* ── 图表2：商业模式收入结构（PC vs 主机） ── */
+new Chart(document.getElementById('chart-biz-model'), {
+  type: 'bar',
+  data: {
+    labels: ['PC平台收入结构', '主机平台收入结构'],
+    datasets: [
+      { label: '微交易/F2P', data: [48, 27], backgroundColor: '#6B46C1', borderRadius: 3 },
+      { label: '买断制', data: [33, 50], backgroundColor: '#2B6CB0', borderRadius: 3 },
+      { label: '其他', data: [19, 23], backgroundColor: '#CBD5E0', borderRadius: 3 }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'top', labels: { font: { size: 9 }, boxWidth: 8, padding: 5 } },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label}: ${ctx.raw}%` } }
+    },
+    scales: {
+      x: { stacked: true, grid: { display: false }, ticks: { font: { size: 9 } } },
+      y: { stacked: true, ticks: { callback: v => v+'%', font: { size: 9 } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+    }
+  }
+});
+
+/* ── 图表3：游戏类型时长变化 ── */
+new Chart(document.getElementById('chart-genre-shift'), {
+  type: 'bar',
+  data: {
+    labels: ['Roblox', 'Minecraft', '沙盒/UGC', '射击类', '大逃杀'],
+    datasets: [{
+      label: '游戏时长同比增幅',
+      data: [52, 19, 36, -5, -27],
+      backgroundColor: ctx => ctx.raw >= 0 ? '#276749' : '#C53030',
+      borderRadius: 4,
+      borderSkipped: false
+    }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: ctx => ` ${ctx.raw > 0 ? '+' : ''}${ctx.raw}%` } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 9 } } },
+      y: { ticks: { callback: v => v+'%', font: { size: 9 } }, grid: { color: 'rgba(0,0,0,0.05)' } }
+    }
+  }
+});
+
+/* ── 下载单张 ── */
+function downloadCard(id) {
+  const el = document.getElementById(id);
+  showToast('正在渲染图片…');
+  htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true, skipFonts: false })
+    .then(dataUrl => { saveAs(dataUrl, `newzoo-2026-xhs-${id}.png`); showToast('✅ 下载成功！'); })
+    .catch(e => { showToast('⚠️ 生成失败，请重试'); console.error(e); });
+}
+
+/* ── 全部导出 ── */
+async function downloadAll() {
+  const ids = ['card-0','card-1','card-2','card-3','card-4','card-5','card-6','card-7'];
+  for (let i = 0; i < ids.length; i++) {
+    showToast(`导出第 ${i+1} / ${ids.length} 张…`);
+    const el = document.getElementById(ids[i]);
+    try {
+      const dataUrl = await htmlToImage.toPng(el, { pixelRatio: 3, cacheBust: true });
+      saveAs(dataUrl, `newzoo-2026-xhs-${String(i+1).padStart(2,'0')}.png`);
+      await new Promise(r => setTimeout(r, 500));
+    } catch(e) { console.error(ids[i], e); }
+  }
+  showToast('🎉 全部导出完成！');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+</script>
+</body>
+</html>

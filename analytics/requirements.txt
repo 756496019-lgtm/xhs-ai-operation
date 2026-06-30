@@ -1,0 +1,8 @@
+# Python 标准库就够：sqlite3 / csv / argparse / datetime
+# 阶段 C/D 才需要的可选依赖：
+
+# 阶段 C：AI 分析（如果不通过 sys.path 复用 crawler/content-monitor 已装的 openai，可独立装）
+openai>=1.0.0
+
+# 阶段 D：HTML 渲染依赖 jinja2（如果选择本地模板路线）；
+# 当前实现复用 D:/project/xhs-weeklyreport/render_xhs_cards.py，无需额外依赖

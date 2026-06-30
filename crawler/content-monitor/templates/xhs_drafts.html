@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}草稿箱 - 游戏雷达局{% endblock %}
+{% block page_title %}小红书定时草稿箱{% endblock %}
+{% block page_subtitle %}展示已提交到小红书、尚未到发布时间的笔记记录{% endblock %}
+
+{% block header_actions %}
+<a href="/xhs_full" class="text-xs px-3 py-1.5 rounded-lg border border-[#6C5CE7] text-[#6C5CE7] hover:bg-[#F0EDFF] transition-all flex items-center gap-1.5">
+  <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i> 返回生成器
+</a>
+{% endblock %}
+
+{% block main %}
+<div class="card p-5 h-full flex flex-col">
+  <div class="flex items-center justify-between mb-4">
+    <div>
+      <h2 class="text-sm font-bold text-gray-800 flex items-center gap-2">
+        <span class="w-6 h-6 rounded-lg bg-[#F0EDFF] text-[#6C5CE7] flex items-center justify-center">
+          <i data-lucide="clock-4" class="w-3.5 h-3.5"></i>
+        </span>
+        已提交的定时发布
+      </h2>
+      <p class="text-[11px] text-gray-400 mt-0.5">仅记录设置了未来发布时间的笔记，方便核对与测试。</p>
+    </div>
+    <div class="text-xs text-gray-500">
+      共 <span class="font-semibold">{{ drafts|length }}</span> 条
+    </div>
+  </div>
+
+  <div class="flex-1 overflow-auto scroll-y -mx-1.5">
+    {% if drafts %}
+    <table class="min-w-full text-xs">
+      <thead class="sticky top-0 bg-[#FAFBFC] z-10">
+        <tr>
+          <th class="px-3 py-2 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-20">计划时间</th>
+          <th class="px-3 py-2 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest">标题</th>
+          <th class="px-3 py-2 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-24">来源</th>
+          <th class="px-3 py-2 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-24">创建时间</th>
+          <th class="px-3 py-2 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-20">状态</th>
+          <th class="px-3 py-2 text-left text-[11px] font-bold text-gray-400 uppercase tracking-widest w-16">操作</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-50">
+        {% for d in drafts %}
+        <tr class="hover:bg-[#F8F9FC] transition-colors">
+          <td class="px-3 py-2 text-[11px] text-gray-700 whitespace-nowrap">
+            {{ d.post_time or '--' }}
+          </td>
+          <td class="px-3 py-2">
+            <div class="text-xs font-medium text-gray-800 truncate max-w-[260px]">
+              {{ d.title or '（无标题）' }}
+            </div>
+            {% if d.note_id %}
+            <div class="text-[10px] text-gray-400 mt-0.5">ID: {{ d.note_id }}</div>
+            {% endif %}
+          </td>
+          <td class="px-3 py-2">
+            {% set src = (d.source or 'xhs') %}
+            {% if src == 'cards' %}
+              <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-600 text-[10px] font-semibold">图文卡片</span>
+            {% elif src == 'reddit_screenshot' %}
+              <span class="px-2 py-0.5 rounded-md bg-orange-50 text-orange-600 text-[10px] font-semibold">Reddit 截图</span>
+            {% else %}
+              <span class="px-2 py-0.5 rounded-md bg-purple-50 text-purple-600 text-[10px] font-semibold">简单编辑</span>
+            {% endif %}
+          </td>
+          <td class="px-3 py-2 text-[11px] text-gray-400 whitespace-nowrap">
+            {{ d.created_at or '' }}
+          </td>
+          <td class="px-3 py-2">
+            <span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 text-[10px] font-semibold">
+              待发布
+            </span>
+          </td>
+          <td class="px-3 py-2">
+            {% if d.url %}
+            <a href="{{ d.url }}" target="_blank"
+               class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-gray-800 text-white text-[10px] font-semibold hover:bg-gray-700">
+              <i data-lucide="external-link" class="w-3 h-3"></i> 查看
+            </a>
+            {% else %}
+            <span class="text-[10px] text-gray-300">暂无链接</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="h-full flex flex-col items-center justify-center text-gray-300">
+      <i data-lucide="inbox" class="w-10 h-10 mb-2"></i>
+      <p class="text-sm font-medium">暂无定时草稿</p>
+      <p class="text-[11px] mt-1">在小红书发布弹窗中选择「定时发布」后，这里会自动出现记录。</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+

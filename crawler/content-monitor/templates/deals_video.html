@@ -1,0 +1,519 @@
+{% extends "base.html" %}
+{% block title %}Steam 折扣盘点视频 - 游戏雷达局{% endblock %}
+{% block page_title %}折扣盘点视频{% endblock %}
+{% block page_subtitle %}Steam 特惠 → 一键合成小红书短视频{% endblock %}
+
+{% block head_extra %}
+<style>
+  .game-card { background:#fff; border-radius:12px; border:1.5px solid #e2e8f0; transition:border-color .2s, box-shadow .2s; }
+  .game-card:hover { border-color:#6C5CE7; box-shadow:0 2px 12px rgba(108,92,231,.1); }
+  .game-card.selected { border-color:#6C5CE7; background:#faf9ff; }
+  .badge-discount { background:#FF4757; color:#fff; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:700; }
+  .badge-price { background:#f0edff; color:#6C5CE7; border-radius:6px; padding:2px 8px; font-size:11px; font-weight:600; }
+  .stage-bar { height:6px; border-radius:3px; background:#e2e8f0; overflow:hidden; }
+  .stage-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,#6C5CE7,#a29bfe); transition:width .5s ease; }
+  .upload-zone { border:2px dashed #c7d2fe; border-radius:10px; background:#f5f3ff; cursor:pointer; transition:all .2s; }
+  .upload-zone:hover { border-color:#6C5CE7; background:#ede9fe; }
+  .missing-item { background:#fff3cd; border:1px solid #ffc107; border-radius:10px; padding:10px 14px; }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="flex gap-6 h-full min-h-0 overflow-auto scroll-y">
+
+  <!-- ── 左栏：抓取 + 选择游戏 ── -->
+  <div class="w-[380px] shrink-0 flex flex-col gap-4">
+
+    <!-- 抓取折扣卡片 -->
+    <div class="card p-5" style="border:1.5px solid #6C5CE740;">
+      <h2 class="text-xs font-bold text-gray-600 uppercase tracking-widest mb-3 flex items-center gap-2">
+        <svg class="w-4 h-4 text-[#6C5CE7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+        </svg>
+        抓取 Steam 折扣
+      </h2>
+      <div class="flex gap-2 items-end mb-2">
+        <div class="flex-1">
+          <label class="block text-[11px] font-semibold text-gray-500 mb-1">数量上限</label>
+          <input id="fetch-limit" type="number" value="30" min="5" max="100"
+                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#6C5CE7] focus:ring-2 focus:ring-[#6C5CE7]/10 transition-all">
+        </div>
+        <button onclick="fetchDeals()"
+                class="btn-primary px-5 py-2 text-sm flex items-center gap-1.5 whitespace-nowrap">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i> 抓取
+        </button>
+      </div>
+      <div id="fetch-status" class="text-[11px] text-gray-400 min-h-[14px]"></div>
+    </div>
+
+    <!-- 折扣游戏列表 -->
+    <div class="card p-4 flex flex-col gap-3 flex-1" id="deals-panel" style="display:none!important;">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-gray-700 flex items-center gap-1.5">
+          <i data-lucide="list" class="w-3.5 h-3.5 text-[#6C5CE7]"></i>
+          折扣列表
+          <span id="deals-count-label" class="text-gray-400 font-normal"></span>
+        </span>
+        <div class="flex gap-2">
+          <button onclick="selectAll()" class="text-[11px] text-[#6C5CE7] hover:underline font-medium">全选</button>
+          <button onclick="selectNone()" class="text-[11px] text-gray-400 hover:underline">取消</button>
+        </div>
+      </div>
+      <div id="deals-list" class="flex flex-col gap-2 overflow-y-auto scroll-y" style="max-height:480px;"></div>
+    </div>
+
+    <!-- 生成设置 -->
+    <div class="card p-4" id="gen-settings" style="display:none!important;">
+      <h3 class="text-xs font-bold text-gray-600 mb-3">生成设置</h3>
+      <div class="space-y-2.5">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 mb-1">配音声音</label>
+          <select id="voice-select"
+                  class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#6C5CE7] focus:ring-2 focus:ring-[#6C5CE7]/10 transition-all">
+            <option value="zh-CN-YunxiNeural">云希（男，稳重）</option>
+            <option value="zh-CN-XiaoxiaoNeural">晓晓（女，活泼）</option>
+            <option value="zh-CN-YunjianNeural">云健（男，激昂）</option>
+            <option value="zh-CN-XiaohanNeural">晓涵（女，沉稳）</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 mb-1">
+            BGM 音量：<span id="bgm-vol-label">12%</span>
+          </label>
+          <input type="range" id="bgm-volume" min="0" max="40" step="1" value="12"
+                 oninput="document.getElementById('bgm-vol-label').textContent=this.value+'%'"
+                 class="w-full accent-[#6C5CE7]">
+        </div>
+      </div>
+      <button onclick="startGenerate()"
+              class="btn-primary w-full py-2.5 mt-4 text-sm font-bold flex items-center justify-center gap-2">
+        <i data-lucide="video" class="w-4 h-4"></i>
+        生成折扣视频
+      </button>
+    </div>
+
+  </div>
+
+  <!-- ── 右栏：进度 + 结果 ── -->
+  <div class="flex-1 flex flex-col gap-4 min-w-0">
+
+    <!-- 初始提示 -->
+    <div id="empty-hint" class="flex-1 flex items-center justify-center">
+      <div class="text-center">
+        <div class="w-20 h-20 mx-auto mb-5 rounded-2xl bg-[#f0edff] flex items-center justify-center">
+          <svg class="w-10 h-10 text-[#6C5CE7]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M15 10l4.553-2.276A1 1 0 0 1 21 8.723v6.554a1 1 0 0 1-1.447.894L15 14M3 8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8z"/>
+          </svg>
+        </div>
+        <p class="text-sm font-semibold text-gray-700">先抓取 Steam 折扣</p>
+        <p class="text-xs text-gray-400 mt-1">选择游戏后一键生成小红书短视频</p>
+      </div>
+    </div>
+
+    <!-- 进度面板 -->
+    <div id="progress-panel" class="card p-6" style="display:none;">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-sm font-bold text-gray-700 flex items-center gap-2">
+          <i data-lucide="loader-2" class="w-4 h-4 text-[#6C5CE7] animate-spin" id="progress-spinner"></i>
+          <span id="progress-title">正在生成…</span>
+        </h3>
+        <span id="progress-pct" class="text-xs font-bold text-[#6C5CE7]">0%</span>
+      </div>
+      <div class="stage-bar mb-2">
+        <div class="stage-fill" id="progress-bar" style="width:0%"></div>
+      </div>
+      <div id="progress-stage" class="text-[11px] text-gray-400 mt-1.5"></div>
+
+      <!-- 阶段步骤 -->
+      <div class="grid grid-cols-4 gap-2 mt-5" id="stage-steps">
+        <div class="stage-step text-center" data-stages="ai_select,fetch_pv">
+          <div class="w-8 h-8 mx-auto rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs font-bold mb-1 transition-all" id="st-1">1</div>
+          <div class="text-[10px] text-gray-400">AI筛选 & PV</div>
+        </div>
+        <div class="stage-step text-center" data-stages="gen_scripts,gen_hook">
+          <div class="w-8 h-8 mx-auto rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs font-bold mb-1 transition-all" id="st-2">2</div>
+          <div class="text-[10px] text-gray-400">AI生成文案</div>
+        </div>
+        <div class="stage-step text-center" data-stages="generate_tts,match_pv_scenes">
+          <div class="w-8 h-8 mx-auto rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs font-bold mb-1 transition-all" id="st-3">3</div>
+          <div class="text-[10px] text-gray-400">TTS & 画面</div>
+        </div>
+        <div class="stage-step text-center" data-stages="edit_video,done">
+          <div class="w-8 h-8 mx-auto rounded-full bg-gray-100 text-gray-400 flex items-center justify-center text-xs font-bold mb-1 transition-all" id="st-4">4</div>
+          <div class="text-[10px] text-gray-400">合成视频</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- waiting_pv：缺失PV面板 -->
+    <div id="missing-pv-panel" class="card p-6" style="display:none;">
+      <div class="flex items-center gap-2 mb-4">
+        <div class="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+          <i data-lucide="alert-triangle" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-gray-700">部分游戏缺少 PV</h3>
+          <p class="text-[11px] text-gray-400">以下游戏未能自动获取 PV，请手动上传后继续</p>
+        </div>
+      </div>
+      <div id="missing-pv-list" class="space-y-3 mb-5"></div>
+      <button onclick="resumeGenerate()"
+              class="btn-primary w-full py-2.5 text-sm font-bold flex items-center justify-center gap-2">
+        <i data-lucide="play" class="w-4 h-4"></i>
+        已上传全部 PV，继续生成
+      </button>
+    </div>
+
+    <!-- 完成结果 -->
+    <div id="result-panel" class="card p-6" style="display:none;">
+      <div class="flex items-center gap-3 mb-5">
+        <div class="w-10 h-10 rounded-full bg-green-100 text-green-600 flex items-center justify-center">
+          <i data-lucide="check-circle" class="w-5 h-5"></i>
+        </div>
+        <div>
+          <h3 class="text-base font-bold text-gray-800">视频生成完成！</h3>
+          <p class="text-xs text-gray-400">小红书折扣盘点视频已就绪</p>
+        </div>
+      </div>
+      <video id="result-video" controls class="w-full rounded-xl bg-black mb-4" style="max-height:360px;"></video>
+      <a id="download-btn"
+         class="btn-primary w-full py-3 text-sm font-bold flex items-center justify-center gap-2 no-underline text-white"
+         download>
+        <i data-lucide="download" class="w-4 h-4"></i>
+        下载视频
+      </a>
+    </div>
+
+    <!-- 错误面板 -->
+    <div id="error-panel" class="card p-5" style="display:none;">
+      <div class="flex items-start gap-3">
+        <div class="w-8 h-8 rounded-full bg-red-100 text-red-500 flex items-center justify-center shrink-0">
+          <i data-lucide="x-circle" class="w-4 h-4"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-bold text-red-600 mb-1">生成失败</h3>
+          <p id="error-msg" class="text-xs text-gray-500 break-all"></p>
+          <button onclick="resetUI()" class="mt-3 text-xs text-[#6C5CE7] hover:underline font-semibold">重新开始</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+// ── 状态 ──
+let _deals = [];           // 全量折扣数据
+let _taskId = null;        // 当前任务 ID
+let _pollTimer = null;     // 轮询定时器
+let _pvUploads = {};       // {title: serverPath} 用户上传的PV
+
+// ── 抓取折扣 ──
+async function fetchDeals() {
+  const limit = parseInt(document.getElementById('fetch-limit').value) || 30;
+  setFetchStatus('抓取中…', 'gray');
+  try {
+    const resp = await fetch('/run', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({source: 'deals', platforms: ['steam'], limit}),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+    _deals = (data.items || []).filter(it => (it.label || '').toLowerCase() === 'steam');
+    if (!_deals.length) { setFetchStatus('未找到 Steam 折扣数据', 'red'); return; }
+    setFetchStatus(`抓取完成，共 ${_deals.length} 款 Steam 折扣游戏`, 'green');
+    renderDeals();
+    show('deals-panel');
+    show('gen-settings');
+    hide('empty-hint');
+  } catch (e) {
+    setFetchStatus('抓取失败：' + e.message, 'red');
+  }
+}
+
+function setFetchStatus(msg, color) {
+  const el = document.getElementById('fetch-status');
+  el.textContent = msg;
+  el.className = 'text-[11px] ' + (color === 'green' ? 'text-green-600' : color === 'red' ? 'text-red-500' : 'text-gray-400');
+}
+
+// ── 渲染折扣列表 ──
+function renderDeals() {
+  const list = document.getElementById('deals-list');
+  const counter = document.getElementById('deals-count-label');
+  list.innerHTML = '';
+  counter.textContent = `（${_deals.length} 款）`;
+
+  _deals.forEach((item, idx) => {
+    const title = item.title || '';
+    const discount = item.discount || '';
+    const priceNow = item.price_current || '';
+    const priceOrig = item.price_original || '';
+    const url = item.url || '';
+    const cover = item.cover_image || '';
+
+    const div = document.createElement('div');
+    div.className = 'game-card selected flex gap-3 p-3 cursor-pointer';
+    div.dataset.idx = idx;
+    div.innerHTML = `
+      <label class="flex items-start gap-3 w-full cursor-pointer">
+        <input type="checkbox" checked class="deal-check mt-0.5 w-4 h-4 accent-[#6C5CE7]" data-idx="${idx}">
+        ${cover ? `<img src="/api/proxy_image?url=${encodeURIComponent(cover)}" class="w-12 h-12 rounded-lg object-cover shrink-0 bg-gray-100" onerror="this.style.display='none'">` : '<div class="w-12 h-12 rounded-lg bg-gray-100 shrink-0"></div>'}
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-semibold text-gray-800 leading-tight truncate">${title}</div>
+          <div class="flex items-center gap-1.5 mt-1 flex-wrap">
+            ${discount ? `<span class="badge-discount">${discount}</span>` : ''}
+            ${priceNow ? `<span class="badge-price">${priceNow}</span>` : ''}
+            ${priceOrig && priceOrig !== priceNow ? `<span class="text-[10px] text-gray-400 line-through">${priceOrig}</span>` : ''}
+          </div>
+        </div>
+      </label>`;
+    div.querySelector('input').addEventListener('change', (e) => {
+      div.classList.toggle('selected', e.target.checked);
+    });
+    list.appendChild(div);
+  });
+}
+
+function selectAll()  { document.querySelectorAll('.deal-check').forEach(c => { c.checked=true;  c.closest('.game-card').classList.add('selected'); }); }
+function selectNone() { document.querySelectorAll('.deal-check').forEach(c => { c.checked=false; c.closest('.game-card').classList.remove('selected'); }); }
+
+function getSelectedDeals() {
+  return Array.from(document.querySelectorAll('.deal-check'))
+    .filter(c => c.checked)
+    .map(c => _deals[parseInt(c.dataset.idx)]);
+}
+
+// ── 生成视频 ──
+async function startGenerate() {
+  const selected = getSelectedDeals();
+  if (!selected.length) { alert('请至少选择一款游戏'); return; }
+
+  const voice = document.getElementById('voice-select').value;
+  const bgmVolume = parseInt(document.getElementById('bgm-volume').value) / 100;
+
+  resetProgressUI();
+  showPanel('progress');
+
+  try {
+    const resp = await fetch('/api/deals_video', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({deals: selected, voice, bgm_volume: bgmVolume}),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+    _taskId = data.task_id;
+    startPolling();
+  } catch (e) {
+    showPanel('error');
+    document.getElementById('error-msg').textContent = e.message;
+  }
+}
+
+// ── 轮询状态 ──
+function startPolling() {
+  if (_pollTimer) clearInterval(_pollTimer);
+  _pollTimer = setInterval(pollStatus, 2000);
+}
+
+async function pollStatus() {
+  if (!_taskId) return;
+  try {
+    const resp = await fetch(`/api/video_status/${_taskId}`);
+    const data = await resp.json();
+    if (data.status !== 'ok') return;
+    const task = data.task;
+    updateProgress(task);
+
+    if (task.status === 'completed') {
+      clearInterval(_pollTimer);
+      showResult(task);
+    } else if (task.status === 'failed') {
+      clearInterval(_pollTimer);
+      showPanel('error');
+      document.getElementById('error-msg').textContent = task.error || '未知错误';
+      document.getElementById('progress-spinner').classList.remove('animate-spin');
+    } else if (task.status === 'waiting_pv') {
+      clearInterval(_pollTimer);
+      showMissingPV(task.missing_pv || []);
+    }
+  } catch (e) {
+    console.warn('轮询失败', e);
+  }
+}
+
+const STAGE_LABELS = {
+  queued: '排队中', ai_select: 'AI 筛选游戏', fetch_pv: '下载 Steam PV',
+  gen_scripts: 'AI 生成口播文案', gen_hook: '生成开场钩子',
+  generate_tts: 'TTS 生成配音', match_pv_scenes: 'AI 画面匹配',
+  edit_video: '合成视频', done: '完成',
+  waiting_pv: '等待用户上传 PV', resuming: '继续生成中…',
+};
+
+const STAGE_STEP_MAP = {
+  ai_select: 1, fetch_pv: 1,
+  gen_scripts: 2, gen_hook: 2,
+  generate_tts: 3, match_pv_scenes: 3,
+  edit_video: 4, done: 4,
+};
+
+function updateProgress(task) {
+  const pct = task.progress || 0;
+  document.getElementById('progress-bar').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+  const stageLabel = STAGE_LABELS[task.stage] || task.stage || '';
+  document.getElementById('progress-stage').textContent = stageLabel;
+  document.getElementById('progress-title').textContent = task.status === 'waiting_pv' ? '等待 PV 补充' : '正在生成…';
+
+  // 步骤高亮
+  const currentStep = STAGE_STEP_MAP[task.stage] || 0;
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('st-' + i);
+    if (i < currentStep) {
+      el.style.background = '#00B894'; el.style.color = '#fff';
+    } else if (i === currentStep) {
+      el.style.background = '#6C5CE7'; el.style.color = '#fff';
+      el.style.boxShadow = '0 0 0 4px rgba(108,92,231,.18)';
+    } else {
+      el.style.background = '#f1f5f9'; el.style.color = '#94a3b8';
+      el.style.boxShadow = '';
+    }
+  }
+}
+
+function showResult(task) {
+  document.getElementById('progress-spinner').classList.remove('animate-spin');
+  document.getElementById('progress-title').textContent = '生成完成！';
+  updateProgress({...task, progress: 100});
+
+  const taskId = task.task_id;
+  const videoUrl = `/video_outputs/${taskId}/final_output.mp4`;
+  const vid = document.getElementById('result-video');
+  vid.src = videoUrl;
+  const dlBtn = document.getElementById('download-btn');
+  dlBtn.href = videoUrl;
+  dlBtn.download = `steam_deals_${taskId.substring(0,8)}.mp4`;
+
+  showPanel('result');
+  lucide.createIcons();
+}
+
+// ── 缺失PV流程 ──
+function showMissingPV(missing) {
+  updateProgress({stage: 'waiting_pv', progress: 30, status: 'waiting_pv'});
+  const list = document.getElementById('missing-pv-list');
+  list.innerHTML = '';
+  missing.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'missing-item flex items-center justify-between gap-3';
+    div.innerHTML = `
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-semibold text-gray-800 truncate">${item.title}</div>
+        <div class="text-[10px] text-gray-500 mt-0.5">AppID: ${item.app_id || '未知'}</div>
+        ${item.url ? `<a href="${item.url}" target="_blank" class="text-[10px] text-blue-500 hover:underline">Steam 页面</a>` : ''}
+      </div>
+      <div class="shrink-0">
+        <label class="upload-zone flex flex-col items-center justify-center px-4 py-2 cursor-pointer">
+          <i data-lucide="upload" class="w-4 h-4 text-[#6C5CE7] mb-0.5"></i>
+          <span class="text-[10px] text-[#6C5CE7] font-semibold" id="pv-label-${slugify(item.title)}">上传 PV</span>
+          <input type="file" accept="video/*" class="hidden" onchange="handlePVUpload(event,'${escStr(item.title)}')">
+        </label>
+      </div>`;
+    list.appendChild(div);
+  });
+  showPanel('missing-pv');
+  lucide.createIcons();
+}
+
+function slugify(s) { return s.replace(/[^a-zA-Z0-9]/g, '_').substring(0, 20); }
+function escStr(s) { return s.replace(/'/g, "\\'").replace(/"/g, '\\"'); }
+
+async function handlePVUpload(event, title) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const slug = slugify(title);
+  const labelEl = document.getElementById('pv-label-' + slug);
+  if (labelEl) labelEl.textContent = '上传中…';
+
+  const form = new FormData();
+  form.append('file', file);
+  try {
+    const resp = await fetch('/api/upload_pv', {method: 'POST', body: form});
+    const data = await resp.json();
+    if (data.status === 'ok') {
+      _pvUploads[title] = data.path;
+      if (labelEl) { labelEl.textContent = '✓ 已上传'; labelEl.style.color = '#00B894'; }
+    } else {
+      if (labelEl) labelEl.textContent = '失败，重试';
+      alert('上传失败：' + data.message);
+    }
+  } catch (e) {
+    if (labelEl) labelEl.textContent = '失败，重试';
+    alert('上传出错：' + e.message);
+  }
+}
+
+async function resumeGenerate() {
+  if (!_taskId) return;
+  showPanel('progress');
+  resetProgressUI();
+  document.getElementById('progress-title').textContent = '继续生成中…';
+
+  try {
+    const resp = await fetch('/api/deals_video_resume', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({task_id: _taskId, pv_map: _pvUploads}),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+    startPolling();
+  } catch (e) {
+    showPanel('error');
+    document.getElementById('error-msg').textContent = e.message;
+  }
+}
+
+// ── UI 辅助 ──
+function show(id) { document.getElementById(id).style.removeProperty('display'); }
+function hide(id) { document.getElementById(id).style.display = 'none'; }
+
+function showPanel(name) {
+  ['progress', 'missing-pv', 'result', 'error', 'empty-hint'].forEach(n => {
+    const el = document.getElementById(n === 'missing-pv' ? 'missing-pv-panel' :
+                                        n === 'empty-hint' ? 'empty-hint' :
+                                        n + '-panel');
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById(
+    name === 'missing-pv' ? 'missing-pv-panel' :
+    name === 'empty-hint' ? 'empty-hint' :
+    name + '-panel'
+  );
+  if (target) target.style.display = '';
+  lucide.createIcons();
+}
+
+function resetProgressUI() {
+  document.getElementById('progress-bar').style.width = '0%';
+  document.getElementById('progress-pct').textContent = '0%';
+  document.getElementById('progress-stage').textContent = '';
+  document.getElementById('progress-title').textContent = '正在生成…';
+  document.getElementById('progress-spinner').classList.add('animate-spin');
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById('st-' + i);
+    el.style.background = '#f1f5f9'; el.style.color = '#94a3b8'; el.style.boxShadow = '';
+  }
+}
+
+function resetUI() {
+  showPanel('empty-hint');
+  _taskId = null;
+  _pvUploads = {};
+  if (_pollTimer) clearInterval(_pollTimer);
+}
+</script>
+{% endblock %}

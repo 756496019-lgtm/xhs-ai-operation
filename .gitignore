@@ -1,0 +1,87 @@
+# ====== Python ======
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+.env
+.env.local
+
+# ====== Node / Remotion ======
+node_modules/
+creator/motion-remotion/out/
+.remotion/
+*.tsbuildinfo
+
+# ====== 运行时产物 ======
+# Crawler 抓取产物（每次跑都会重写）
+crawler/content-monitor/xhs_drafts.json
+crawler/content-monitor/weekly_news_data.json
+crawler/content-monitor/taptap_*.json
+crawler/content-monitor/taptap_*.txt
+crawler/content-monitor/anthem_result.txt
+crawler/content-monitor/weekly_report_final_*.md
+crawler/content-monitor/xhs_weekly_report_*.md
+crawler/content-monitor/context.mc
+crawler/content-monitor/startup.log
+crawler/content-monitor/*.log
+crawler/content-monitor/weekly_cache/
+crawler/content-monitor/xhs_uploads/
+crawler/content-monitor/video_outputs/
+crawler/content-monitor/fan_tag_output/
+crawler/content-monitor/playwright_chrome_profile/
+crawler/content-monitor/ppt_preview*/
+
+# 调试图（每次抓取生成）
+crawler/content-monitor/*_debug.png
+crawler/content-monitor/debug_*.jpg
+crawler/content-monitor/debug_*.png
+crawler/content-monitor/frame_*.jpg
+crawler/content-monitor/frame_*.png
+
+# Benchmark
+benchmark/data/*.json
+benchmark/data/*.png
+benchmark/data/*.html
+benchmark/chrome_profile/
+
+# Analytics
+analytics/data/*.db
+analytics/data/exports/*
+!analytics/data/exports/.gitkeep
+analytics/data/reports/*
+!analytics/data/reports/.gitkeep
+
+# 但保留 examples 样本
+!analytics/examples/sample_export.csv
+
+# ====== OS / IDE ======
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+*.iml
+
+# ====== 本地敏感配置 ======
+.env
+.env.*.local
+*.cookies
+cookies.txt
+config.local.py
+crawler/content-monitor/config.py
+!crawler/content-monitor/config.py.example
+
+# ====== 大文件 / 临时 ======
+*.zip
+*.tar.gz
+*.mp4
+*.mov
+*.bak
+tmp/
+.tmp/

@@ -1,0 +1,1157 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎮 AI 游戏试玩 Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --card: #1a1a2e;
+      --card2: #16213e;
+      --border: #2d2d5e;
+      --accent: #7c3aed;
+      --accent2: #06b6d4;
+      --success: #10b981;
+      --warn: #f59e0b;
+      --error: #ef4444;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── 顶部导航 ── */
+    .nav {
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
+      padding: 0 24px;
+      height: 56px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-logo { font-size: 20px; font-weight: 700; color: var(--accent2); }
+    .nav-sub { color: var(--muted); font-size: 14px; }
+    .nav-links { margin-left: auto; display: flex; gap: 12px; }
+    .nav-links a { color: var(--muted); text-decoration: none; font-size: 14px; }
+    .nav-links a:hover { color: var(--text); }
+
+    /* ── 主布局 ── */
+    .main {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 24px;
+    }
+
+    /* ── 卡片 ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ── 表单 ── */
+    .form-group { margin-bottom: 14px; }
+    label {
+      display: block;
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    input, select, textarea {
+      width: 100%;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 12px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 80px; font-family: 'Consolas', monospace; font-size: 12px; }
+    select option { background: var(--card2); }
+
+    /* ── 按钮 ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    .btn-primary:hover { background: #6d28d9; }
+    .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-secondary {
+      background: var(--card2);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent2); }
+    .btn-success {
+      background: var(--success);
+      color: white;
+    }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+
+    /* ── 进度条 ── */
+    .progress-wrap { margin: 16px 0; }
+    .progress-bar {
+      height: 6px;
+      background: var(--border);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 3px;
+      transition: width 0.5s ease;
+    }
+    .progress-label {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* ── 状态标签 ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge-pending { background: #334155; color: var(--muted); }
+    .badge-running { background: #1e3a5f; color: var(--accent2); }
+    .badge-analyzing { background: #2d1b69; color: #a78bfa; }
+    .badge-editing { background: #1a3327; color: var(--success); }
+    .badge-done { background: #052e16; color: #4ade80; }
+    .badge-error { background: #450a0a; color: #fca5a5; }
+
+    /* ── 日志面板 ── */
+    .log-panel {
+      background: #0a0a14;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      height: 220px;
+      overflow-y: auto;
+      font-family: 'Consolas', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .log-line { color: var(--muted); }
+    .log-line.success { color: #4ade80; }
+    .log-line.warn { color: var(--warn); }
+    .log-line.error { color: var(--error); }
+
+    /* ── 分析结果 ── */
+    .result-section { margin-bottom: 20px; }
+    .result-section h3 {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent2);
+      margin-bottom: 10px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .summary-text {
+      font-size: 14px;
+      line-height: 1.8;
+      color: var(--text);
+    }
+    .highlight-list {
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .highlight-item {
+      background: #1e1e3f;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 4px 12px;
+      font-size: 13px;
+      color: var(--accent2);
+    }
+    .impressions-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-top: 8px;
+    }
+    .impression-item {
+      background: var(--card2);
+      border-radius: 8px;
+      padding: 10px 12px;
+    }
+    .impression-label {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 3px;
+      text-transform: uppercase;
+    }
+    .impression-value { font-size: 13px; }
+    .one-liner {
+      background: linear-gradient(135deg, #1e1e3f, #0f2027);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+      text-align: center;
+      margin-top: 12px;
+    }
+
+    /* ── 剪辑脚本面板 ── */
+    .script-panel { margin-top: 16px; }
+    .segment-item {
+      display: flex;
+      gap: 12px;
+      padding: 12px;
+      background: var(--card2);
+      border-radius: 8px;
+      margin-bottom: 8px;
+      border-left: 3px solid var(--accent);
+    }
+    .segment-time {
+      font-size: 12px;
+      font-family: monospace;
+      color: var(--accent2);
+      white-space: nowrap;
+      padding-top: 2px;
+      min-width: 90px;
+    }
+    .segment-content { flex: 1; }
+    .segment-narration { font-size: 13px; margin-bottom: 4px; }
+    .segment-subtitle {
+      font-size: 11px;
+      color: var(--muted);
+      background: #0a0a14;
+      padding: 2px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    .segment-reason {
+      font-size: 11px;
+      color: #64748b;
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* ── 关键帧网格 ── */
+    .frames-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .frame-thumb {
+      aspect-ratio: 16/9;
+      border-radius: 6px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .frame-thumb:hover { border-color: var(--accent2); }
+    .frame-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    /* ── 视频预览 ── */
+    .video-preview {
+      width: 100%;
+      border-radius: 8px;
+      background: #000;
+      margin-top: 12px;
+      max-height: 360px;
+    }
+
+    /* ── 折叠面板 ── */
+    .collapsible {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .collapsible-header {
+      padding: 10px 14px;
+      background: var(--card2);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      user-select: none;
+    }
+    .collapsible-header:hover { background: #1e2235; }
+    .collapsible-body { padding: 12px 14px; display: none; }
+    .collapsible-body.open { display: block; }
+    .arrow { transition: transform 0.2s; }
+    .arrow.open { transform: rotate(90deg); }
+
+    /* ── 预设游戏卡片 ── */
+    .preset-games {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .preset-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      background: var(--card2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .preset-card:hover, .preset-card.active { border-color: var(--accent); }
+    .preset-icon { font-size: 24px; }
+    .preset-info { flex: 1; }
+    .preset-name { font-size: 14px; font-weight: 600; }
+    .preset-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .preset-badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #1e3a5f;
+      color: var(--accent2);
+    }
+
+    /* ── 标签页 ── */
+    .tabs { display: flex; gap: 2px; margin-bottom: 16px; }
+    .tab {
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--muted);
+      border: 1px solid transparent;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: var(--card2);
+      border-color: var(--border);
+      color: var(--text);
+    }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── 动画 ── */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+    .pulsing { animation: pulse 1.5s infinite; }
+
+    /* ── Toast ── */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 1000;
+    }
+    .toast {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 14px;
+      max-width: 320px;
+      animation: slideIn 0.3s ease;
+    }
+    @keyframes slideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+
+    /* ── 响应式 ── */
+    @media (max-width: 900px) {
+      .main { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- 导航 -->
+<nav class="nav">
+  <span class="nav-logo">🎮 GameAI Demo</span>
+  <span class="nav-sub">AI 试玩 · 录制 · 分析 · 剪辑</span>
+  <div class="nav-links">
+    <a href="/">首页</a>
+    <a href="/video">视频流水线</a>
+    <a href="/weekly_report">周报</a>
+  </div>
+</nav>
+
+<div class="main">
+
+  <!-- ══ 左侧：配置面板 ══ -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- 游戏预设 -->
+    <div class="card">
+      <div class="card-title">🕹️ 选择游戏</div>
+      <div class="preset-games" id="presetGames"></div>
+      <div style="color:var(--muted);font-size:12px;margin-top:4px;">
+        或自定义 exe 路径 ↓
+      </div>
+    </div>
+
+    <!-- 配置表单 -->
+    <div class="card">
+      <div class="card-title">⚙️ 配置</div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+          <span>游戏基本信息</span>
+          <span class="arrow">›</span>
+        </div>
+        <div class="collapsible-body open">
+          <div class="form-group">
+            <label>游戏名称</label>
+            <input id="gameName" type="text" value="Dyping Escape Demo" placeholder="游戏显示名称">
+          </div>
+          <div class="form-group">
+            <label>游戏路径 (.exe)</label>
+            <input id="exePath" type="text"
+              value="C:\Program Files (x86)\Steam\steamapps\common\Dyping Escape Demo\DypingEscape.exe"
+              placeholder="完整exe路径">
+          </div>
+          <div class="form-group">
+            <label>窗口标题关键词（可留空自动检测）</label>
+            <input id="windowTitle" type="text" value="Dyping" placeholder="如: Minecraft, 游戏名称片段">
+          </div>
+          <div class="form-group">
+            <label>启动等待时间 (秒)</label>
+            <input id="launchWait" type="number" value="6" min="2" max="30">
+          </div>
+          <div class="form-group">
+            <label>最长试玩时间 (秒)</label>
+            <input id="maxDuration" type="number" value="120" min="30" max="600">
+          </div>
+        </div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+          <span>AI 操控脚本</span>
+          <span class="arrow">›</span>
+        </div>
+        <div class="collapsible-body open">
+          <div class="form-group">
+            <label>操控模式</label>
+            <select id="playMode" onchange="handlePlayModeChange()">
+              <option value="script">📋 脚本模式（推荐）</option>
+              <option value="vision">🧠 视觉AI模式</option>
+              <option value="skip">⏭️ 跳过试玩（分析已有视频）</option>
+            </select>
+          </div>
+          <div id="scriptArea">
+            <label>动作脚本 (JSON)</label>
+            <textarea id="actionsJson" rows="8" placeholder='[
+  {"type":"wait","delay":3.0,"label":"等待主菜单"},
+  {"type":"click","x":0.5,"y":0.55,"delay":1.5,"label":"点击开始"},
+  {"type":"key","key":"right","delay":0.4,"label":"向右移动"}
+]'></textarea>
+            <div class="btn-row" style="margin-top:8px;">
+              <button class="btn btn-secondary btn-sm" onclick="loadPresetScript('start_and_explore')">加载通用脚本</button>
+              <button class="btn btn-secondary btn-sm" onclick="loadPresetScript('menu_skip')">加载菜单跳过</button>
+              <button class="btn btn-secondary btn-sm" onclick="loadDypingScript()">加载 Dyping 脚本</button>
+            </div>
+          </div>
+          <div id="skipVideoArea" style="display:none;">
+            <label>已有视频路径</label>
+            <input id="existingVideo" type="text" placeholder="D:\录制\gameplay.mp4">
+          </div>
+        </div>
+      </div>
+
+      <div class="collapsible">
+        <div class="collapsible-header" onclick="toggleCollapse(this)">
+          <span>视频输出设置</span>
+          <span class="arrow">›</span>
+        </div>
+        <div class="collapsible-body">
+          <div class="form-group">
+            <label>输出视频风格</label>
+            <select id="style">
+              <option value="短视频种草">🌟 短视频种草（小红书/抖音）</option>
+              <option value="游戏评测">🔍 游戏评测（B站/油管）</option>
+              <option value="搞笑解说">😄 搞笑解说</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>目标输出时长 (秒)</label>
+            <input id="outputDuration" type="number" value="60" min="30" max="180">
+          </div>
+          <div class="form-group">
+            <label>TTS 解说声音</label>
+            <select id="voice">
+              <option value="zh-CN-XiaoxiaoNeural">小晓（女，温柔）</option>
+              <option value="zh-CN-YunxiNeural">云希（男，自然）</option>
+              <option value="zh-CN-XiaoyiNeural">小艺（女，活泼）</option>
+              <option value="zh-CN-YunjianNeural">云健（男，沉稳）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>关键帧提取数量</label>
+            <input id="keyframeCount" type="number" value="8" min="4" max="16">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 启动按钮 -->
+    <button id="startBtn" class="btn btn-primary" onclick="startDemo()" style="width:100%;justify-content:center;padding:14px;">
+      🚀 启动 AI 试玩流水线
+    </button>
+    <button id="stopBtn" class="btn btn-secondary" onclick="stopDemo()" style="width:100%;justify-content:center;display:none;">
+      ⏹️ 停止任务
+    </button>
+
+  </div>
+
+  <!-- ══ 右侧：进度 & 结果 ══ -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- 进度状态 -->
+    <div class="card" id="progressCard" style="display:none;">
+      <div class="card-title">
+        <span>📊 任务进度</span>
+        <span id="taskBadge" class="badge badge-pending">等待</span>
+        <span id="taskId" style="font-size:11px;color:var(--muted);margin-left:auto;font-family:monospace;"></span>
+      </div>
+      <div class="progress-wrap">
+        <div class="progress-bar">
+          <div class="progress-fill" id="progressFill" style="width:0%"></div>
+        </div>
+        <div class="progress-label">
+          <span id="stageLabel">初始化...</span>
+          <span id="progressPct">0%</span>
+        </div>
+      </div>
+      <div class="log-panel" id="logPanel"></div>
+    </div>
+
+    <!-- 结果标签页 -->
+    <div class="card" id="resultCard" style="display:none;">
+      <div class="tabs">
+        <div class="tab active" onclick="switchTab('summary')">📝 AI总结</div>
+        <div class="tab" onclick="switchTab('script')">✂️ 剪辑脚本</div>
+        <div class="tab" onclick="switchTab('frames')">🖼️ 关键帧</div>
+        <div class="tab" onclick="switchTab('video')">🎬 最终视频</div>
+      </div>
+
+      <!-- 总结 -->
+      <div class="tab-panel active" id="tab-summary">
+        <div class="result-section">
+          <h3>一句话推荐</h3>
+          <div class="one-liner" id="oneLiner">加载中...</div>
+        </div>
+        <div class="result-section">
+          <h3>游戏体验总结</h3>
+          <div class="summary-text" id="summaryText"></div>
+        </div>
+        <div class="result-section">
+          <h3>游戏亮点</h3>
+          <ul class="highlight-list" id="highlightList"></ul>
+        </div>
+        <div class="result-section">
+          <h3>多维评价</h3>
+          <div class="impressions-grid" id="impressionsGrid"></div>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap;">
+          <div id="tagsList"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" onclick="copySummary()">📋 复制总结</button>
+          <button class="btn btn-secondary btn-sm" onclick="downloadAnalysis()">⬇️ 下载分析JSON</button>
+        </div>
+      </div>
+
+      <!-- 剪辑脚本 -->
+      <div class="tab-panel" id="tab-script">
+        <div id="scriptTitle" style="font-size:16px;font-weight:700;margin-bottom:6px;"></div>
+        <div id="scriptDesc" style="font-size:13px;color:var(--muted);margin-bottom:12px;"></div>
+        <div id="hookBox" style="background:#1a1a2e;border:1px solid var(--accent);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:14px;color:#c4b5fd;"></div>
+        <div class="script-panel" id="segmentsList"></div>
+        <div style="padding:10px;background:var(--card2);border-radius:8px;margin-top:10px;">
+          <div style="font-size:12px;color:var(--muted);">BGM建议</div>
+          <div id="bgmStyle" style="font-size:14px;margin-top:2px;"></div>
+        </div>
+        <div style="padding:10px;background:var(--card2);border-radius:8px;margin-top:8px;">
+          <div style="font-size:12px;color:var(--muted);">结尾CTA</div>
+          <div id="ctaText" style="font-size:14px;margin-top:2px;color:#4ade80;"></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn btn-secondary btn-sm" onclick="copyScript()">📋 复制脚本</button>
+          <button class="btn btn-secondary btn-sm" onclick="reEditScript()">✏️ 手动调整后重新剪辑</button>
+        </div>
+        <div id="editScriptArea" style="display:none;margin-top:12px;">
+          <label>编辑剪辑脚本 JSON</label>
+          <textarea id="editScriptJson" rows="15"></textarea>
+          <button class="btn btn-primary btn-sm" onclick="rerunEdit()" style="margin-top:8px;">🔄 重新执行剪辑</button>
+        </div>
+      </div>
+
+      <!-- 关键帧 -->
+      <div class="tab-panel" id="tab-frames">
+        <p style="font-size:13px;color:var(--muted);margin-bottom:8px;">AI 从录制视频中提取的关键帧画面</p>
+        <div class="frames-grid" id="framesGrid"></div>
+      </div>
+
+      <!-- 最终视频 -->
+      <div class="tab-panel" id="tab-video">
+        <div id="videoWrap">
+          <p style="color:var(--muted);font-size:14px;">⏳ 视频剪辑完成后在此预览...</p>
+        </div>
+        <div class="btn-row" id="videoActions" style="display:none;">
+          <button class="btn btn-success" onclick="downloadVideo()">⬇️ 下载最终视频</button>
+          <button class="btn btn-secondary" onclick="copyVideoPath()">📋 复制路径</button>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ─────────────────────────────────────────────
+// 全局状态
+// ─────────────────────────────────────────────
+let currentTaskId = null;
+let pollTimer = null;
+let currentSummary = null;
+let currentScript = null;
+
+// ─────────────────────────────────────────────
+// 预设游戏
+// ─────────────────────────────────────────────
+const PRESET_GAMES = [
+  {
+    id: "dyping",
+    icon: "🔐",
+    name: "Dyping Escape Demo",
+    desc: "解谜逃脱类游戏，适合AI演示",
+    badge: "已配置",
+    exePath: "C:\\Program Files (x86)\\Steam\\steamapps\\common\\Dyping Escape Demo\\DypingEscape.exe",
+    windowTitle: "Dyping",
+    launchWait: 6,
+    maxDuration: 120,
+  },
+  {
+    id: "custom",
+    icon: "📁",
+    name: "自定义游戏",
+    desc: "填写下方 exe 路径和配置",
+    badge: "手动配置",
+    exePath: "",
+    windowTitle: "",
+    launchWait: 5,
+    maxDuration: 120,
+  },
+];
+
+function renderPresets() {
+  const el = document.getElementById("presetGames");
+  el.innerHTML = PRESET_GAMES.map(g => `
+    <div class="preset-card ${g.id === 'dyping' ? 'active' : ''}" id="preset_${g.id}"
+         onclick="selectPreset('${g.id}')">
+      <span class="preset-icon">${g.icon}</span>
+      <div class="preset-info">
+        <div class="preset-name">${g.name}</div>
+        <div class="preset-desc">${g.desc}</div>
+      </div>
+      <span class="preset-badge">${g.badge}</span>
+    </div>
+  `).join("");
+}
+
+function selectPreset(id) {
+  document.querySelectorAll(".preset-card").forEach(c => c.classList.remove("active"));
+  document.getElementById("preset_" + id).classList.add("active");
+  const g = PRESET_GAMES.find(p => p.id === id);
+  if (g && g.exePath) {
+    document.getElementById("gameName").value = g.name;
+    document.getElementById("exePath").value = g.exePath;
+    document.getElementById("windowTitle").value = g.windowTitle;
+    document.getElementById("launchWait").value = g.launchWait;
+    document.getElementById("maxDuration").value = g.maxDuration;
+  }
+  if (id === "dyping") loadDypingScript();
+}
+
+// ─────────────────────────────────────────────
+// 脚本预设
+// ─────────────────────────────────────────────
+const PRESET_SCRIPTS = {
+  start_and_explore: [
+    {"type":"wait","delay":2.0,"label":"等待加载"},
+    {"type":"key","key":"space","delay":0.5,"label":"跳过开场"},
+    {"type":"click","x":0.5,"y":0.5,"delay":1.0,"label":"点击屏幕中央"},
+    {"type":"wait","delay":3.0,"label":"观察初始画面"},
+    {"type":"key","key":"right","delay":0.3,"label":"向右移动"},
+    {"type":"key","key":"right","delay":0.3},
+    {"type":"key","key":"space","delay":0.5,"label":"跳跃/交互"},
+    {"type":"wait","delay":2.0,"label":"观察关卡"}
+  ],
+  menu_skip: [
+    {"type":"wait","delay":3.0,"label":"等待主菜单"},
+    {"type":"key","key":"enter","delay":0.5,"label":"确认/开始"},
+    {"type":"key","key":"space","delay":0.5},
+    {"type":"click","x":0.5,"y":0.6,"delay":1.0,"label":"点击开始游戏"}
+  ]
+};
+
+function loadDypingScript() {
+  const script = [
+    {"type":"wait","delay":3.0,"label":"等待主菜单"},
+    {"type":"click","x":0.5,"y":0.55,"delay":1.5,"label":"点击开始游戏"},
+    {"type":"key","key":"enter","delay":1.0,"label":"确认开始"},
+    {"type":"wait","delay":2.0,"label":"观察初始场景"},
+    {"type":"key","key":"right","delay":0.4,"label":"向右移动"},
+    {"type":"key","key":"right","delay":0.4},
+    {"type":"key","key":"right","delay":0.4},
+    {"type":"key","key":"up","delay":0.5,"label":"查看上方"},
+    {"type":"key","key":"space","delay":0.5,"label":"交互/跳跃"},
+    {"type":"wait","delay":1.5,"label":"观察反应"},
+    {"type":"key","key":"left","delay":0.4,"label":"向左探索"},
+    {"type":"key","key":"left","delay":0.4},
+    {"type":"key","key":"space","delay":0.5,"label":"交互"},
+    {"type":"wait","delay":2.0,"label":"观察谜题"},
+    {"type":"key","key":"right","delay":0.3},
+    {"type":"key","key":"right","delay":0.3},
+    {"type":"key","key":"down","delay":0.4,"label":"向下"},
+    {"type":"key","key":"space","delay":0.5,"label":"与物品互动"},
+    {"type":"wait","delay":2.0,"label":"观察进展"},
+    {"type":"key","key":"escape","delay":0.5,"label":"查看菜单"},
+    {"type":"key","key":"escape","delay":0.5,"label":"关闭菜单"},
+    {"type":"wait","delay":3.0,"label":"最终展示"}
+  ];
+  document.getElementById("actionsJson").value = JSON.stringify(script, null, 2);
+}
+
+function loadPresetScript(name) {
+  const s = PRESET_SCRIPTS[name];
+  if (s) document.getElementById("actionsJson").value = JSON.stringify(s, null, 2);
+}
+
+// ─────────────────────────────────────────────
+// 模式切换
+// ─────────────────────────────────────────────
+function handlePlayModeChange() {
+  const mode = document.getElementById("playMode").value;
+  document.getElementById("scriptArea").style.display = mode === "script" ? "block" : "none";
+  document.getElementById("skipVideoArea").style.display = mode === "skip" ? "block" : "none";
+}
+
+// ─────────────────────────────────────────────
+// 折叠面板
+// ─────────────────────────────────────────────
+function toggleCollapse(header) {
+  const body = header.nextElementSibling;
+  const arrow = header.querySelector(".arrow");
+  body.classList.toggle("open");
+  arrow.classList.toggle("open");
+}
+
+// ─────────────────────────────────────────────
+// 标签页切换
+// ─────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll(".tab").forEach((t, i) => {
+    const panels = ["summary","script","frames","video"];
+    t.classList.toggle("active", panels[i] === name);
+  });
+  document.querySelectorAll(".tab-panel").forEach(p => {
+    p.classList.toggle("active", p.id === "tab-" + name);
+  });
+}
+
+// ─────────────────────────────────────────────
+// 启动任务
+// ─────────────────────────────────────────────
+async function startDemo() {
+  // 收集配置
+  const mode = document.getElementById("playMode").value;
+  let actions = null;
+  if (mode === "script") {
+    try {
+      actions = JSON.parse(document.getElementById("actionsJson").value || "[]");
+    } catch(e) {
+      toast("❌ 动作脚本 JSON 格式错误: " + e.message, "error");
+      return;
+    }
+  }
+
+  const gameConfig = {
+    name: document.getElementById("gameName").value,
+    exe_path: document.getElementById("exePath").value,
+    window_title: document.getElementById("windowTitle").value,
+    launch_wait: parseFloat(document.getElementById("launchWait").value),
+    max_duration: parseInt(document.getElementById("maxDuration").value),
+    vision_mode: mode === "vision",
+    actions: actions || [],
+  };
+
+  const options = {
+    output_duration: parseInt(document.getElementById("outputDuration").value),
+    style: document.getElementById("style").value,
+    voice: document.getElementById("voice").value,
+    keyframe_count: parseInt(document.getElementById("keyframeCount").value),
+    skip_play: mode === "skip",
+    existing_video: document.getElementById("existingVideo").value || null,
+    custom_actions: actions,
+  };
+
+  if (!gameConfig.exe_path && mode !== "skip") {
+    toast("❌ 请填写游戏路径", "error");
+    return;
+  }
+
+  try {
+    const resp = await fetch("/api/game_demo/start", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({game_config: gameConfig, options}),
+    });
+    const data = await resp.json();
+    if (!resp.ok || data.error) {
+      toast("❌ 启动失败: " + (data.error || "未知错误"), "error");
+      return;
+    }
+
+    currentTaskId = data.task_id;
+    document.getElementById("taskId").textContent = data.task_id.substring(0, 12) + "...";
+    document.getElementById("progressCard").style.display = "block";
+    document.getElementById("resultCard").style.display = "none";
+    document.getElementById("startBtn").disabled = true;
+    document.getElementById("stopBtn").style.display = "block";
+    document.getElementById("logPanel").innerHTML = "";
+
+    toast("✅ 任务已启动！", "success");
+    startPolling();
+  } catch(e) {
+    toast("❌ 请求失败: " + e.message, "error");
+  }
+}
+
+function stopDemo() {
+  if (!currentTaskId) return;
+  fetch(`/api/game_demo/stop/${currentTaskId}`, {method: "POST"});
+  stopPolling();
+  toast("⏹️ 已发送停止信号", "warn");
+}
+
+// ─────────────────────────────────────────────
+// 轮询进度
+// ─────────────────────────────────────────────
+function startPolling() {
+  pollTimer = setInterval(pollStatus, 2000);
+  pollStatus();
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function pollStatus() {
+  if (!currentTaskId) return;
+  try {
+    const resp = await fetch(`/api/game_demo/status/${currentTaskId}`);
+    if (!resp.ok) return;
+    const task = await resp.json();
+    updateUI(task);
+    if (["done", "error"].includes(task.status)) {
+      stopPolling();
+      document.getElementById("startBtn").disabled = false;
+      document.getElementById("stopBtn").style.display = "none";
+    }
+  } catch(e) {
+    console.error("轮询失败:", e);
+  }
+}
+
+function updateUI(task) {
+  // 进度条
+  const pct = task.progress || 0;
+  document.getElementById("progressFill").style.width = pct + "%";
+  document.getElementById("progressPct").textContent = pct + "%";
+
+  // 阶段标签
+  const stageMap = {
+    init:"初始化", playing:"AI试玩中", extracting:"提取关键帧",
+    analyzing:"AI分析", editing:"视频剪辑", done:"完成 🎉"
+  };
+  document.getElementById("stageLabel").textContent = stageMap[task.stage] || task.stage || "-";
+
+  // 状态 Badge
+  const badge = document.getElementById("taskBadge");
+  const badgeInfo = {
+    pending:["pending","等待"],running:["running","运行中"],
+    analyzing:["analyzing","分析中"],editing:["editing","剪辑中"],
+    done:["done","完成"],error:["error","出错"]
+  };
+  const [cls, label] = badgeInfo[task.status] || ["pending", task.status];
+  badge.className = `badge badge-${cls}`;
+  badge.textContent = label;
+
+  // 日志
+  const logEl = document.getElementById("logPanel");
+  const lastLogs = (task.logs || []).slice(-50);
+  logEl.innerHTML = lastLogs.map(line => {
+    let cls = "log-line";
+    if (line.includes("✅") || line.includes("🎉") || line.includes("完成")) cls += " success";
+    else if (line.includes("⚠️")) cls += " warn";
+    else if (line.includes("❌")) cls += " error";
+    return `<div class="${cls}">${escapeHtml(line)}</div>`;
+  }).join("");
+  logEl.scrollTop = logEl.scrollHeight;
+
+  // 关键帧
+  if (task.keyframes && task.keyframes.length > 0) {
+    renderFrames(task.keyframes, task.task_id);
+  }
+
+  // 分析结果
+  if (task.summary) {
+    currentSummary = task.summary;
+    renderSummary(task.summary);
+    document.getElementById("resultCard").style.display = "block";
+  }
+
+  if (task.edit_script) {
+    currentScript = task.edit_script;
+    renderScript(task.edit_script);
+  }
+
+  // 最终视频
+  if (task.final_video && task.status === "done") {
+    renderVideo(task.task_id);
+    toast("🎬 视频剪辑完成！", "success");
+  }
+
+  if (task.status === "error") {
+    toast("❌ 任务失败: " + (task.error || ""), "error");
+  }
+}
+
+// ─────────────────────────────────────────────
+// 渲染：总结
+// ─────────────────────────────────────────────
+function renderSummary(s) {
+  document.getElementById("oneLiner").textContent = s.one_line_pitch || "";
+  document.getElementById("summaryText").textContent = s.summary || "";
+  document.getElementById("highlightList").innerHTML =
+    (s.highlights || []).map(h => `<li class="highlight-item">✨ ${escapeHtml(h)}</li>`).join("");
+  const imp = s.impressions || {};
+  const impLabels = {gameplay:"玩法", visuals:"画面", difficulty:"难度", originality:"创意"};
+  document.getElementById("impressionsGrid").innerHTML =
+    Object.entries(impLabels).map(([k,l]) => `
+      <div class="impression-item">
+        <div class="impression-label">${l}</div>
+        <div class="impression-value">${escapeHtml(imp[k] || "-")}</div>
+      </div>`).join("");
+  document.getElementById("tagsList").innerHTML =
+    (s.tags || []).map(t => `<span style="display:inline-block;margin:2px;padding:3px 10px;background:#1e293b;border-radius:4px;font-size:12px;color:var(--accent2);">#${escapeHtml(t)}</span>`).join("");
+}
+
+// ─────────────────────────────────────────────
+// 渲染：剪辑脚本
+// ─────────────────────────────────────────────
+function renderScript(s) {
+  document.getElementById("scriptTitle").textContent = s.title || "";
+  document.getElementById("scriptDesc").textContent = s.description || "";
+  document.getElementById("hookBox").textContent = "🎣 开场钩子: " + (s.hook || "");
+  document.getElementById("bgmStyle").textContent = s.bgm_style || "";
+  document.getElementById("ctaText").textContent = s.cta || "";
+  document.getElementById("segmentsList").innerHTML =
+    (s.segments || []).map((seg, i) => `
+      <div class="segment-item">
+        <div class="segment-time">
+          ${fmtTime(seg.start)} → ${fmtTime(seg.end)}
+          <div style="color:#64748b;font-size:10px;margin-top:2px;">${seg.transition || "cut"}</div>
+        </div>
+        <div class="segment-content">
+          <div class="segment-narration">🎙️ ${escapeHtml(seg.narration || "")}</div>
+          <div class="segment-subtitle">字幕: ${escapeHtml(seg.subtitle || "")}</div>
+          <div class="segment-reason">${escapeHtml(seg.reason || "")}</div>
+        </div>
+      </div>`).join("");
+}
+
+// ─────────────────────────────────────────────
+// 渲染：关键帧
+// ─────────────────────────────────────────────
+function renderFrames(framePaths, taskId) {
+  document.getElementById("framesGrid").innerHTML = framePaths.map((p, i) => `
+    <div class="frame-thumb" onclick="viewFrame('${taskId}', ${i})">
+      <img src="/api/game_demo/frame/${taskId}/${i}" alt="帧${i+1}"
+           onerror="this.parentElement.style.display='none'">
+    </div>`).join("");
+}
+
+function viewFrame(taskId, idx) {
+  window.open(`/api/game_demo/frame/${taskId}/${idx}`, '_blank');
+}
+
+// ─────────────────────────────────────────────
+// 渲染：最终视频
+// ─────────────────────────────────────────────
+function renderVideo(taskId) {
+  document.getElementById("videoWrap").innerHTML = `
+    <video class="video-preview" controls>
+      <source src="/api/game_demo/video/${taskId}" type="video/mp4">
+      您的浏览器不支持 video 标签
+    </video>`;
+  document.getElementById("videoActions").style.display = "flex";
+  switchTab("video");
+}
+
+function downloadVideo() {
+  if (!currentTaskId) return;
+  window.open(`/api/game_demo/download/${currentTaskId}`, '_blank');
+}
+
+function copyVideoPath() {
+  if (!currentTaskId) return;
+  fetch(`/api/game_demo/status/${currentTaskId}`).then(r => r.json()).then(t => {
+    if (t.final_video) {
+      navigator.clipboard.writeText(t.final_video);
+      toast("✅ 路径已复制", "success");
+    }
+  });
+}
+
+// ─────────────────────────────────────────────
+// 重新剪辑
+// ─────────────────────────────────────────────
+function reEditScript() {
+  const area = document.getElementById("editScriptArea");
+  area.style.display = area.style.display === "none" ? "block" : "none";
+  if (currentScript) {
+    document.getElementById("editScriptJson").value = JSON.stringify(currentScript, null, 2);
+  }
+}
+
+async function rerunEdit() {
+  if (!currentTaskId) return;
+  let script;
+  try { script = JSON.parse(document.getElementById("editScriptJson").value); }
+  catch(e) { toast("❌ JSON格式错误: " + e.message, "error"); return; }
+  const resp = await fetch("/api/game_demo/recut", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({task_id: currentTaskId, edit_script: script}),
+  });
+  const d = await resp.json();
+  if (d.ok) toast("🔄 重新剪辑已启动", "success");
+  else toast("❌ " + (d.error || "失败"), "error");
+}
+
+// ─────────────────────────────────────────────
+// 下载/复制
+// ─────────────────────────────────────────────
+function copySummary() {
+  if (!currentSummary) return;
+  const text = `${currentSummary.one_line_pitch}\n\n${currentSummary.summary}\n\n亮点：${(currentSummary.highlights||[]).join("、")}`;
+  navigator.clipboard.writeText(text);
+  toast("✅ 总结已复制到剪贴板", "success");
+}
+
+function downloadAnalysis() {
+  if (!currentTaskId) return;
+  window.open(`/api/game_demo/analysis/${currentTaskId}`, '_blank');
+}
+
+function copyScript() {
+  if (!currentScript) return;
+  navigator.clipboard.writeText(JSON.stringify(currentScript, null, 2));
+  toast("✅ 脚本JSON已复制", "success");
+}
+
+// ─────────────────────────────────────────────
+// 工具函数
+// ─────────────────────────────────────────────
+function fmtTime(s) {
+  const m = Math.floor(s / 60), sec = Math.floor(s % 60);
+  return `${m}:${String(sec).padStart(2, '0')}`;
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function toast(msg, type = "info") {
+  const el = document.createElement("div");
+  el.className = "toast";
+  const colors = {success:"#10b981",error:"#ef4444",warn:"#f59e0b",info:"var(--accent2)"};
+  el.style.borderLeftColor = colors[type] || colors.info;
+  el.style.borderLeftWidth = "3px";
+  el.textContent = msg;
+  document.getElementById("toastContainer").appendChild(el);
+  setTimeout(() => el.remove(), 4000);
+}
+
+// ─────────────────────────────────────────────
+// 初始化
+// ─────────────────────────────────────────────
+renderPresets();
+selectPreset("dyping");
+loadDypingScript();
+</script>
+</body>
+</html>

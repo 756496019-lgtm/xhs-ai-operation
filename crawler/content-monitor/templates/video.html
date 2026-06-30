@@ -1,0 +1,1370 @@
+{% extends "base.html" %}
+{% block title %}视频生成 - 游戏雷达局{% endblock %}
+{% block page_title %}视频流水线{% endblock %}
+{% block page_subtitle %}全自动视频生成：文案→PV→配音→剪辑→上传{% endblock %}
+
+{% block head_extra %}
+<style>
+  .step { display: flex; align-items: center; gap: 8px; }
+  .step-dot { width: 28px; height: 28px; border-radius: 50%; border: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #94a3b8; background: #f8fafc; flex-shrink: 0; transition: all .3s; }
+  .step-dot.active { border-color: #6C5CE7; background: #6C5CE7; color: #fff; box-shadow: 0 0 0 4px rgba(108,92,231,.15); }
+  .step-dot.done { border-color: #00B894; background: #00B894; color: #fff; }
+  .step-line { flex: 1; height: 2px; background: #e2e8f0; transition: background .3s; }
+  .step-line.done { background: #00B894; }
+  .step-label { font-size: 10px; color: #94a3b8; margin-top: 4px; text-align: center; }
+  .step-label.active { color: #6C5CE7; font-weight: 600; }
+  .step-label.done { color: #00B894; }
+  .job-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; border-radius: 10px; background: #f8fafc; margin-bottom: 8px; }
+  .trigger-btn { background: #6C5CE7; color: #fff; border: none; border-radius: 8px; padding: 4px 12px; font-size: 11px; cursor: pointer; transition: all .2s; }
+  .trigger-btn:hover { box-shadow: 0 3px 10px rgba(108,92,231,.35); }
+  .bgm-tab { color: #94a3b8; background: transparent; border: none; cursor: pointer; }
+  .bgm-tab-active { background: #fff; color: #6C5CE7; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .bgm-preset-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; border: 1.5px solid #e2e8f0; background: #f8fafc; cursor: pointer; transition: all .2s; }
+  .bgm-preset-item:hover { border-color: #6C5CE7; background: #F0EDFF; }
+  .bgm-preset-item.selected { border-color: #6C5CE7; background: #F0EDFF; }
+</style>
+{% endblock %}
+
+{% block main %}
+<div class="flex gap-6 h-full min-h-0 overflow-auto scroll-y">
+
+  <!-- 左侧：输入 -->
+  <div class="w-[340px] shrink-0 flex flex-col gap-5">
+
+    <!-- ★ Steam 一键生成卡片 ★ -->
+    <div class="card p-5" style="border: 1.5px solid #F39C1240; background: linear-gradient(135deg, #fffbf0 0%, #fff 100%);">
+      <h2 class="text-xs font-bold text-gray-600 uppercase tracking-widest mb-1 flex items-center gap-2">
+        <svg class="w-4 h-4 text-[#F39C12]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        Steam 一键生成
+      </h2>
+      <p class="text-[10px] text-gray-400 mb-3">输入游戏名 + Steam 链接，先生成文案预览，满意后再生成视频</p>
+
+      <!-- 步骤1：输入 + 生成文案 -->
+      <div id="promo-step1" class="space-y-2">
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 mb-1">游戏名称</label>
+          <input id="promo-game-name" type="text" placeholder="如：THE CUBE SAVE US、幻兽帕鲁..."
+                 class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F39C12] focus:ring-2 focus:ring-[#F39C12]/10 transition-all">
+        </div>
+        <div>
+          <label class="block text-[11px] font-semibold text-gray-500 mb-1">Steam 商店链接</label>
+          <input id="promo-steam-url" type="text" placeholder="https://store.steampowered.com/app/..."
+                 class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#F39C12] focus:ring-2 focus:ring-[#F39C12]/10 transition-all font-mono text-xs">
+        </div>
+        <button id="btn-promo-gen-script"
+                class="w-full py-2 rounded-xl text-white text-sm font-bold transition-all flex items-center justify-center gap-2"
+                style="background: linear-gradient(135deg, #F39C12, #E08E0B);"
+                onclick="startPromoScript()">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 生成文案预览
+        </button>
+        <div id="promo-script-status" class="text-[11px] text-gray-400 min-h-[14px] text-center"></div>
+      </div>
+
+      <!-- 步骤2：文案预览 + 确认（生成文案后显示） -->
+      <div id="promo-step2" class="hidden mt-3 pt-3 border-t border-gray-100 space-y-2">
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-[11px] font-bold text-gray-600 flex items-center gap-1">
+            <i data-lucide="file-text" class="w-3 h-3 text-[#F39C12]"></i> 文案预览
+            <span class="text-[10px] text-gray-400 font-normal">（可直接编辑）</span>
+          </span>
+          <button onclick="regenPromoScript()" class="text-[10px] text-[#F39C12] hover:underline font-semibold flex items-center gap-0.5">
+            <i data-lucide="refresh-cw" class="w-3 h-3"></i> 重新生成
+          </button>
+        </div>
+        <textarea id="promo-script-preview" rows="8"
+                  class="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-xs resize-none focus:outline-none focus:border-[#F39C12] focus:ring-1 focus:ring-[#F39C12]/10 transition-all font-mono leading-relaxed"></textarea>
+        <p class="text-[10px] text-gray-400">每行为一段配音，可增删改。满意后选择声音并生成视频。</p>
+
+        <div class="flex items-center gap-2">
+          <div>
+            <label class="block text-[11px] font-semibold text-gray-500 mb-1">配音声音</label>
+            <select id="promo-voice"
+                    class="bg-white border border-gray-200 rounded-xl px-2 py-1.5 text-xs focus:outline-none focus:border-[#F39C12] transition-all">
+              <optgroup label="男声">
+                <option value="zh-CN-YunxiNeural" selected>云希（阳光）</option>
+                <option value="zh-CN-YunjianNeural">云健（激情）</option>
+                <option value="zh-CN-YunyangNeural">云扬（播报）</option>
+              </optgroup>
+              <optgroup label="女声">
+                <option value="zh-CN-XiaoxiaoNeural">晓晓（自然）</option>
+                <option value="zh-CN-XiaoyiNeural">晓伊（活泼）</option>
+              </optgroup>
+            </select>
+          </div>
+          <div class="flex-1">
+            <label class="block text-[11px] font-semibold text-gray-500 mb-1">BGM 音量</label>
+            <div class="flex items-center gap-1.5">
+              <input type="range" id="promo-bgm-vol" min="0" max="30" value="12" step="1"
+                     class="flex-1 accent-[#F39C12]"
+                     oninput="document.getElementById('promo-bgm-vol-lbl').textContent = this.value + '%'">
+              <span id="promo-bgm-vol-lbl" class="text-[10px] text-gray-500 w-6 text-right">12%</span>
+            </div>
+          </div>
+        </div>
+
+        <button id="btn-promo-generate"
+                class="w-full py-2.5 rounded-xl text-white text-sm font-bold transition-all flex items-center justify-center gap-2"
+                style="background: linear-gradient(135deg, #6C5CE7, #a29bfe);"
+                onclick="startPromoVideo()">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+          确认文案，生成视频
+        </button>
+      </div>
+
+      <!-- 步骤3：视频生成进度（提交后显示） -->
+      <div id="promo-progress-area" class="hidden mt-3 pt-3 border-t border-gray-100">
+        <div class="flex items-center justify-between text-[11px] text-gray-500 mb-1">
+          <span id="promo-stage-text">初始化中...</span>
+          <span id="promo-pct-text">0%</span>
+        </div>
+        <div class="bg-gray-100 rounded-full h-1.5 mb-2">
+          <div id="promo-prog-bar" class="h-1.5 rounded-full transition-all" style="width:0%;background:linear-gradient(90deg,#F39C12,#FAD7A0)"></div>
+        </div>
+        <div class="flex flex-wrap gap-1 text-[10px]">
+          <span id="promo-step-fetch"   class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">① 获取信息</span>
+          <span id="promo-step-search"  class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">② 搜索评测</span>
+          <span id="promo-step-script"  class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">③ 生成脚本</span>
+          <span id="promo-step-pv"      class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">④ 下载PV</span>
+          <span id="promo-step-tts"     class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">⑤ 配音</span>
+          <span id="promo-step-edit"    class="px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400">⑥ 剪辑</span>
+        </div>
+        <div id="promo-result-area" class="hidden mt-2">
+          <div class="bg-[#FFF5E0] border border-[#F39C1240] rounded-xl p-3 text-xs">
+            <div class="font-bold text-[#E08E0B] mb-1">视频生成完成！</div>
+            <div id="promo-result-path" class="text-gray-500 text-[10px] font-mono break-all mb-2"></div>
+            <a id="promo-download-link" href="#" download
+               class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white text-xs font-semibold"
+               style="background:#F39C12;">
+              <i data-lucide="download" class="w-3 h-3"></i> 下载视频
+            </a>
+          </div>
+        </div>
+        <div id="promo-error-area" class="hidden mt-2 bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-600">
+          <div class="font-bold mb-0.5">生成失败</div>
+          <div id="promo-error-msg" class="break-all"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 手动模式分隔线 -->
+    <div class="flex items-center gap-3">
+      <div class="flex-1 h-px bg-gray-200"></div>
+      <span class="text-[10px] text-gray-400 font-semibold whitespace-nowrap">手动模式（自定义脚本+PV）</span>
+      <div class="flex-1 h-px bg-gray-200"></div>
+    </div>
+
+    <div class="card p-5">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">视频参数</h2>
+      <div class="space-y-4">
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">游戏名称</label>
+          <input id="vp-game" type="text" value="原神" placeholder="如：原神、崩铁、鸣潮..."
+                 class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#6C5CE7] focus:ring-2 focus:ring-[#6C5CE7]/10 transition-all">
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">口播脚本 <span class="text-gray-300 font-normal">（每行为一段，直接生成配音）</span></label>
+          <textarea id="vp-content" rows="5" placeholder="每行一段口播文案，支持（停顿）（夸张笑）等语气提示词..."
+                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#6C5CE7] focus:ring-2 focus:ring-[#6C5CE7]/10 transition-all resize-none"></textarea>
+        </div>
+
+        <!-- 多新闻源面板 -->
+        <div id="news-sources-panel" class="hidden">
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-gray-500">已选新闻源 <span id="news-count-badge" class="ml-1 px-1.5 py-0.5 rounded-md bg-purple-100 text-purple-600 text-[10px] font-bold"></span></label>
+            <button id="btn-merge-news" type="button" class="text-[10px] text-[#6C5CE7] border border-[#6C5CE7] rounded-lg px-2 py-1 hover:bg-[#F0EDFF] transition-all font-semibold">合并为脚本素材</button>
+          </div>
+          <div id="news-sources-list" class="space-y-1.5 max-h-48 overflow-y-auto pr-1"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">PV/宣传片 <span class="text-gray-300 font-normal">（留空则自动搜索 B 站）</span></label>
+          <div class="flex gap-2">
+            <input id="vp-pv-url" type="text" placeholder="https://www.bilibili.com/video/BV... 或 YouTube 链接"
+                   class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#6C5CE7] focus:ring-2 focus:ring-[#6C5CE7]/10 transition-all">
+            <button id="btn-verify-pv" title="验证链接是否可下载" class="shrink-0 bg-gray-100 hover:bg-[#6C5CE7] hover:text-white text-gray-600 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold transition-all whitespace-nowrap">
+              验证
+            </button>
+            <button id="btn-search-pv" title="B站优先，YouTube备选" class="shrink-0 bg-gray-100 hover:bg-[#6C5CE7] hover:text-white text-gray-600 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold transition-all whitespace-nowrap">
+              搜索
+            </button>
+          </div>
+          <div id="pv-source-label" class="text-[10px] mt-1 text-gray-400"></div>
+
+          <!-- 本地视频上传入口（始终显示） -->
+          <div id="pv-local-upload" class="mt-2 space-y-2">
+            <!-- 提示（验证失败时变红，成功时变绿） -->
+            <div id="pv-cookie-hint" class="flex items-start gap-2 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-[10px] text-gray-500 leading-relaxed">
+              <i data-lucide="info" class="w-3.5 h-3.5 shrink-0 mt-0.5"></i>
+              <div id="pv-cookie-hint-text">
+                YouTube 需要 Cookie 才能下载，可在下方「YouTube Cookie」栏粘贴后点验证。也可直接上传本地视频。
+              </div>
+            </div>
+            <!-- 本地文件上传 -->
+            <label class="flex items-center gap-2 w-full px-3 py-2 bg-amber-50 border border-amber-200 rounded-xl cursor-pointer hover:border-[#6C5CE7] hover:bg-[#F0EDFF] transition-all">
+              <i data-lucide="upload" class="w-4 h-4 text-amber-500 shrink-0"></i>
+              <span id="pv-upload-label" class="text-xs text-amber-700">上传本地视频作为背景（MP4/MKV）</span>
+              <input type="file" id="pv-file-input" accept="video/mp4,video/x-matroska,video/*" class="hidden">
+            </label>
+            <div id="pv-upload-status" class="text-[10px] hidden"></div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">视频时长：<span id="duration-label">60</span> 秒</label>
+          <input id="vp-duration" type="range" min="30" max="120" value="60" step="5"
+                 class="w-full accent-[#6C5CE7]"
+                 oninput="document.getElementById('duration-label').textContent = this.value">
+          <div class="flex justify-between text-[10px] text-gray-400 mt-1"><span>30秒</span><span>120秒</span></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">AI 配音声音</label>
+          <div class="flex gap-2 items-center">
+            <select id="vp-voice"
+                    class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#6C5CE7] focus:ring-2 focus:ring-[#6C5CE7]/10 transition-all">
+              <optgroup label="女声">
+                <option value="zh-CN-XiaoxiaoNeural">晓晓 — 温柔自然（默认）</option>
+                <option value="zh-CN-XiaoyiNeural">晓伊 — 甜美活泼</option>
+                <option value="zh-CN-liaoning-XiaobeiNeural">小北 — 东北口音</option>
+                <option value="zh-CN-shaanxi-XiaoniNeural">小妮 — 陕西口音</option>
+              </optgroup>
+              <optgroup label="男声">
+                <option value="zh-CN-YunjianNeural">云健 — 激情热血</option>
+                <option value="zh-CN-YunxiNeural">云希 — 活泼阳光</option>
+                <option value="zh-CN-YunxiaNeural">云夏 — 沉稳播报</option>
+                <option value="zh-CN-YunyangNeural">云扬 — 新闻播报</option>
+              </optgroup>
+            </select>
+            <button id="btn-voice-preview" type="button" title="试听选中声音"
+                    class="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl border border-[#6C5CE7] text-[#6C5CE7] text-xs font-semibold hover:bg-[#F0EDFF] transition-all whitespace-nowrap">
+              <i data-lucide="play-circle" class="w-3.5 h-3.5"></i> 试听
+            </button>
+          </div>
+          <!-- 试听播放器（隐藏，动态填充 src） -->
+          <audio id="voice-preview-audio" class="hidden w-full mt-2" controls></audio>
+          <div id="voice-preview-status" class="text-[10px] mt-1 text-gray-400"></div>
+
+          <!-- 配音音量 -->
+          <div class="mt-2.5">
+            <div class="flex items-center justify-between text-[10px] text-gray-400 mb-1">
+              <span>配音音量</span>
+              <span id="tts-volume-label">100%</span>
+            </div>
+            <input type="range" id="tts-volume" min="20" max="200" value="100" step="10"
+                   class="w-full accent-[#6C5CE7]"
+                   oninput="document.getElementById('tts-volume-label').textContent = this.value + '%'">
+            <div class="flex justify-between text-[10px] text-gray-300 mt-0.5"><span>轻声</span><span>标准</span><span>响亮</span></div>
+          </div>
+          <div id="voice-preview-status" class="text-[10px] text-gray-400 mt-1 min-h-[14px]"></div>
+        </div>
+
+        <!-- 背景配乐 -->
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">背景配乐</label>
+
+          <!-- 模式切换 -->
+          <div class="flex gap-1.5 mb-2.5 p-1 bg-gray-100 rounded-xl">
+            <button type="button" id="bgm-tab-none"
+                    class="flex-1 py-1 rounded-lg text-xs font-semibold transition-all bgm-tab bgm-tab-active">
+              无配乐
+            </button>
+            <button type="button" id="bgm-tab-preset"
+                    class="flex-1 py-1 rounded-lg text-xs font-semibold transition-all bgm-tab">
+              内置曲库
+            </button>
+            <button type="button" id="bgm-tab-upload"
+                    class="flex-1 py-1 rounded-lg text-xs font-semibold transition-all bgm-tab">
+              本地上传
+            </button>
+          </div>
+
+          <!-- 内置曲库面板 -->
+          <div id="bgm-panel-preset" class="hidden space-y-1.5">
+            <div class="grid grid-cols-1 gap-1.5" id="bgm-preset-list">
+              <!-- 动态渲染 -->
+            </div>
+          </div>
+
+          <!-- 本地上传面板 -->
+          <div id="bgm-panel-upload" class="hidden">
+            <label class="flex flex-col items-center justify-center w-full h-16 bg-gray-50 border-2 border-dashed border-gray-200 rounded-xl cursor-pointer hover:border-[#6C5CE7] hover:bg-[#F0EDFF] transition-all">
+              <div class="flex items-center gap-2 text-xs text-gray-400">
+                <i data-lucide="music" class="w-4 h-4"></i>
+                <span id="bgm-upload-label">点击选择 MP3 / WAV 文件</span>
+              </div>
+              <input type="file" id="bgm-file-input" accept="audio/mp3,audio/mpeg,audio/wav,audio/*" class="hidden">
+            </label>
+          </div>
+
+          <!-- 音量控制（有配乐时显示） -->
+          <div id="bgm-volume-row" class="hidden mt-2.5">
+            <div class="flex items-center justify-between text-[10px] text-gray-400 mb-1">
+              <span>配乐音量</span>
+              <span id="bgm-volume-label">15%</span>
+            </div>
+            <input type="range" id="bgm-volume" min="5" max="60" value="15" step="5"
+                   class="w-full accent-[#6C5CE7]"
+                   oninput="document.getElementById('bgm-volume-label').textContent = this.value + '%'">
+            <div class="flex justify-between text-[10px] text-gray-300 mt-0.5"><span>轻柔衬底</span><span>突出配乐</span></div>
+          </div>
+
+          <!-- 已选配乐预览 -->
+          <div id="bgm-selected-info" class="hidden mt-2 flex items-center gap-2 text-xs text-[#6C5CE7] bg-[#F0EDFF] rounded-lg px-3 py-1.5">
+            <i data-lucide="music-2" class="w-3.5 h-3.5 shrink-0"></i>
+            <span id="bgm-selected-name" class="truncate"></span>
+            <button type="button" id="btn-bgm-preview" title="试听" class="ml-auto shrink-0 text-[#6C5CE7] hover:text-purple-800">
+              <i data-lucide="play-circle" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">
+            YouTube Cookie
+            <span class="text-gray-300 font-normal">（下载 YouTube 视频必填，防 bot 验证）</span>
+          </label>
+          <div class="flex gap-2 items-start">
+            <textarea id="vp-yt-cookie" rows="2" placeholder="粘贴 YouTube / Google 的 cookie（Netscape 格式或 header 格式均可）"
+                      class="flex-1 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#6C5CE7] focus:ring-2 focus:ring-[#6C5CE7]/10 transition-all resize-none text-[11px] font-mono"></textarea>
+            <button id="btn-verify-yt-cookie" type="button"
+                    class="shrink-0 bg-gray-100 hover:bg-[#6C5CE7] hover:text-white text-gray-600 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold transition-all whitespace-nowrap mt-0.5">
+              验证
+            </button>
+          </div>
+          <div id="yt-cookie-status" class="text-[10px] mt-1 min-h-[14px]"></div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-gray-500 mb-1.5">小红书 Cookie <span class="text-gray-300 font-normal">（留空则只生成不上传）</span></label>
+          <textarea id="vp-cookie" rows="2" placeholder="可选：填入 xhs cookie 自动上传视频笔记"
+                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#6C5CE7] focus:ring-2 focus:ring-[#6C5CE7]/10 transition-all resize-none text-[11px] font-mono"></textarea>
+        </div>
+
+      </div>
+
+      <button id="btn-gen-video" class="btn-primary w-full py-3 text-sm flex items-center justify-center gap-2 mt-4">
+        <i data-lucide="play" class="w-4 h-4"></i> 生成视频
+      </button>
+    </div>
+
+    <!-- 依赖说明 -->
+    <div class="card p-4">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">所需环境</h2>
+      <div class="space-y-1.5 text-[11px] text-gray-500">
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#6C5CE7] shrink-0"></span>yt-dlp — 视频下载</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#6C5CE7] shrink-0"></span>edge-tts — 中文 TTS 配音</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#6C5CE7] shrink-0"></span>moviepy — 视频剪辑合成</div>
+        <div class="flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-[#6C5CE7] shrink-0"></span>ffmpeg — 视频编解码</div>
+        <code class="block bg-gray-100 rounded-lg px-3 py-2 mt-2 text-[10px] text-gray-600">pip install -r requirements.txt</code>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 右侧：进度 + 定时任务 -->
+  <div class="flex-1 min-w-0 flex flex-col gap-5">
+
+    <!-- 进度区 -->
+    <div class="card p-6" id="progress-card">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-5">流水线进度</h2>
+
+      <!-- 步骤指示器 -->
+      <div class="flex items-start mb-6" id="steps-bar">
+        <div class="flex flex-col items-center">
+          <div class="step-dot" id="step-dot-0">1</div>
+          <div class="step-label" id="step-lbl-0">生成脚本</div>
+        </div>
+        <div class="step-line mt-3.5" id="step-line-0"></div>
+        <div class="flex flex-col items-center">
+          <div class="step-dot" id="step-dot-1">2</div>
+          <div class="step-label" id="step-lbl-1">下载PV</div>
+        </div>
+        <div class="step-line mt-3.5" id="step-line-1"></div>
+        <div class="flex flex-col items-center">
+          <div class="step-dot" id="step-dot-2">3</div>
+          <div class="step-label" id="step-lbl-2">AI匹配</div>
+        </div>
+        <div class="step-line mt-3.5" id="step-line-2"></div>
+        <div class="flex flex-col items-center">
+          <div class="step-dot" id="step-dot-3">4</div>
+          <div class="step-label" id="step-lbl-3">生成配音</div>
+        </div>
+        <div class="step-line mt-3.5" id="step-line-3"></div>
+        <div class="flex flex-col items-center">
+          <div class="step-dot" id="step-dot-4">5</div>
+          <div class="step-label" id="step-lbl-4">视频剪辑</div>
+        </div>
+        <div class="step-line mt-3.5" id="step-line-4"></div>
+        <div class="flex flex-col items-center">
+          <div class="step-dot" id="step-dot-5">6</div>
+          <div class="step-label" id="step-lbl-5">上传小红书</div>
+        </div>
+      </div>
+
+      <!-- 进度条 -->
+      <div class="bg-gray-100 rounded-full h-2 mb-3">
+        <div id="progress-bar" class="h-2 rounded-full transition-all duration-500" style="width:0%;background:linear-gradient(90deg,#6C5CE7,#a29bfe)"></div>
+      </div>
+      <div class="flex justify-between text-xs text-gray-400 mb-4">
+        <span id="progress-text">等待开始</span>
+        <span id="progress-pct">0%</span>
+      </div>
+
+      <!-- AI 匹配指导 -->
+      <div id="match-guide-area" class="hidden mb-4">
+        <div class="text-xs font-semibold text-[#6C5CE7] mb-2">AI 画面匹配指导</div>
+        <div id="match-guide-list" class="space-y-1.5 max-h-48 overflow-y-auto pr-1"></div>
+      </div>
+
+      <!-- 结果 -->
+      <div id="result-area" class="hidden">
+        <div class="bg-[#e8f5e9] border border-[#a5d6a7] rounded-xl p-4 text-sm text-[#2e7d32]">
+          <div class="font-semibold mb-1">视频生成完成！</div>
+          <div id="result-path" class="text-xs font-mono break-all text-gray-600"></div>
+        </div>
+      </div>
+      <div id="error-area" class="hidden">
+        <div class="bg-[#ffebee] border border-[#ef9a9a] rounded-xl p-4 text-sm text-[#c62828]">
+          <div class="font-semibold mb-1">生成失败</div>
+          <div id="error-msg" class="text-xs break-all"></div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 任务历史 -->
+    <div class="card p-5" id="tasks-history">
+      <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">最近任务</h2>
+      <div id="task-list" class="space-y-2 text-sm text-gray-400 text-center py-4">暂无任务</div>
+    </div>
+
+    <!-- 定时任务面板已移除 -->
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  try {
+    // 兼容新格式 videoItems 和旧格式 videoItem
+    let items = [];
+    const rawNew = sessionStorage.getItem('videoItems');
+    const rawOld = sessionStorage.getItem('videoItem');
+    if (rawNew) {
+      sessionStorage.removeItem('videoItems');
+      const payload = JSON.parse(rawNew);
+      items = payload.items || [];
+    } else if (rawOld) {
+      sessionStorage.removeItem('videoItem');
+      items = [JSON.parse(rawOld)];
+    }
+    if (!items.length) return;
+
+    // 单条且来自脚本预览页（含分段配图数据）
+    if (items.length === 1 && items[0]._is_script_preview) {
+      const item = items[0];
+      const gameName = (item.game || item.topic || item.up_name || '').trim();
+      if (gameName) document.getElementById('vp-game').value = gameName;
+      const segs = item.script_segments || [];
+      const content = segs.length
+        ? segs.map(s => s.text || '').filter(Boolean).join('\n')
+        : (item.content || '');
+      if (content) document.getElementById('vp-content').value = content;
+      window._scriptSegmentImages = segs
+        .filter(s => s.image_b64)
+        .map(s => ({ index: s.index, image_b64: s.image_b64 }));
+      return;
+    }
+
+    // 提取游戏名：优先 game 字段，其次 topic/up_name，最后从 title 里取第一个名词
+    function guessGame(item) {
+      if (item.game) return item.game;
+      if (item.topic) return item.topic;
+      if (item.up_name) return item.up_name;
+      // label 清理（去掉 _official/_news/_hot 等后缀）
+      const label = (item.label || '').replace(/_(official|news|hot|funny|meme|all)$/g, '').replace(/_/g, '');
+      if (label && label !== 'gamersky' && label !== 'reddit' && label !== 'domestic' && label !== 'taptap') return label;
+      // 从 title 里尝试提取：取第一个 2-8 字的中文词（通常是游戏名）
+      const title = item.title || '';
+      const m = title.match(/^[\u4e00-\u9fa5a-zA-Z0-9：:·\-]{2,10}/);
+      return (m && m[0]) ? m[0].replace(/[：:·\-].*$/, '').trim() : '';
+    }
+
+    // 单条：直接填游戏名 + title + content
+    if (items.length === 1) {
+      const item = items[0];
+      const gameName = guessGame(item);
+      const content = item.content || [item.title, item.content].filter(Boolean).join('\n\n');
+      if (gameName) document.getElementById('vp-game').value = gameName;
+      if (content)  document.getElementById('vp-content').value = content;
+      return;
+    }
+
+    // 多条：用第一条的游戏名，展示多新闻源面板
+    const gameName = guessGame(items[0]) || guessGame(items[1] || {});
+    if (gameName) document.getElementById('vp-game').value = gameName;
+
+    // 默认合并所有内容到文案框
+    const merged = items.map((it, i) => {
+      const src = it.title ? `【素材${i+1}】${it.title}\n${it.content || ''}` : (it.content || '');
+      return src.trim();
+    }).filter(Boolean).join('\n\n---\n\n');
+    document.getElementById('vp-content').value = merged;
+
+    // 展示多新闻源列表面板
+    const panel = document.getElementById('news-sources-panel');
+    const list  = document.getElementById('news-sources-list');
+    const badge = document.getElementById('news-count-badge');
+    if (!panel || !list) return;
+    badge.textContent = items.length + ' 条';
+    list.innerHTML = items.map((it, i) => `
+      <div class="flex items-start gap-2 p-2 rounded-lg bg-gray-50 border border-gray-100 text-xs">
+        <input type="checkbox" class="news-item-cb mt-0.5 accent-[#6C5CE7] shrink-0" data-idx="${i}" checked>
+        <div class="min-w-0 flex-1">
+          <div class="font-semibold text-gray-700 truncate">${(it.title || '').substring(0,60) || '(无标题)'}</div>
+          <div class="text-gray-400 truncate mt-0.5">${(it.content || '').substring(0,80)}</div>
+        </div>
+      </div>
+    `).join('');
+    panel.classList.remove('hidden');
+
+    // 存起来供"合并为脚本素材"按钮使用
+    window._videoSourceItems = items;
+  } catch(e) { console.warn('videoItems 预填失败:', e); }
+})();
+
+// 合并勾选的新闻源到内容框
+document.getElementById('btn-merge-news')?.addEventListener('click', () => {
+  const items = window._videoSourceItems || [];
+  if (!items.length) return;
+  const checked = Array.from(document.querySelectorAll('.news-item-cb:checked'))
+    .map(cb => items[parseInt(cb.dataset.idx)]).filter(Boolean);
+  if (!checked.length) { alert('请勾选至少一条新闻源'); return; }
+  const merged = checked.map((it, i) => {
+    return `【素材${i+1}】${it.title || ''}\n${it.content || ''}`.trim();
+  }).join('\n\n---\n\n');
+  document.getElementById('vp-content').value = merged;
+});
+
+
+// ── 验证 PV 链接 ─────────────────────────────────────────────
+let _pvLocalPath = '';  // 本地上传后服务器返回的路径
+
+document.getElementById('btn-verify-pv').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-verify-pv');
+  const label = document.getElementById('pv-source-label');
+  const url = document.getElementById('vp-pv-url').value.trim();
+  if (!url) { alert('请先填写 PV 链接'); return; }
+
+  btn.textContent = '验证中...';
+  btn.disabled = true;
+  label.className = 'text-[10px] mt-1 text-gray-400';
+  label.textContent = '正在用 yt-dlp 探测链接...';
+
+  try {
+    const resp = await fetch('/api/verify_pv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, yt_cookies: document.getElementById('vp-yt-cookie').value.trim() }),
+    });
+    const data = await resp.json();
+    if (data.status === 'ok') {
+      label.textContent = `✓ 可下载：${data.title}${data.duration ? '  ' + data.duration : ''}`;
+      label.className = 'text-[10px] mt-1 text-green-600';
+      // 验证成功：提示框变绿，但本地上传仍保留
+      const hint = document.getElementById('pv-cookie-hint');
+      const hintText = document.getElementById('pv-cookie-hint-text');
+      if (hint && hintText) {
+        hint.className = 'flex items-start gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-xl text-[10px] text-green-700 leading-relaxed';
+        hintText.textContent = '✓ 链接可直接下载。也可上传本地视频优先使用。';
+      }
+      _pvLocalPath = '';
+    } else {
+      label.textContent = `✗ 无法下载：${data.message}`;
+      label.className = 'text-[10px] mt-1 text-red-500';
+      // 验证失败：提示框变红
+      const hint = document.getElementById('pv-cookie-hint');
+      const hintText = document.getElementById('pv-cookie-hint-text');
+      if (hint && hintText) {
+        hint.className = 'flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[10px] text-red-700 leading-relaxed';
+        hintText.textContent = data.message.includes('bot') || data.message.includes('Cookie')
+          ? '下载失败，YouTube 需要 Cookie 验证。请在下方「YouTube Cookie」栏粘贴后重试，或直接上传本地视频。'
+          : '链接无法下载，请检查链接或直接上传本地视频。';
+      }
+    }
+  } catch(e) {
+    label.className = 'text-[10px] mt-1 text-red-500';
+    label.textContent = e.message.includes('JSON') ? '✗ 服务未启动，请运行 python app.py 后刷新页面' : '✗ 验证出错：' + e.message;
+    const hint = document.getElementById('pv-cookie-hint');
+    if (hint) hint.className = 'flex items-start gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-[10px] text-red-700 leading-relaxed';
+  } finally {
+    btn.textContent = '验证';
+    btn.disabled = false;
+  }
+});
+
+// ── 本地视频上传 ──────────────────────────────────────────────
+document.getElementById('pv-file-input').addEventListener('change', async function() {
+  const file = this.files[0];
+  if (!file) return;
+  const status = document.getElementById('pv-upload-status');
+  const uploadLabel = document.getElementById('pv-upload-label');
+  status.textContent = '上传中...';
+  status.className = 'text-[10px] mt-1 text-gray-400';
+  status.classList.remove('hidden');
+
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const resp = await fetch('/api/upload_pv', { method: 'POST', body: fd });
+    const data = await resp.json();
+    if (data.status === 'ok') {
+      _pvLocalPath = data.path;
+      uploadLabel.textContent = '✓ ' + file.name;
+      status.textContent = '上传成功，将使用此视频作为背景';
+      status.className = 'text-[10px] mt-1 text-green-600';
+      document.getElementById('pv-source-label').textContent = '使用本地文件：' + file.name;
+      document.getElementById('pv-source-label').className = 'text-[10px] mt-1 text-green-600';
+    } else {
+      status.textContent = '上传失败：' + data.message;
+      status.className = 'text-[10px] mt-1 text-red-500';
+    }
+  } catch(e) {
+    status.textContent = '上传出错：' + e.message;
+    status.className = 'text-[10px] mt-1 text-red-500';
+  }
+});
+
+// ── 自动搜索 PV ─────────────────────────────────────────────
+document.getElementById('btn-search-pv').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-search-pv');
+  const label = document.getElementById('pv-source-label');
+  const gameName = document.getElementById('vp-game').value.trim();
+  if (!gameName) { alert('请先填写游戏名称'); return; }
+
+  btn.textContent = '搜索中...';
+  btn.disabled = true;
+  label.className = 'text-[10px] mt-1 text-gray-400';
+  label.textContent = 'B站优先 → YouTube备选，请稍候...';
+  label.classList.remove('hidden');
+
+  try {
+    const resp = await fetch('/api/search_pv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ game_name: gameName }),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message || '搜索失败');
+    if (data.url) {
+      document.getElementById('vp-pv-url').value = data.url;
+      const src = data.source === 'bilibili' ? 'B站 ✓' : data.source === 'youtube' ? 'YouTube ✓' : data.source;
+      label.textContent = `来源：${src}`;
+      label.className = 'text-[10px] mt-1 text-green-600';
+    } else {
+      label.textContent = '未找到 PV，请手动输入 URL 后点验证，或留空使用纯色背景';
+      label.className = 'text-[10px] mt-1 text-orange-500';
+    }
+  } catch(e) {
+    label.textContent = '搜索出错：' + e.message;
+    label.className = 'text-[10px] mt-1 text-red-500';
+  } finally {
+    btn.textContent = '搜索';
+    btn.disabled = false;
+  }
+});
+
+// ── 验证 YouTube Cookie ───────────────────────────────────────
+document.getElementById('btn-verify-yt-cookie').addEventListener('click', async () => {
+  const btn = document.getElementById('btn-verify-yt-cookie');
+  const status = document.getElementById('yt-cookie-status');
+  const cookieText = document.getElementById('vp-yt-cookie').value.trim();
+  if (!cookieText) {
+    status.textContent = '请先粘贴 Cookie 内容';
+    status.className = 'text-[10px] mt-1 text-orange-500';
+    return;
+  }
+
+  btn.textContent = '验证中...';
+  btn.disabled = true;
+  status.textContent = '正在用 Cookie 探测 YouTube...';
+  status.className = 'text-[10px] mt-1 text-gray-400';
+
+  // 用一个公开的 YouTube 短视频做探测
+  const testUrl = 'https://www.youtube.com/watch?v=BaW_jenozKc';
+  try {
+    const resp = await fetch('/api/verify_pv', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: testUrl, yt_cookies: cookieText }),
+    });
+    const data = await resp.json();
+    if (data.status === 'ok') {
+      status.textContent = '✓ Cookie 有效，YouTube 访问正常';
+      status.className = 'text-[10px] mt-1 text-green-600';
+    } else {
+      const msg = data.message || '验证失败';
+      if (msg.includes('bot') || msg.includes('Sign in') || msg.includes('Cookie')) {
+        status.textContent = '✗ Cookie 已失效，请重新导出并粘贴';
+      } else {
+        status.textContent = '✗ ' + msg;
+      }
+      status.className = 'text-[10px] mt-1 text-red-500';
+    }
+  } catch(e) {
+    status.textContent = '验证出错：' + e.message;
+    status.className = 'text-[10px] mt-1 text-red-500';
+  } finally {
+    btn.textContent = '验证';
+    btn.disabled = false;
+  }
+});
+
+const STAGE_MAP = {
+  'queued': -1,
+  'parse_script': 0,
+  'generate_script': 0,
+  'download_pv': 1,
+  'match_pv_scenes': 2,
+  'generate_tts': 3,
+  'edit_video': 4,
+  'upload_xhs': 5,
+  'done': 6,
+};
+
+let _pollTimer = null;
+let _taskHistory = [];
+
+function setStep(stageKey, progress) {
+  const stageIdx = STAGE_MAP[stageKey] ?? -1;
+  for (let i = 0; i < 6; i++) {
+    const dot = document.getElementById(`step-dot-${i}`);
+    const lbl = document.getElementById(`step-lbl-${i}`);
+    if (i < stageIdx) {
+      dot.className = 'step-dot done'; lbl.className = 'step-label done';
+    } else if (i === stageIdx) {
+      dot.className = 'step-dot active'; lbl.className = 'step-label active';
+    } else {
+      dot.className = 'step-dot'; lbl.className = 'step-label';
+    }
+    if (i < 5) {
+      const line = document.getElementById(`step-line-${i}`);
+      line.className = i < stageIdx ? 'step-line done' : 'step-line';
+    }
+  }
+  document.getElementById('progress-bar').style.width = progress + '%';
+  document.getElementById('progress-pct').textContent = progress + '%';
+}
+
+function pollTask(taskId) {
+  _pollTimer = setInterval(async () => {
+    try {
+      const resp = await fetch('/api/video_status/' + taskId);
+      if (resp.status === 404) {
+        // 任务不存在（服务重启导致内存状态丢失，且磁盘也无记录）
+        clearInterval(_pollTimer);
+        document.getElementById('error-area').classList.remove('hidden');
+        document.getElementById('error-msg').textContent = '任务状态丢失（服务已重启）。请检查 video_outputs/' + taskId + '/ 目录，若 final_output.mp4 存在则视频已生成完成。';
+        document.getElementById('btn-gen-video').disabled = false;
+        updateTaskHistory(taskId, 'failed', { game_name: '' });
+        return;
+      }
+      const data = await resp.json();
+      if (data.status !== 'ok') return;
+      const task = data.task;
+      setStep(task.stage, task.progress || 0);
+      document.getElementById('progress-text').textContent = task.stage || '';
+
+      // 展示 AI 匹配指导
+      if (task.pv_match_guide && task.pv_match_guide.length > 0) {
+        const guideArea = document.getElementById('match-guide-area');
+        const guideList = document.getElementById('match-guide-list');
+        guideArea.classList.remove('hidden');
+        guideList.innerHTML = task.pv_match_guide.map(m => `
+          <div class="flex items-start gap-2 text-[11px] bg-[#f5f3ff] rounded-lg px-3 py-2">
+            <span class="text-[#6C5CE7] font-bold flex-shrink-0">段${m.segment}</span>
+            <span class="text-gray-600 flex-1 min-w-0 truncate" title="${m.text}">${m.text}</span>
+            <span class="text-gray-400 flex-shrink-0">→ ${m.pv_time}s</span>
+            <span class="text-[#00B894] flex-shrink-0">${m.reason}</span>
+          </div>
+        `).join('');
+      }
+
+      if (task.status === 'completed') {
+        clearInterval(_pollTimer);
+        document.getElementById('result-area').classList.remove('hidden');
+        document.getElementById('result-path').textContent = task.output_path || '文件已生成';
+        setStep('done', 100);
+        document.getElementById('btn-gen-video').disabled = false;
+        updateTaskHistory(taskId, 'completed', task);
+      } else if (task.status === 'failed') {
+        clearInterval(_pollTimer);
+        document.getElementById('error-area').classList.remove('hidden');
+        document.getElementById('error-msg').textContent = task.error || '未知错误';
+        document.getElementById('btn-gen-video').disabled = false;
+        updateTaskHistory(taskId, 'failed', task);
+      }
+    } catch(e) { /* 忽略轮询错误 */ }
+  }, 3000);
+}
+
+function updateTaskHistory(taskId, status, task) {
+  _taskHistory.unshift({ taskId, status, game: task.game_name, ts: new Date().toLocaleTimeString() });
+  if (_taskHistory.length > 5) _taskHistory.pop();
+  renderTaskHistory();
+}
+
+function renderTaskHistory() {
+  const el = document.getElementById('task-list');
+  if (!_taskHistory.length) { el.textContent = '暂无任务'; return; }
+  el.innerHTML = _taskHistory.map(t => `
+    <div class="flex items-center justify-between text-xs py-1.5 border-b border-gray-50">
+      <span class="text-gray-600 font-mono">${t.taskId}</span>
+      <span class="text-gray-500">${t.game}</span>
+      <span class="${t.status === 'completed' ? 'text-green-500' : t.status === 'failed' ? 'text-red-400' : 'text-[#6C5CE7]'} font-semibold">${t.status}</span>
+      <span class="text-gray-400">${t.ts}</span>
+    </div>
+  `).join('');
+}
+
+document.getElementById('btn-gen-video').addEventListener('click', async () => {
+  const gameName = document.getElementById('vp-game').value.trim() || '原神';
+  const content = document.getElementById('vp-content').value.trim();
+  const pvUrl = document.getElementById('vp-pv-url').value.trim();
+  const duration = parseInt(document.getElementById('vp-duration').value, 10);
+  const cookie = document.getElementById('vp-cookie').value.trim();
+  const voice = document.getElementById('vp-voice').value;
+  const ttsVolume = parseInt(document.getElementById('tts-volume').value, 10) / 100;
+
+  // 背景配乐
+  let bgmB64 = '';
+  let bgmVolume = parseInt(document.getElementById('bgm-volume').value, 10) / 100;
+  if (_bgmData && _bgmData.startsWith('__preset__')) {
+    // 预设：通过 URL fetch 转 base64
+    try {
+      const presetUrl = _bgmData.replace('__preset__', '');
+      const resp = await fetch(presetUrl);
+      if (resp.ok) {
+        const blob = await resp.blob();
+        bgmB64 = await new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = e => resolve(e.target.result);
+          r.onerror = reject;
+          r.readAsDataURL(blob);
+        });
+      }
+    } catch(e) {
+      console.warn('预设音乐加载失败，忽略配乐:', e);
+    }
+  } else if (_bgmData && _bgmData.startsWith('data:')) {
+    bgmB64 = _bgmData;
+  }
+
+  if (!content) { alert('请填写内容文案'); return; }
+
+  document.getElementById('btn-gen-video').disabled = true;
+  document.getElementById('result-area').classList.add('hidden');
+  document.getElementById('error-area').classList.add('hidden');
+  clearInterval(_pollTimer);
+  setStep('queued', 0);
+  document.getElementById('progress-text').textContent = '提交中...';
+
+  try {
+    const segmentImages = window._scriptSegmentImages || [];
+    const resp = await fetch('/api/video_pipeline', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ game_name: gameName, content, pv_url: pvUrl, duration_secs: duration, xhs_cookie: cookie, segment_images: segmentImages, voice, bgm_b64: bgmB64, bgm_volume: bgmVolume, tts_volume: ttsVolume, pv_local_path: _pvLocalPath || '', yt_cookies: document.getElementById('vp-yt-cookie').value.trim() })
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+    document.getElementById('progress-text').textContent = '任务已创建：' + data.task_id;
+    pollTask(data.task_id);
+    _taskHistory.unshift({ taskId: data.task_id, status: 'running', game: gameName, ts: new Date().toLocaleTimeString() });
+    renderTaskHistory();
+  } catch(e) {
+    document.getElementById('btn-gen-video').disabled = false;
+    document.getElementById('error-area').classList.remove('hidden');
+    document.getElementById('error-msg').textContent = e.message;
+  }
+});
+
+// ── 背景配乐逻辑 ─────────────────────────────────────────────
+const BGM_PRESETS = [
+  { id: 'lofi_chill',    name: 'Lo-Fi 轻松',   desc: '温柔钢琴·适合日常资讯',   emoji: '🎹' },
+  { id: 'epic_game',     name: '史诗游戏',       desc: '激昂节奏·适合大作宣传',   emoji: '⚔️' },
+  { id: 'anime_sparkle', name: '二次元闪亮',    desc: '轻快电音·适合二次元内容', emoji: '✨' },
+  { id: 'tech_pulse',    name: '科技节拍',       desc: '电子律动·适合科技/新游',  emoji: '🎮' },
+  { id: 'cozy_cafe',     name: '咖啡厅氛围',    desc: '轻柔氛围·适合测评/评分',  emoji: '☕' },
+];
+
+let _bgmMode = 'none';
+let _bgmData = null;
+let _bgmName = '';
+let _bgmAudio = new Audio();
+let _bgmPlayingId = null;
+let _audioCtx = null;
+let _synthNodes = [];  // 当前合成音源节点列表，用于停止
+
+// ── Web Audio 合成预设 ──────────────────────────────────────
+// 每种预设用振荡器+滤波器合成短循环音效，不依赖任何外部文件
+const BGM_SYNTH = {
+  lofi_chill: (ctx) => {
+    // 温柔钢琴感：正弦波 + 低通滤波 + 缓慢音量包络
+    const notes = [261.6, 329.6, 392, 329.6, 261.6, 220, 261.6, 293.6];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass'; filter.frequency.value = 1200;
+      osc.type = 'sine'; osc.frequency.value = freq;
+      osc.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+      const t = ctx.currentTime + i * 0.5;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.12, t + 0.05);
+      gain.gain.linearRampToValueAtTime(0, t + 0.45);
+      osc.start(t); osc.stop(t + 0.5);
+      _synthNodes.push(osc);
+    });
+  },
+  epic_game: (ctx) => {
+    // 激昂：锯齿波 + 低音鼓点脉冲
+    const chords = [[130.8, 164.8, 196], [146.8, 185, 220], [130.8, 164.8, 196]];
+    chords.forEach((chord, ci) => {
+      chord.forEach(freq => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.value = freq;
+        osc.connect(gain); gain.connect(ctx.destination);
+        const t = ctx.currentTime + ci * 0.8;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.08, t + 0.02);
+        gain.gain.linearRampToValueAtTime(0, t + 0.7);
+        osc.start(t); osc.stop(t + 0.8);
+        _synthNodes.push(osc);
+      });
+      // 鼓点噪声
+      const buf = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let j = 0; j < d.length; j++) d[j] = (Math.random() * 2 - 1) * (1 - j / d.length);
+      const src = ctx.createBufferSource();
+      const g = ctx.createGain(); g.gain.value = 0.25;
+      src.buffer = buf; src.connect(g); g.connect(ctx.destination);
+      src.start(ctx.currentTime + ci * 0.8);
+      _synthNodes.push(src);
+    });
+  },
+  anime_sparkle: (ctx) => {
+    // 轻快电音：方波高音 + 快速琶音
+    const scale = [523.2, 659.2, 784, 1046.5, 784, 659.2, 523.2, 440];
+    scale.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square'; osc.frequency.value = freq;
+      osc.connect(gain); gain.connect(ctx.destination);
+      const t = ctx.currentTime + i * 0.18;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.07, t + 0.02);
+      gain.gain.linearRampToValueAtTime(0, t + 0.15);
+      osc.start(t); osc.stop(t + 0.18);
+      _synthNodes.push(osc);
+    });
+  },
+  tech_pulse: (ctx) => {
+    // 电子节拍：方波 + 固定节拍脉冲
+    [0, 0.25, 0.5, 0.75].forEach(offset => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'square'; osc.frequency.value = offset === 0 || offset === 0.5 ? 110 : 220;
+      osc.connect(gain); gain.connect(ctx.destination);
+      const t = ctx.currentTime + offset;
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.15, t + 0.01);
+      gain.gain.linearRampToValueAtTime(0, t + 0.18);
+      osc.start(t); osc.stop(t + 0.25);
+      _synthNodes.push(osc);
+    });
+  },
+  cozy_cafe: (ctx) => {
+    // 轻柔氛围：三角波和弦 + 混响感（多层微调）
+    [[220, 277.2, 330], [196, 246.9, 293.7]].forEach((chord, ci) => {
+      chord.forEach((freq, fi) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq + fi * 0.3; // 微调制造空间感
+        osc.connect(gain); gain.connect(ctx.destination);
+        const t = ctx.currentTime + ci * 1.2;
+        gain.gain.setValueAtTime(0, t);
+        gain.gain.linearRampToValueAtTime(0.09, t + 0.3);
+        gain.gain.linearRampToValueAtTime(0, t + 1.1);
+        osc.start(t); osc.stop(t + 1.2);
+        _synthNodes.push(osc);
+      });
+    });
+  },
+};
+
+function _stopSynth() {
+  _synthNodes.forEach(n => { try { n.stop(); } catch(e) {} });
+  _synthNodes = [];
+}
+
+function _playSynth(id) {
+  _stopSynth();
+  if (!_audioCtx) _audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (_audioCtx.state === 'suspended') _audioCtx.resume();
+  const fn = BGM_SYNTH[id];
+  if (fn) fn(_audioCtx);
+}
+
+function renderBgmPresets() {
+  const list = document.getElementById('bgm-preset-list');
+  list.innerHTML = BGM_PRESETS.map(p => `
+    <div class="bgm-preset-item" data-id="${p.id}" onclick="selectPreset('${p.id}')">
+      <span class="text-lg">${p.emoji}</span>
+      <div class="flex-1 min-w-0">
+        <div class="text-xs font-semibold text-gray-700">${p.name}</div>
+        <div class="text-[10px] text-gray-400 truncate">${p.desc}</div>
+      </div>
+      <button type="button" id="bgm-play-btn-${p.id}" onclick="event.stopPropagation();previewPreset('${p.id}')"
+              class="shrink-0 text-gray-400 hover:text-[#6C5CE7] transition-all" title="试听">
+        <i data-lucide="play-circle" class="w-4 h-4"></i>
+      </button>
+    </div>
+  `).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+// 播放结束时重置按钮图标
+_bgmAudio.addEventListener('ended', () => _resetBgmPlayBtn());
+_bgmAudio.addEventListener('pause',  () => _resetBgmPlayBtn());
+
+function _resetBgmPlayBtn() {
+  if (_bgmPlayingId) {
+    const btn = document.getElementById('bgm-play-btn-' + _bgmPlayingId);
+    if (btn) { btn.innerHTML = '<i data-lucide="play-circle" class="w-4 h-4"></i>'; if (window.lucide) lucide.createIcons(); }
+  }
+  _bgmPlayingId = null;
+}
+
+function switchBgmTab(mode) {
+  _bgmMode = mode;
+  ['none','preset','upload'].forEach(m => {
+    document.getElementById('bgm-tab-' + m).classList.toggle('bgm-tab-active', m === mode);
+  });
+  document.getElementById('bgm-panel-preset').classList.toggle('hidden', mode !== 'preset');
+  document.getElementById('bgm-panel-upload').classList.toggle('hidden', mode !== 'upload');
+  if (mode === 'none') {
+    _bgmData = null; _bgmName = '';
+    document.getElementById('bgm-selected-info').classList.add('hidden');
+    document.getElementById('bgm-volume-row').classList.add('hidden');
+    stopBgmPreview();
+  }
+}
+
+function selectPreset(id) {
+  const preset = BGM_PRESETS.find(p => p.id === id);
+  if (!preset) return;
+  document.querySelectorAll('.bgm-preset-item').forEach(el => {
+    el.classList.toggle('selected', el.dataset.id === id);
+  });
+  _bgmData = '__preset__' + preset.url;
+  _bgmName = preset.emoji + ' ' + preset.name;
+  showBgmSelected(_bgmName);
+}
+
+function showBgmSelected(name) {
+  document.getElementById('bgm-selected-name').textContent = name;
+  document.getElementById('bgm-selected-info').classList.remove('hidden');
+  document.getElementById('bgm-volume-row').classList.remove('hidden');
+  if (window.lucide) lucide.createIcons();
+}
+
+// 试听预设 —— Web Audio 合成，无需文件
+function previewPreset(id) {
+  const btn = document.getElementById('bgm-play-btn-' + id);
+
+  if (_bgmPlayingId === id) {
+    // 再次点击：停止
+    _stopSynth();
+    _bgmPlayingId = null;
+    if (btn) { btn.innerHTML = '<i data-lucide="play-circle" class="w-4 h-4"></i>'; if (window.lucide) lucide.createIcons(); }
+    return;
+  }
+
+  // 停止上一首
+  _stopSynth();
+  if (_bgmPlayingId) _resetBgmPlayBtn();
+
+  _bgmPlayingId = id;
+  _playSynth(id);
+  if (btn) { btn.innerHTML = '<i data-lucide="pause-circle" class="w-4 h-4 text-[#6C5CE7]"></i>'; if (window.lucide) lucide.createIcons(); }
+
+  // 合成音短，1.8s 后自动重置图标
+  setTimeout(() => {
+    if (_bgmPlayingId === id) {
+      _bgmPlayingId = null;
+      if (btn) { btn.innerHTML = '<i data-lucide="play-circle" class="w-4 h-4"></i>'; if (window.lucide) lucide.createIcons(); }
+    }
+  }, 1800);
+}
+
+function stopBgmPreview() {
+  _stopSynth();
+  _bgmAudio.pause();
+  _bgmAudio.src = '';
+  _resetBgmPlayBtn();
+}
+
+// 文件上传
+document.getElementById('bgm-file-input').addEventListener('change', function() {
+  const file = this.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    _bgmData = e.target.result; // data:audio/...;base64,...
+    _bgmName = '📁 ' + file.name;
+    document.getElementById('bgm-upload-label').textContent = file.name;
+    showBgmSelected(_bgmName);
+    // 预填播放器供"已选配乐试听"按钮使用
+    stopBgmPreview();
+    _bgmAudio.src = _bgmData;
+  };
+  reader.readAsDataURL(file);
+});
+
+// 已选配乐试听按钮（bgm-selected-info 里的按钮）
+document.getElementById('btn-bgm-preview').addEventListener('click', () => {
+  if (!_bgmAudio.src) return;
+  if (_bgmAudio.paused) {
+    _bgmAudio.volume = 0.6;
+    _bgmAudio.play().catch(() => {});
+  } else {
+    _bgmAudio.pause();
+  }
+});
+
+// Tab 切换绑定
+document.getElementById('bgm-tab-none').addEventListener('click', () => switchBgmTab('none'));
+document.getElementById('bgm-tab-preset').addEventListener('click', () => { switchBgmTab('preset'); renderBgmPresets(); });
+document.getElementById('bgm-tab-upload').addEventListener('click', () => switchBgmTab('upload'));
+
+// 初始渲染
+renderBgmPresets();
+
+document.getElementById('btn-voice-preview').addEventListener('click', async () => {
+  const btn    = document.getElementById('btn-voice-preview');
+  const status = document.getElementById('voice-preview-status');
+  const audio  = document.getElementById('voice-preview-audio');
+  const voice  = document.getElementById('vp-voice').value;
+  // 试听文本：优先取文案框前 40 字，否则用示例句
+  const rawText = document.getElementById('vp-content').value.trim();
+  const text = rawText ? rawText.substring(0, 40) : '游戏雷达局，情报已送达！今日有大量新情报等你来看！';
+
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> 生成中...';
+  if (window.lucide) lucide.createIcons();
+  status.textContent = '正在生成试听音频...';
+  audio.classList.add('hidden');
+
+  try {
+    const resp = await fetch('/api/tts_preview', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, voice }),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message);
+    audio.src = 'data:audio/mpeg;base64,' + data.audio_b64;
+    audio.classList.remove('hidden');
+    audio.play();
+    status.textContent = '';
+  } catch(e) {
+    status.textContent = '试听失败：' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="play-circle" class="w-3.5 h-3.5"></i> 试听';
+    if (window.lucide) lucide.createIcons();
+  }
+});
+
+// 切换声音时隐藏上一次的试听播放器
+document.getElementById('vp-voice').addEventListener('change', () => {
+  const audio = document.getElementById('voice-preview-audio');
+  audio.pause();
+  audio.src = '';
+  audio.classList.add('hidden');
+  document.getElementById('voice-preview-status').textContent = '';
+});
+
+// ── Steam 一键生成逻辑 ──────────────────────────────────────
+const PROMO_STAGE_STEPS = {
+  'fetch_steam':      'promo-step-fetch',
+  'search_reviews':   'promo-step-search',
+  'generate_script':  'promo-step-script',
+  'parse_script':     'promo-step-script',
+  'download_pv':      'promo-step-pv',
+  'generate_tts':     'promo-step-tts',
+  'match_pv_scenes':  'promo-step-tts',
+  'edit_video':       'promo-step-edit',
+  'done':             'promo-step-edit',
+};
+
+let _promoTimer = null;
+let _promoCachedSteamInfo = null;  // 文案生成后缓存 steam_info 供视频生成使用
+
+function _promoSetStep(stageKey, progress) {
+  const activeId = PROMO_STAGE_STEPS[stageKey];
+  const allIds = ['promo-step-fetch','promo-step-search','promo-step-script','promo-step-pv','promo-step-tts','promo-step-edit'];
+  let found = false;
+  for (const id of allIds) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    if (id === activeId && !found) {
+      found = true;
+      el.className = 'px-1.5 py-0.5 rounded-full bg-[#FFF5E0] text-[#E08E0B] font-bold';
+    } else if (!found) {
+      el.className = 'px-1.5 py-0.5 rounded-full bg-green-100 text-green-600 font-semibold';
+    } else {
+      el.className = 'px-1.5 py-0.5 rounded-full bg-gray-100 text-gray-400';
+    }
+  }
+  document.getElementById('promo-prog-bar').style.width = progress + '%';
+  document.getElementById('promo-pct-text').textContent = progress + '%';
+}
+
+function _promoPoll(taskId) {
+  _promoTimer = setInterval(async () => {
+    try {
+      const resp = await fetch('/api/video_status/' + taskId);
+      if (!resp.ok) return;
+      const data = await resp.json();
+      if (data.status !== 'ok') return;
+      const task = data.task;
+      _promoSetStep(task.stage, task.progress || 0);
+      document.getElementById('promo-stage-text').textContent = task.stage || '处理中...';
+
+      if (task.status === 'completed') {
+        clearInterval(_promoTimer);
+        _promoSetStep('done', 100);
+        document.getElementById('promo-stage-text').textContent = '完成！';
+        const resultArea = document.getElementById('promo-result-area');
+        resultArea.classList.remove('hidden');
+        const outPath = task.output_path || '';
+        document.getElementById('promo-result-path').textContent = outPath;
+        const parts = outPath.replace(/\\/g, '/').split('/');
+        const tidx = parts.indexOf('video_outputs');
+        if (tidx >= 0 && parts[tidx+1]) {
+          const tid = parts[tidx+1];
+          document.getElementById('promo-download-link').href = '/video_outputs/' + tid + '/final_output.mp4';
+        }
+        if (window.lucide) lucide.createIcons();
+        document.getElementById('btn-promo-generate').disabled = false;
+      } else if (task.status === 'failed') {
+        clearInterval(_promoTimer);
+        document.getElementById('promo-error-area').classList.remove('hidden');
+        document.getElementById('promo-error-msg').textContent = task.error || '未知错误';
+        document.getElementById('btn-promo-generate').disabled = false;
+      }
+    } catch(e) { /* 忽略轮询错误 */ }
+  }, 3000);
+}
+
+// ── 阶段1：生成文案预览 ──
+async function startPromoScript() {
+  const steamUrl = document.getElementById('promo-steam-url').value.trim();
+  const gameName = document.getElementById('promo-game-name').value.trim();
+  const statusEl = document.getElementById('promo-script-status');
+
+  if (!steamUrl || !steamUrl.includes('steampowered.com')) {
+    statusEl.textContent = '请填写正确的 Steam 商店链接';
+    statusEl.className = 'text-[11px] text-red-500 text-center';
+    return;
+  }
+
+  const btn = document.getElementById('btn-promo-gen-script');
+  btn.disabled = true;
+  btn.innerHTML = '<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i> 生成中（约15-30秒）...';
+  if (window.lucide) lucide.createIcons();
+  statusEl.textContent = '正在联网搜索游戏信息和评测...';
+  statusEl.className = 'text-[11px] text-gray-400 text-center';
+
+  try {
+    const resp = await fetch('/api/game_promo_script', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ steam_url: steamUrl, game_name: gameName }),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message || '生成失败');
+
+    // 展示文案预览
+    document.getElementById('promo-script-preview').value = data.script;
+    _promoCachedSteamInfo = data.steam_info || null;
+    document.getElementById('promo-step1').classList.add('hidden');
+    document.getElementById('promo-step2').classList.remove('hidden');
+    if (window.lucide) lucide.createIcons();
+    statusEl.textContent = '';
+  } catch(e) {
+    statusEl.textContent = '生成失败：' + e.message;
+    statusEl.className = 'text-[11px] text-red-500 text-center';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 生成文案预览';
+    if (window.lucide) lucide.createIcons();
+  }
+}
+
+// ── 重新生成文案 ──
+function regenPromoScript() {
+  document.getElementById('promo-step2').classList.add('hidden');
+  document.getElementById('promo-step1').classList.remove('hidden');
+  document.getElementById('promo-script-status').textContent = '';
+  _promoCachedSteamInfo = null;
+}
+
+// ── 阶段2：用确认后的文案生成视频 ──
+async function startPromoVideo() {
+  const script = document.getElementById('promo-script-preview').value.trim();
+  const voice  = document.getElementById('promo-voice').value;
+  const bgmVol = parseInt(document.getElementById('promo-bgm-vol').value, 10) / 100;
+  const steamUrl = document.getElementById('promo-steam-url').value.trim();
+  const gameName = document.getElementById('promo-game-name').value.trim();
+
+  if (!script) { alert('文案不能为空'); return; }
+
+  document.getElementById('btn-promo-generate').disabled = true;
+  document.getElementById('promo-result-area').classList.add('hidden');
+  document.getElementById('promo-error-area').classList.add('hidden');
+  document.getElementById('promo-progress-area').classList.remove('hidden');
+  document.getElementById('promo-stage-text').textContent = '正在提交任务...';
+  clearInterval(_promoTimer);
+
+  try {
+    const resp = await fetch('/api/game_promo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        steam_url: steamUrl, game_name: gameName,
+        script_override: script,
+        voice, bgm_volume: bgmVol
+      }),
+    });
+    const data = await resp.json();
+    if (data.status !== 'ok') throw new Error(data.message || '提交失败');
+    document.getElementById('promo-stage-text').textContent = '任务已创建：' + data.task_id;
+    _promoPoll(data.task_id);
+  } catch(e) {
+    document.getElementById('promo-error-area').classList.remove('hidden');
+    document.getElementById('promo-error-msg').textContent = e.message;
+    document.getElementById('btn-promo-generate').disabled = false;
+  }
+}
+</script>
+{% endblock %}

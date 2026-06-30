@@ -1,0 +1,40 @@
+{
+  "_comment": "封面模板布局示例。和模板 PNG 同名同目录, 比如 dark_steam.png 配 dark_steam.json。坐标单位是像素, 原点在左上角。",
+  "size": [1080, 1440],
+
+  "_title_text_comment": "标题文字位置和样式 (anchor=mm 表示 x,y 是文字中心点)",
+  "title_text": {
+    "x": 540,
+    "y": 200,
+    "size": 110,
+    "max_width": 920,
+    "color": "#FFFFFF",
+    "stroke_color": "#000000",
+    "stroke_width": 4,
+    "anchor": "mm"
+  },
+
+  "_subtitle_text_comment": "副标题位置 (没有就设为 null)",
+  "subtitle_text": {
+    "x": 540,
+    "y": 1320,
+    "size": 48,
+    "color": "#FFFFFF",
+    "stroke_color": "#000000",
+    "stroke_width": 2,
+    "anchor": "mm"
+  },
+
+  "_grid_comment": "游戏拼图网格区域",
+  "grid": {
+    "x": 60,
+    "y": 380,
+    "w": 960,
+    "h": 880,
+    "padding": 24,
+    "corner_radius": 24
+  },
+
+  "_label_overlay_comment": "是否在每张游戏图底部叠半透明黑条 + 游戏名",
+  "label_overlay": true
+}

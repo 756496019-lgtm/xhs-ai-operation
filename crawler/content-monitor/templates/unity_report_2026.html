@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unity 2026 游戏开发报告解读</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&family=Noto+Serif+SC:wght@400;600;700&family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html-to-image/1.11.11/html-to-image.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: #0D1520;
+  font-family: 'Noto Sans SC', sans-serif;
+  min-height: 100vh;
+}
+
+/* ── 顶部工具栏 ── */
+#top-bar {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: 54px;
+  background: rgba(8,14,26,0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(232,130,12,0.2);
+  display: flex; align-items: center; padding: 0 24px; gap: 12px;
+}
+#top-bar .logo {
+  font-size: 12px; font-weight: 800; color: #E8820C;
+  letter-spacing: 0.12em; font-family: 'Inter', sans-serif; margin-right: 4px;
+}
+#top-bar .hint { font-size: 11px; color: #3A5070; flex: 1; }
+.tbtn {
+  border: none; border-radius: 8px;
+  padding: 7px 16px; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: 'Noto Sans SC', sans-serif;
+  transition: all 0.2s; white-space: nowrap;
+}
+.tbtn-primary { background: #E8820C; color: #fff; }
+.tbtn-primary:hover { background: #d4720a; }
+.tbtn-ghost { background: #1A2840; color: #8899AA; border: 1px solid #243650; }
+.tbtn-ghost:hover { color: #E8820C; border-color: #E8820C; }
+
+/* ── 主区域两栏 ── */
+#main {
+  display: flex;
+  padding-top: 54px;
+  min-height: 100vh;
+}
+
+/* 左侧：章节列表 */
+#sidebar {
+  width: 220px; flex-shrink: 0;
+  background: #0A1220;
+  border-right: 1px solid #1A2840;
+  padding: 20px 0;
+  position: sticky; top: 54px; height: calc(100vh - 54px);
+  overflow-y: auto;
+}
+#sidebar h3 {
+  font-size: 10px; font-weight: 700; color: #3A5070;
+  letter-spacing: 0.12em; text-transform: uppercase;
+  padding: 0 16px 10px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 16px; cursor: pointer;
+  transition: all 0.15s; border-left: 2px solid transparent;
+}
+.nav-item:hover { background: #111E30; border-left-color: #E8820C; }
+.nav-item.active { background: #131E2E; border-left-color: #E8820C; }
+.nav-dot {
+  width: 22px; height: 22px; border-radius: 4px; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; font-weight: 800; font-family: 'Inter', sans-serif; color: #fff;
+}
+.nav-text { font-size: 12px; color: #6A8AAA; line-height: 1.4; }
+.nav-item.active .nav-text { color: #E8820C; }
+.nav-dl {
+  display: flex; justify-content: center; margin-top: 6px; padding: 0 16px;
+}
+.nav-dl button {
+  width: 100%; background: transparent; border: 1px solid #1E3050;
+  color: #3A5A7A; border-radius: 6px; padding: 5px 0;
+  font-size: 10px; cursor: pointer; transition: all 0.2s;
+  font-family: 'Noto Sans SC', sans-serif;
+}
+.nav-dl button:hover { border-color: #E8820C; color: #E8820C; }
+.nav-sep { height: 1px; background: #131E2E; margin: 8px 16px; }
+
+/* 右侧：预览区 */
+#preview-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 32px;
+}
+
+/* ── 单个章节渲染块 ── */
+.section-wrap {
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+}
+.section-label {
+  font-size: 11px; color: #3A5070; letter-spacing: 0.06em;
+  font-family: 'Inter', sans-serif; align-self: flex-start;
+  margin-left: 8px;
+}
+
+/* ── 渲染目标：750px 宽度，微信公众号标准 ── */
+.wx-block {
+  width: 750px;
+  background: #fff;
+  overflow: hidden;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+
+/* ════════════════════════════════
+   公共内部样式（写在 .wx-block 内）
+════════════════════════════════ */
+.wx-block * { box-sizing: border-box; font-family: 'Noto Sans SC', sans-serif; }
+.wx-block .inter { font-family: 'Inter', sans-serif; }
+
+/* ── 封面块 ── */
+.wx-cover {
+  background: linear-gradient(150deg, #0D1B2E 0%, #162840 55%, #0B1522 100%);
+  padding: 72px 64px 60px;
+  position: relative; overflow: hidden;
+}
+.wx-cover .grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(232,130,12,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,130,12,0.07) 1px, transparent 1px);
+  background-size: 36px 36px; pointer-events: none;
+}
+.wx-cover .glow {
+  position: absolute; top: -100px; right: -100px;
+  width: 440px; height: 440px;
+  background: radial-gradient(circle, rgba(232,130,12,0.13) 0%, transparent 70%);
+  pointer-events: none;
+}
+.wx-cover .tag {
+  display: inline-flex;
+  background: rgba(232,130,12,0.15); border: 1px solid rgba(232,130,12,0.3);
+  color: #E8A050; font-size: 11px; font-weight: 700;
+  letter-spacing: 0.1em; padding: 5px 14px; border-radius: 2px;
+  font-family: 'Inter', sans-serif; text-transform: uppercase;
+  position: relative; margin-bottom: 28px;
+}
+.wx-cover h1 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 40px; font-weight: 700; color: #EAF0F8;
+  line-height: 1.35; letter-spacing: 0.02em;
+  position: relative; margin-bottom: 20px;
+}
+.wx-cover h1 em { color: #E8820C; font-style: normal; }
+.wx-cover .sub {
+  font-size: 15px; color: #5A7A9A; line-height: 1.75;
+  border-left: 2px solid rgba(232,130,12,0.4);
+  padding-left: 16px; position: relative; margin-bottom: 48px;
+}
+.wx-cover .meta {
+  display: flex; gap: 40px; position: relative;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 28px;
+}
+.wx-cover .meta-item { display: flex; flex-direction: column; gap: 5px; }
+.wx-cover .meta-label { font-size: 10px; color: #3A5A7A; letter-spacing: 0.08em; text-transform: uppercase; }
+.wx-cover .meta-val { font-size: 14px; color: #8AABBF; font-weight: 500; }
+
+/* ── 章节内容块 ── */
+.wx-section {
+  background: #fff;
+  padding: 56px 64px;
+}
+.wx-section + .wx-section {
+  border-top: 1px solid #F0F2F5;
+}
+.sec-header {
+  display: flex; align-items: flex-start; gap: 16px;
+  margin-bottom: 28px;
+}
+.sec-num {
+  width: 36px; height: 36px; border-radius: 4px;
+  background: #E8820C; color: #fff;
+  font-family: 'Inter', sans-serif; font-size: 14px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 4px;
+}
+.sec-title h2 {
+  font-family: 'Noto Serif SC', serif;
+  font-size: 22px; font-weight: 700; color: #111;
+  line-height: 1.3; margin-bottom: 4px;
+}
+.sec-title p { font-size: 12px; color: #AAA; letter-spacing: 0.04em; }
+.para {
+  font-size: 15px; line-height: 1.95; color: #333; margin-bottom: 20px;
+}
+.para strong { color: #111; font-weight: 700; }
+.para em { color: #E8820C; font-style: normal; font-weight: 600; }
+
+/* 统计卡片行 */
+.stat-row {
+  display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin: 28px 0;
+}
+.stat-card {
+  background: #F8F9FA; border: 1px solid #EAECEF;
+  border-radius: 8px; padding: 20px 14px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.stat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: #E8820C;
+}
+.stat-card.blue::before { background: #3B82F6; }
+.stat-card.green::before { background: #10B981; }
+.stat-card.purple::before { background: #8B5CF6; }
+.stat-num {
+  font-family: 'Inter', sans-serif;
+  font-size: 34px; font-weight: 900; color: #111; line-height: 1; margin-bottom: 6px;
+}
+.stat-num sub { font-size: 18px; font-weight: 700; }
+.stat-desc { font-size: 11px; color: #888; line-height: 1.5; }
+
+/* 大数字横排 */
+.bignum-row {
+  display: flex; justify-content: space-around; align-items: center;
+  padding: 28px 0; border-top: 1px solid #EAECEF; border-bottom: 1px solid #EAECEF;
+  margin: 24px 0;
+}
+.bignum-item { text-align: center; }
+.bignum { font-family: 'Inter', sans-serif; font-size: 48px; font-weight: 900; color: #E8820C; line-height: 1; }
+.bignum-sub { font-size: 11px; color: #999; margin-top: 7px; max-width: 90px; line-height: 1.4; }
+
+/* 数据条 */
+.bar-list { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
+.bar-item {}
+.bar-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
+.bar-lbl { color: #444; font-weight: 500; }
+.bar-val { font-weight: 800; font-family: 'Inter', sans-serif; color: #E8820C; }
+.bar-val.blue { color: #3B82F6; }
+.bar-val.green { color: #10B981; }
+.bar-val.red { color: #EF4444; }
+.bar-track { height: 8px; background: #EAECEF; border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 4px; background: linear-gradient(90deg,#E8820C,#F5A840); }
+.bar-fill.blue { background: linear-gradient(90deg,#3B82F6,#60A5FA); }
+.bar-fill.green { background: linear-gradient(90deg,#10B981,#34D399); }
+.bar-fill.red { background: linear-gradient(90deg,#EF4444,#F87171); }
+
+/* 引用块 */
+.pull {
+  border-left: 3px solid #E8820C; background: #FFF8F2;
+  padding: 18px 22px; border-radius: 0 6px 6px 0;
+  margin: 24px 0; font-size: 14px; color: #5A3A10; line-height: 1.8;
+}
+.pull strong { color: #E8820C; }
+
+/* 对比格 */
+.vs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin: 20px 0; }
+.vs-card { border-radius: 8px; padding: 20px; }
+.vs-card.old { background: #F8F9FA; border: 1px solid #EAECEF; }
+.vs-card.new { background: #FFF5EC; border: 1px solid #FDDBB4; }
+.vs-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; margin-bottom: 12px; display: block; }
+.vs-card.old .vs-tag { color: #AAA; }
+.vs-card.new .vs-tag { color: #E8820C; }
+.vs-li {
+  font-size: 13px; color: #555; padding: 5px 0;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  display: flex; align-items: flex-start; gap: 6px;
+}
+.vs-li::before { content: '·'; color: #CCC; }
+.vs-card.new .vs-li::before { content: '▸'; color: #E8820C; font-size: 10px; margin-top: 3px; }
+
+/* 图表块 */
+.chart-block {
+  background: #FAFBFC; border: 1px solid #EAECEF;
+  border-radius: 10px; padding: 28px 28px 22px; margin: 28px 0;
+}
+.chart-title { font-size: 14px; font-weight: 700; color: #333; margin-bottom: 4px; }
+.chart-sub { font-size: 11px; color: #AAA; margin-bottom: 20px; }
+
+/* 结论列表 */
+.concl-list { display: flex; flex-direction: column; gap: 14px; margin: 20px 0; }
+.concl-item {
+  display: flex; gap: 14px; align-items: flex-start;
+  background: #FAFAFA; border: 1px solid #EAECEF;
+  border-radius: 8px; padding: 20px;
+  transition: border-color 0.2s;
+}
+.concl-icon {
+  width: 38px; height: 38px; border-radius: 8px; background: #E8820C;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.concl-title { font-size: 15px; font-weight: 700; color: #111; margin-bottom: 5px; }
+.concl-desc { font-size: 13px; color: #666; line-height: 1.7; }
+
+/* 深色结论盒 */
+.hl-box {
+  background: linear-gradient(135deg, #0D1B2E 0%, #162840 100%);
+  border-radius: 10px; padding: 32px; margin: 28px 0;
+  position: relative; overflow: hidden;
+}
+.hl-box::before {
+  content: ''; position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(232,130,12,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(232,130,12,0.05) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+.hl-box .hl-head {
+  font-size: 11px; font-weight: 700; color: #E8820C;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  margin-bottom: 20px; position: relative;
+}
+.hl-item { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 16px; position: relative; }
+.hl-num {
+  width: 24px; height: 24px; border-radius: 4px;
+  background: rgba(232,130,12,0.2); border: 1px solid rgba(232,130,12,0.4);
+  color: #E8820C; font-size: 12px; font-weight: 800;
+  font-family: 'Inter', sans-serif;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 1px;
+}
+.hl-text { font-size: 14px; color: #B8C8D8; line-height: 1.75; }
+.hl-text strong { color: #EAF0F8; }
+
+/* 分割线 */
+.hr { border: none; border-top: 1px solid #EAECEF; margin: 40px 0; }
+
+/* 页脚 */
+.wx-footer {
+  background: #0D1B2E; padding: 28px 64px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.wx-footer .brand { font-size: 13px; color: #3A5A7A; letter-spacing: 0.08em; font-family: 'Inter', sans-serif; }
+.wx-footer .src { font-size: 11px; color: #2A4060; }
+
+/* toast */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  background: #111; color: #fff; padding: 10px 20px; border-radius: 8px;
+  font-size: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+}
+#toast.show { opacity: 1; }
+
+/* 进度弹层 */
+#progress-overlay {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  align-items: center; justify-content: center;
+}
+#progress-overlay.show { display: flex; }
+#progress-box {
+  background: #0D1B2E; border: 1px solid #2A4060;
+  border-radius: 12px; padding: 32px 40px; text-align: center; min-width: 260px;
+}
+#progress-box h4 { font-size: 14px; color: #EAF0F8; margin-bottom: 8px; }
+#progress-box p { font-size: 12px; color: #5A7A9A; margin-bottom: 20px; }
+.prog-track { height: 4px; background: #1A2840; border-radius: 2px; overflow: hidden; }
+.prog-fill { height: 100%; background: #E8820C; border-radius: 2px; transition: width 0.3s; }
+</style>
+</head>
+<body>
+
+<!-- ── 顶部工具栏 ── -->
+<div id="top-bar">
+  <div class="logo">DATA RADAR</div>
+  <div class="hint">微信公众号图片生成器 · 750px 宽 · 按章节分图上传，手机/电脑端完美适配</div>
+  <button class="tbtn tbtn-ghost" onclick="scrollToPreview()">预览全文</button>
+  <button class="tbtn tbtn-primary" onclick="exportAll()">⬇ 全部导出图片</button>
+</div>
+
+<!-- ── 进度弹层 ── -->
+<div id="progress-overlay">
+  <div id="progress-box">
+    <h4>正在渲染图片</h4>
+    <p id="prog-text">准备中…</p>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
+  </div>
+</div>
+
+<div id="main">
+
+  <!-- 左侧导航 -->
+  <div id="sidebar">
+    <h3>章节导航</h3>
+
+    <div class="nav-item active" onclick="navTo(0)">
+      <div class="nav-dot" style="background:#E8820C">封</div>
+      <div class="nav-text">封面</div>
+    </div>
+    <div class="nav-dl"><button onclick="exportOne(0,'封面')">下载此图</button></div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-item" onclick="navTo(1)">
+      <div class="nav-dot" style="background:#E8820C">01</div>
+      <div class="nav-text">效率革命<br>"小而快"范式</div>
+    </div>
+    <div class="nav-dl"><button onclick="exportOne(1,'效率革命')">下载此图</button></div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-item" onclick="navTo(2)">
+      <div class="nav-dot" style="background:#3B82F6">02</div>
+      <div class="nav-text">AI 基础设施化</div>
+    </div>
+    <div class="nav-dl"><button onclick="exportOne(2,'AI基础设施化')">下载此图</button></div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-item" onclick="navTo(3)">
+      <div class="nav-dot" style="background:#10B981">03</div>
+      <div class="nav-text">买量逻辑失效<br>变现路径转移</div>
+    </div>
+    <div class="nav-dl"><button onclick="exportOne(3,'变现路径')">下载此图</button></div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-item" onclick="navTo(4)">
+      <div class="nav-dot" style="background:#8B5CF6">04</div>
+      <div class="nav-text">留存设计共识</div>
+    </div>
+    <div class="nav-dl"><button onclick="exportOne(4,'留存设计')">下载此图</button></div>
+
+    <div class="nav-sep"></div>
+
+    <div class="nav-item" onclick="navTo(5)">
+      <div class="nav-dot" style="background:#E8820C">结</div>
+      <div class="nav-text">三个结构性判断</div>
+    </div>
+    <div class="nav-dl"><button onclick="exportOne(5,'结论')">下载此图</button></div>
+  </div>
+
+  <!-- 右侧预览区 -->
+  <div id="preview-area">
+
+    <!-- ══ 块 0：封面 ══ -->
+    <div class="section-wrap">
+      <div class="section-label">封面图 · 750px</div>
+      <div class="wx-block" id="wx-0">
+        <div class="wx-cover">
+          <div class="grid"></div>
+          <div class="glow"></div>
+          <div class="tag">Unity Developer Report 2026</div>
+          <h1>Unity 2026<br>游戏开发报告<br>解读：<em>三个结构性转变</em></h1>
+          <p class="sub">
+            基于 Unity 全球开发者调研数据，解析「小而快」务实主义、<br>
+            AI 基础设施化、合作优先于买量三大行业转折信号
+          </p>
+          <div class="meta">
+            <div class="meta-item">
+              <span class="meta-label">数据来源</span>
+              <span class="meta-val">Unity 2026 Gaming Report</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">发布时间</span>
+              <span class="meta-val">2026 年 3 月</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">出品</span>
+              <span class="meta-val">数据雷达</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 块 1：效率革命 ══ -->
+    <div class="section-wrap">
+      <div class="section-label">第一章 · 效率革命</div>
+      <div class="wx-block" id="wx-1">
+        <div class="wx-section">
+          <div class="sec-header">
+            <div class="sec-num">01</div>
+            <div class="sec-title">
+              <h2>"小而快"不是妥协，是主动选择</h2>
+              <p>Development Efficiency · 效率革命</p>
+            </div>
+          </div>
+
+          <p class="para">
+            报告揭示了一个看似矛盾的现象：<strong>72% 的开发者表示游戏制作变得更高效</strong>，与此同时，<strong>52% 的工作室正在主动缩减项目规模</strong>。这很容易被误读为"市场不景气所以降标"——但数字背后的逻辑恰好相反。
+          </p>
+          <p class="para">
+            在过去四年内，游戏开发时间的中位数下降了 <em>77%</em>。当原型验证周期可以压缩到 1-3 个月，"大项目等于高质量"的逻辑就开始松动。<strong>64%</strong> 的中型工作室（10-49人）明确表示因市场压力转向小项目。
+          </p>
+
+          <div class="stat-row">
+            <div class="stat-card">
+              <div class="stat-num">72<sub>%</sub></div>
+              <div class="stat-desc">开发者表示<br>效率提升</div>
+            </div>
+            <div class="stat-card blue">
+              <div class="stat-num" style="color:#3B82F6">77<sub>%</sub></div>
+              <div class="stat-desc">开发时长中位数<br>4年内降幅</div>
+            </div>
+            <div class="stat-card green">
+              <div class="stat-num" style="color:#10B981">52<sub>%</sub></div>
+              <div class="stat-desc">工作室主动<br>缩减规模</div>
+            </div>
+            <div class="stat-card purple">
+              <div class="stat-num" style="color:#8B5CF6">64<sub>%</sub></div>
+              <div class="stat-desc">中型团队<br>转向小项目</div>
+            </div>
+          </div>
+
+          <div class="chart-block">
+            <div class="chart-title">原型开发周期分布</div>
+            <div class="chart-sub">工作室完成可验证原型所需时间</div>
+            <div style="position:relative;height:240px">
+              <canvas id="c-prototype"></canvas>
+            </div>
+          </div>
+
+          <div class="bar-list">
+            <div class="bar-item">
+              <div class="bar-row">
+                <span class="bar-lbl">中型工作室（10-49人）因市场转向小项目</span>
+                <span class="bar-val">64%</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width:64%"></div></div>
+            </div>
+            <div class="bar-item">
+              <div class="bar-row">
+                <span class="bar-lbl">整体开发效率提升</span>
+                <span class="bar-val">72%</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width:72%"></div></div>
+            </div>
+            <div class="bar-item">
+              <div class="bar-row">
+                <span class="bar-lbl">工作室主动缩减项目规模</span>
+                <span class="bar-val">52%</span>
+              </div>
+              <div class="bar-track"><div class="bar-fill" style="width:52%"></div></div>
+            </div>
+          </div>
+
+          <div class="pull">
+            真正值得关注的问题不是"小项目好还是大项目好"，而是：当小工作室和大工作室都在做小项目时，<strong>大工作室的规模优势是否还成立？</strong>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 块 2：AI ══ -->
+    <div class="section-wrap">
+      <div class="section-label">第二章 · AI 基础设施化</div>
+      <div class="wx-block" id="wx-2">
+        <div class="wx-section">
+          <div class="sec-header">
+            <div class="sec-num" style="background:#3B82F6">02</div>
+            <div class="sec-title">
+              <h2>AI 已经越过临界点</h2>
+              <p>AI Integration · 从试用阶段进入基础设施阶段</p>
+            </div>
+          </div>
+
+          <p class="para">
+            报告中关于 AI 的数据已无法用"探索阶段"来描述。<strong>62% 的开发者将 AI 整合进编码工作流</strong>，当超过六成从业者已在日常流程中使用 AI 辅助编码，「是否使用」就不再是竞争优势，而变成了基础能力的底线。
+          </p>
+          <p class="para">
+            更值得关注的是 MCP 服务器的渗透数据：<strong>50% 的工作室已完成部署</strong>，其中 90% 用于连接引擎与编辑器，67% 接入源代码管理，76% 将编码与调试列为核心场景。MCP 把 AI 从「可调用的工具」变成了「嵌入工作流的基础设施」——前者是效率的加法，后者是工作方式的乘法。
+          </p>
+
+          <div class="chart-block">
+            <div class="chart-title">AI 工具应用现状</div>
+            <div class="chart-sub">开发者在工作流中使用 AI 的场景与感知价值</div>
+            <div class="bar-list" style="margin:0">
+              <div class="bar-item">
+                <div class="bar-row">
+                  <span class="bar-lbl">认为 AI 最大价值是提升效率</span>
+                  <span class="bar-val blue">73%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill blue" style="width:73%"></div></div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-row">
+                  <span class="bar-lbl">将 AI 用于编码辅助</span>
+                  <span class="bar-val blue">62%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill blue" style="width:62%"></div></div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-row">
+                  <span class="bar-lbl">AI 改善了决策质量</span>
+                  <span class="bar-val blue">62%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill blue" style="width:62%"></div></div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-row">
+                  <span class="bar-lbl">已部署 MCP 服务器</span>
+                  <span class="bar-val blue">50%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill blue" style="width:50%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="chart-block">
+            <div class="chart-title">MCP 服务器核心应用场景</div>
+            <div class="chart-sub">已部署 MCP 的工作室，各场景使用比例</div>
+            <div style="position:relative;height:200px">
+              <canvas id="c-mcp"></canvas>
+            </div>
+          </div>
+
+          <div class="pull">
+            <strong>62% 的开发者认为 AI 改善了决策质量</strong>——这意味着 AI 已在影响方向判断，而不只是执行层面的提速。行业竞争差距，将越来越多体现在 AI 整合的深度上。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 块 3：变现 ══ -->
+    <div class="section-wrap">
+      <div class="section-label">第三章 · 变现路径转移</div>
+      <div class="wx-block" id="wx-3">
+        <div class="wx-section">
+          <div class="sec-header">
+            <div class="sec-num" style="background:#10B981">03</div>
+            <div class="sec-title">
+              <h2>买量逻辑的系统性失效</h2>
+              <p>Monetization Shift · 变现路径的范式转移</p>
+            </div>
+          </div>
+
+          <p class="para">
+            移动游戏开发者面临三大障碍：竞争（<em>33%</em>）、用户获取成本（<em>30%</em>）、曝光困难（<em>17%</em>）。三条叠加，本质上描述的是同一件事：<strong>传统买量增长路径越来越走不通了。</strong>
+          </p>
+
+          <div class="chart-block">
+            <div class="chart-title">移动游戏开发者最大障碍</div>
+            <div class="chart-sub">受访者选择各项作为"最大挑战"的比例</div>
+            <div class="bar-list" style="margin:0">
+              <div class="bar-item">
+                <div class="bar-row">
+                  <span class="bar-lbl">市场竞争激烈</span>
+                  <span class="bar-val red">33%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill red" style="width:33%"></div></div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-row">
+                  <span class="bar-lbl">用户获取成本过高</span>
+                  <span class="bar-val red">30%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill red" style="width:30%"></div></div>
+              </div>
+              <div class="bar-item">
+                <div class="bar-row">
+                  <span class="bar-lbl">获得曝光困难</span>
+                  <span class="bar-val red">17%</span>
+                </div>
+                <div class="bar-track"><div class="bar-fill red" style="width:17%"></div></div>
+              </div>
+            </div>
+          </div>
+
+          <p class="para">
+            行业集体转向的方向清晰可见：<strong>82% 的工作室通过合作与伙伴关系推动收入增长</strong>，在所有变现策略中排名第一，超过了应用内购和广告变现。
+          </p>
+
+          <div class="vs-grid">
+            <div class="vs-card old">
+              <span class="vs-tag">传统路径</span>
+              <div class="vs-li">应用内购为主要变现手段</div>
+              <div class="vs-li">买量广告规模化投放</div>
+              <div class="vs-li">依赖渠道流量分发</div>
+              <div class="vs-li">一次性内容消费模型</div>
+            </div>
+            <div class="vs-card new">
+              <span class="vs-tag">新主流路径</span>
+              <div class="vs-li">IP 联名 · 跨界合作</div>
+              <div class="vs-li">玩家社区深度运营</div>
+              <div class="vs-li">线上活动驱动曝光</div>
+              <div class="vs-li">持续性服务体验</div>
+            </div>
+          </div>
+
+          <div class="chart-block">
+            <div class="chart-title">收入增长策略采用率</div>
+            <div class="chart-sub">工作室采用各渠道推动营收的比例</div>
+            <div style="position:relative;height:200px">
+              <canvas id="c-monetize"></canvas>
+            </div>
+          </div>
+
+          <div class="pull">
+            <strong>73% 的开发者将印度列为最具潜力新兴市场</strong>——正在形成类似 2015-2018 年中国市场的窗口期。先建立渠道关系与品牌认知的团队，将获得结构性优势。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 块 4：留存 ══ -->
+    <div class="section-wrap">
+      <div class="section-label">第四章 · 留存设计共识</div>
+      <div class="wx-block" id="wx-4">
+        <div class="wx-section">
+          <div class="sec-header">
+            <div class="sec-num" style="background:#8B5CF6">04</div>
+            <div class="sec-title">
+              <h2>多人游戏与留存：设计共识已形成</h2>
+              <p>Retention Design · 从"完成即流失"到持续性服务</p>
+            </div>
+          </div>
+
+          <p class="para">
+            <strong>83% 的工作室选择构建在线多人游戏</strong>，这是整个行业对「游戏生命周期管理」认知成熟的体现。单机游戏本质上是一次性内容消费——完成即流失。在线多人体验，无论是竞技、合作还是社交，都创造了玩家主动回流的理由。
+          </p>
+
+          <div class="bignum-row">
+            <div class="bignum-item">
+              <div class="bignum">83%</div>
+              <div class="bignum-sub">构建在线多人游戏</div>
+            </div>
+            <div class="bignum-item">
+              <div class="bignum">78%</div>
+              <div class="bignum-sub">部署每日奖励+排行榜</div>
+            </div>
+            <div class="bignum-item">
+              <div class="bignum">92%</div>
+              <div class="bignum-sub">小型工作室依赖每日任务</div>
+            </div>
+            <div class="bignum-item">
+              <div class="bignum">72%</div>
+              <div class="bignum-sub">优先构建跨平台能力</div>
+            </div>
+          </div>
+
+          <div class="chart-block">
+            <div class="chart-title">玩家留存机制采用率：全体 vs 小型工作室（<10人）</div>
+            <div class="chart-sub">不同规模工作室在核心留存机制上的对比</div>
+            <div style="position:relative;height:230px">
+              <canvas id="c-retention"></canvas>
+            </div>
+          </div>
+
+          <div class="pull">
+            留存机制的普及率说明行业已有经过验证的基本范式。真正的竞争，发生在这套范式<strong>之上的差异化体验设计</strong>，而不是在是否使用这些机制上。
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ 块 5：结论 ══ -->
+    <div class="section-wrap">
+      <div class="section-label">结论 · 三个结构性判断</div>
+      <div class="wx-block" id="wx-5">
+        <div class="wx-section">
+          <div class="sec-header">
+            <div class="sec-num">05</div>
+            <div class="sec-title">
+              <h2>三个结构性判断</h2>
+              <p>Strategic Implications · 对从业者的实践意义</p>
+            </div>
+          </div>
+
+          <div class="concl-list">
+            <div class="concl-item">
+              <div class="concl-icon">⚡</div>
+              <div>
+                <div class="concl-title">小工作室的天花板正在被抬高</div>
+                <div class="concl-desc">AI + 成熟引擎让 3 个月出可发行原型成为可能，URP 采用率从 2024 年的 29% 增至 2025 年的 42%。大团队依赖规模形成的工程壁垒，正在被系统性压缩。规模不再等于优势，速度才是。</div>
+              </div>
+            </div>
+            <div class="concl-item">
+              <div class="concl-icon">🧠</div>
+              <div>
+                <div class="concl-title">AI 竞争差距将在 2026 年集中显现</div>
+                <div class="concl-desc">MCP 服务器、编码辅助只是起点。真正的分水岭在于 AI 能否进入决策层。62% 的工作室报告 AI 改善了决策质量——这意味着 AI 整合深度的差异，将直接转化为产品判断力的差异。</div>
+              </div>
+            </div>
+            <div class="concl-item">
+              <div class="concl-icon">🌏</div>
+              <div>
+                <div class="concl-title">印度市场的窗口期正在打开</div>
+                <div class="concl-desc">73% 的开发者已将印度列为首要新兴市场。渠道关系、本地化内容、品牌认知的建立需要时间沉淀——现在是窗口期，而不是观望期。</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hl-box">
+            <div class="hl-head">核心判断</div>
+            <div class="hl-item">
+              <div class="hl-num">→</div>
+              <div class="hl-text">游戏产业的竞争力，正在从 <strong>「能做大」</strong> 转向 <strong>「能做快、做准、做深」</strong></div>
+            </div>
+            <div class="hl-item">
+              <div class="hl-num">→</div>
+              <div class="hl-text">AI 工具的价值，已从 <strong>提升执行效率</strong> 延伸至 <strong>改善决策质量</strong>，这是更根本的竞争维度</div>
+            </div>
+            <div class="hl-item">
+              <div class="hl-num">→</div>
+              <div class="hl-text">变现路径的重心已从 <strong>流量采购</strong> 转向 <strong>关系资产积累</strong>——IP、社区、合作网络是买量买不来的护城河</div>
+            </div>
+          </div>
+        </div>
+        <div class="wx-footer">
+          <span class="brand">DATA RADAR · 数据雷达</span>
+          <span class="src">数据来源：Unity 2026 Gaming Report</span>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /#preview-area -->
+</div><!-- /#main -->
+
+<div id="toast">正在处理…</div>
+
+<script>
+Chart.defaults.font.family = "'Inter','Noto Sans SC',sans-serif";
+
+// ── 图表渲染 ──
+new Chart(document.getElementById('c-prototype'), {
+  type: 'doughnut',
+  data: {
+    labels: ['1-3 个月','因项目而异','不到 1 个月','其他'],
+    datasets: [{
+      data: [46, 24, 21, 9],
+      backgroundColor: ['#E8820C','#F5B840','#10B981','#CBD5E0'],
+      borderWidth: 3, borderColor: '#fff',
+    }]
+  },
+  options: {
+    cutout: '64%',
+    plugins: {
+      legend: { position: 'right', labels: { font:{size:13}, padding:16 } },
+      tooltip: { callbacks: { label: c => ` ${c.label}：${c.raw}%` } }
+    }
+  }
+});
+
+new Chart(document.getElementById('c-mcp'), {
+  type: 'bar',
+  data: {
+    labels: ['连接引擎/编辑器','接入源码管理','编码与调试'],
+    datasets: [{ data:[90,67,76], backgroundColor:['#3B82F6','#60A5FA','#93C5FD'], borderRadius:4, borderSkipped:false }]
+  },
+  options: {
+    indexAxis: 'y', responsive:true, maintainAspectRatio:false,
+    plugins: { legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw}%`}} },
+    scales: {
+      x: { min:0, max:100, grid:{color:'rgba(0,0,0,0.05)'}, ticks:{callback:v=>v+'%',font:{size:12}} },
+      y: { grid:{display:false}, ticks:{font:{size:13}} }
+    }
+  }
+});
+
+new Chart(document.getElementById('c-monetize'), {
+  type: 'bar',
+  data: {
+    labels: ['合作/联名','印度新兴市场','线上活动','社交媒体'],
+    datasets: [{ data:[82,73,62,60], backgroundColor:['#E8820C','#3B82F6','#10B981','#F5B840'], borderRadius:5, borderSkipped:false }]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins: { legend:{display:false}, tooltip:{callbacks:{label:c=>` ${c.raw}%`}} },
+    scales: {
+      y: { min:0, max:100, grid:{color:'rgba(0,0,0,0.05)'}, ticks:{callback:v=>v+'%',font:{size:12}} },
+      x: { grid:{display:false}, ticks:{font:{size:13}} }
+    }
+  }
+});
+
+new Chart(document.getElementById('c-retention'), {
+  type: 'bar',
+  data: {
+    labels: ['排行榜+每日奖励','在线多人游戏','跨平台能力'],
+    datasets: [
+      { label:'全体工作室', data:[78,83,72], backgroundColor:'#E8820C', borderRadius:4, borderSkipped:false },
+      { label:'小型工作室(<10人)', data:[92,83,65], backgroundColor:'#8B5CF6', borderRadius:4, borderSkipped:false }
+    ]
+  },
+  options: {
+    responsive:true, maintainAspectRatio:false,
+    plugins: {
+      legend: { position:'top', labels:{font:{size:12},boxWidth:12,padding:14} },
+      tooltip: { callbacks:{label:c=>` ${c.dataset.label}：${c.raw}%`} }
+    },
+    scales: {
+      y: { min:0, max:100, grid:{color:'rgba(0,0,0,0.05)'}, ticks:{callback:v=>v+'%',font:{size:12}} },
+      x: { grid:{display:false}, ticks:{font:{size:13}} }
+    }
+  }
+});
+
+// ── 导航 ──
+function navTo(idx) {
+  document.querySelectorAll('.nav-item').forEach((el,i) => el.classList.toggle('active', i===idx));
+  const blocks = document.querySelectorAll('.wx-block');
+  if (blocks[idx]) blocks[idx].scrollIntoView({ behavior:'smooth', block:'start' });
+}
+function scrollToPreview() {
+  document.getElementById('preview-area').scrollTo({top:0, behavior:'smooth'});
+}
+
+// ── 单图导出 ──
+async function exportOne(idx, name) {
+  const el = document.getElementById(`wx-${idx}`);
+  showToast(`正在渲染「${name}」…`);
+  try {
+    // 连续渲染两次解决 Chart.js 字体未加载问题
+    await htmlToImage.toPng(el, { pixelRatio:2, cacheBust:true });
+    const dataUrl = await htmlToImage.toPng(el, { pixelRatio:2, cacheBust:true });
+    saveAs(dataUrl, `unity-2026-${String(idx).padStart(2,'0')}-${name}.png`);
+    showToast(`「${name}」下载成功`);
+  } catch(e) {
+    showToast('渲染失败，请重试');
+    console.error(e);
+  }
+}
+
+// ── 全部导出 ──
+async function exportAll() {
+  const sections = [
+    {id:'wx-0', name:'封面'},
+    {id:'wx-1', name:'效率革命'},
+    {id:'wx-2', name:'AI基础设施化'},
+    {id:'wx-3', name:'变现路径'},
+    {id:'wx-4', name:'留存设计'},
+    {id:'wx-5', name:'结论'},
+  ];
+  const overlay = document.getElementById('progress-overlay');
+  const progText = document.getElementById('prog-text');
+  const progFill = document.getElementById('prog-fill');
+  overlay.classList.add('show');
+
+  for (let i = 0; i < sections.length; i++) {
+    const {id, name} = sections[i];
+    progText.textContent = `第 ${i+1} / ${sections.length} 张：${name}`;
+    progFill.style.width = `${Math.round((i / sections.length) * 100)}%`;
+    const el = document.getElementById(id);
+    try {
+      await htmlToImage.toPng(el, { pixelRatio:2, cacheBust:true });
+      const dataUrl = await htmlToImage.toPng(el, { pixelRatio:2, cacheBust:true });
+      saveAs(dataUrl, `unity-2026-${String(i+1).padStart(2,'0')}-${name}.png`);
+      await new Promise(r => setTimeout(r, 500));
+    } catch(e) { console.error(id, e); }
+  }
+
+  progFill.style.width = '100%';
+  progText.textContent = '全部完成！';
+  setTimeout(() => overlay.classList.remove('show'), 1200);
+  showToast('6 张图片已全部导出');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
