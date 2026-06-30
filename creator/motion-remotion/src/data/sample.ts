@@ -39,7 +39,7 @@ export const GROWTH_POINTS = [
   { week: 13, followers: 2480 },
   { week: 14, followers: 2700 },
   { week: 15, followers: 2880 },
-  { week: 16, followers: 2978, label: 'M4 · 当前' },
+  { week: 16, followers: 2982, label: 'M4 · 当前' },
 ];
 
 export const WEEKLY_OVERALL = {

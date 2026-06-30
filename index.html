@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>小红书运营 · AI 内容生产闭环｜个人创作者的 6 环节闭环 Demo</title>
-<meta name="description" content="基于 WorkBuddy 搭建的内容创作与发布分析系统。4 个月小红书账号 0→2978 粉的真实工作流。">
+<meta name="description" content="基于 WorkBuddy 搭建的内容创作与发布分析系统。4 个月小红书账号 0→2982 粉的真实工作流。">
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
@@ -189,25 +189,61 @@
   }
   .btn-ghost:hover { border-color: var(--orange); background: var(--orange-glow); color: var(--orange-soft); }
 
-  /* Hero 右侧增长曲线 */
-  .hero-chart {
+  /* Hero 右侧账号主页截图 */
+  .hero-screenshot {
     position: relative;
-    background: rgba(22, 32, 46, 0.5);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+  }
+  .hero-screenshot-frame {
+    position: relative;
+    width: 100%;
+    max-width: 380px;
+    border-radius: 24px;
+    overflow: hidden;
+    border: 1px solid rgba(232,130,12,0.4);
+    box-shadow:
+      0 24px 60px rgba(0,0,0,0.5),
+      0 0 80px rgba(232,130,12,0.18),
+      inset 0 0 0 1px rgba(255,255,255,0.04);
+    background: var(--bg-card);
+    transform: rotate(-1.5deg);
+    transition: transform .35s ease;
+  }
+  .hero-screenshot-frame:hover { transform: rotate(0deg) scale(1.02); }
+  .hero-screenshot-frame::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(232,130,12,0.06) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .hero-screenshot-frame img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  .hero-screenshot-caption {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    background: rgba(22, 32, 46, 0.72);
     border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 24px;
-    backdrop-filter: blur(12px);
+    border-radius: 999px;
+    font-size: 12px;
+    color: var(--text-2);
+    backdrop-filter: blur(8px);
   }
-  .hero-chart-title {
-    font-size: 12px; color: var(--text-3); letter-spacing: 1px;
-    margin-bottom: 4px;
+  .hero-screenshot-caption strong { color: var(--orange-soft); font-weight: 700; }
+  .hero-screenshot-caption .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 8px var(--green);
+    animation: pulse 2s infinite;
   }
-  .hero-chart-num {
-    font-size: 36px; font-weight: 900;
-    margin-bottom: 12px;
-  }
-  .hero-chart-num span { color: var(--green); font-size: 14px; font-weight: 600; margin-left: 8px; }
-  .hero-chart-svg { width: 100%; height: 180px; }
 
   /* ========== Section ========== */
   section { padding: 100px 24px; position: relative; }
@@ -766,7 +802,7 @@
       </p>
       <div class="hero-stats">
         <div class="stat">
-          <div class="stat-num">2978</div>
+          <div class="stat-num">2982</div>
           <div class="stat-label">4 个月真实粉丝增长</div>
         </div>
         <div class="stat">
@@ -784,38 +820,15 @@
       </div>
     </div>
 
-    <!-- 增长曲线 SVG -->
-    <div class="hero-chart">
-      <div class="hero-chart-title">XHS FOLLOWERS · 4 MONTHS</div>
-      <div class="hero-chart-num">2,978 <span>+2,978 ▲</span></div>
-      <svg class="hero-chart-svg" viewBox="0 0 400 180" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="growthGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="#E8820C" stop-opacity="0.4"/>
-            <stop offset="100%" stop-color="#E8820C" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <!-- grid -->
-        <line x1="0" y1="40" x2="400" y2="40" stroke="#1F2D40" stroke-dasharray="2,4"/>
-        <line x1="0" y1="90" x2="400" y2="90" stroke="#1F2D40" stroke-dasharray="2,4"/>
-        <line x1="0" y1="140" x2="400" y2="140" stroke="#1F2D40" stroke-dasharray="2,4"/>
-        <!-- area -->
-        <path d="M 0 170 L 20 168 L 60 162 L 100 145 L 140 130 L 180 110 L 220 85 L 260 65 L 300 50 L 340 35 L 380 22 L 400 18 L 400 180 L 0 180 Z" fill="url(#growthGrad)"/>
-        <!-- line -->
-        <path d="M 0 170 L 20 168 L 60 162 L 100 145 L 140 130 L 180 110 L 220 85 L 260 65 L 300 50 L 340 35 L 380 22 L 400 18" stroke="#E8820C" stroke-width="2.5" fill="none" stroke-linecap="round"/>
-        <!-- dots -->
-        <circle cx="0" cy="170" r="3" fill="#E8820C"/>
-        <circle cx="100" cy="145" r="3" fill="#E8820C"/>
-        <circle cx="200" cy="98" r="3" fill="#E8820C"/>
-        <circle cx="300" cy="50" r="3" fill="#E8820C"/>
-        <circle cx="400" cy="18" r="4" fill="#F5B820" stroke="#0F1722" stroke-width="2"/>
-        <!-- x labels -->
-        <text x="0" y="178" fill="#6A7A92" font-size="9" font-family="monospace">M0</text>
-        <text x="100" y="178" fill="#6A7A92" font-size="9" font-family="monospace">M1</text>
-        <text x="200" y="178" fill="#6A7A92" font-size="9" font-family="monospace">M2</text>
-        <text x="300" y="178" fill="#6A7A92" font-size="9" font-family="monospace">M3</text>
-        <text x="380" y="178" fill="#F5B820" font-size="9" font-family="monospace">M4</text>
-      </svg>
+    <!-- 真实账号主页截图 -->
+    <div class="hero-screenshot">
+      <div class="hero-screenshot-frame">
+        <img src="docs/account_homepage.jpg" alt="游戏雷达局 · 小红书账号主页" loading="eager" />
+      </div>
+      <div class="hero-screenshot-caption">
+        <span class="dot"></span>
+        <span><strong>真实账号</strong> · 4 个月运营 · 2,982 粉丝 / 1.2万 获赞收藏</span>
+      </div>
     </div>
   </div>
 </header>

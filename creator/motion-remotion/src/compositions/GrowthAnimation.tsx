@@ -14,7 +14,7 @@ import { BrandHeader } from '../components/BrandHeader';
  * 0:00-0:03  品牌渐入
  * 0:03-0:05  标题"4 个月"字卡 spring 弹入
  * 0:05-0:18  增长曲线沿 stroke-dashoffset 绘制 + 数字 count-up
- * 0:18-0:22  关键节点高亮（破千 / 当前 2978）
+ * 0:18-0:22  关键节点高亮（破千 / 当前 2982）
  * 0:22-0:28  收尾字卡："真实战绩 · 不是样板间"
  */
 export const GrowthAnimation: React.FC = () => {
@@ -35,7 +35,7 @@ export const GrowthAnimation: React.FC = () => {
     extrapolateRight: 'clamp',
   });
   // 数字 count-up
-  const totalFollowers = 2978;
+  const totalFollowers = 2982;
   const countUp = Math.round(
     interpolate(frame, [150, 540], [0, totalFollowers], {
       extrapolateLeft: 'clamp',
