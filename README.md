@@ -14,8 +14,6 @@
 - AI 辅助下，每周稳定 2-3 条内容，单条最高阅读 2 万+
 - 完整工作流已沉淀给团队新成员使用：见 `docs/操作手册.html`
 
-> 增长曲线截图：见 `demo/0to2978_growth.png`（PPT 第一页素材）
-
 ---
 
 ## ⚠ 一个必须先说清楚的事
@@ -108,7 +106,6 @@ xhs-yunying/
 │   ├── qwen_bridge.py
 │   └── examples/sample_export.csv
 └── demo/
-    ├── 0to2978_growth.png
     └── recording_script.md
 ```
 
